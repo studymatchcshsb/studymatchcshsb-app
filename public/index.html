@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign Up</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h2 id="form-title">Study With Me</h2>
+    <p>Already have an account? <a href="#" onclick="toggleMode()">Log In</a></p>
+    <div class="input-container">
+      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <input type="email" id="email" placeholder="Email address" />
+    </div>
+    <div class="input-container">
+      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+      <input type="password" id="password" placeholder="Password" />
+    </div>
+    <div class="input-container" id="code-container" style="display:none;">
+      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-7V7c0-2.76-2.24-5-5-5S8 4.24 8 7v3c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2zm-6-7c1.71 0 3.1 1.39 3.1 3.1V10H8.9V7c0-1.71 1.39-3.1 3.1-3.1z"/></svg>
+      <input type="text" id="code" placeholder="Enter Code" maxlength="6" />
+    </div>
+    <button id="action-btn" onclick="handleAction()">Sign Up</button>
+    <p id="message"></p>
+  </div>
+
+  <script>
+    // --- DEBUGGING ---
+    const backendURL = "http://localhost:3000";
+    let isLoginMode = false;
+    let codeStep = false; // Track if we're in code entry step
+
+    function toggleMode() {
+      console.log("toggleMode called");
+      console.log("isLoginMode before:", isLoginMode);
+      isLoginMode = !isLoginMode;
+      console.log("isLoginMode after:", isLoginMode);
+      codeStep = false;
+      document.getElementById('code-container').style.display = 'none';
+      document.getElementById('action-btn').innerText = isLoginMode ? 'Log In' : 'Sign Up';
+      document.getElementById('form-title').innerText = isLoginMode ? 'Log In' : 'Study With Me';
+      document.querySelector('p a').innerText = isLoginMode ? 'Create an account' : 'Log In';
+      document.querySelector('p').childNodes[0].nodeValue = isLoginMode ? 'Don\'t have an account? ' : 'Already have an account? ';
+      document.getElementById('message').innerText = '';
+    }
+
+    function handleAction() {
+      console.log("handleAction called");
+      console.log("codeStep:", codeStep);
+      console.log("isLoginMode:", isLoginMode);
+      if (codeStep) {
+        console.log("Calling verifyCode");
+        verifyCode();
+      } else if (isLoginMode) {
+        console.log("Calling sendLoginCode");
+        sendLoginCode();
+      } else {
+        console.log("Calling sendSignupCode");
+        sendSignupCode();
+      }
+    }
+
+    function sendLoginCode() {
+      console.log("sendLoginCode called");
+      const email = document.getElementById("email").value;
+      console.log("Email value:", email);
+      if (!email) {
+        console.log("No email provided");
+        document.getElementById("message").innerText = "Please enter your email.";
+        return;
+      }
+      console.log("Sending request to /send-code with email:", email);
+      fetch(`${backendURL}/send-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      })
+      .then(res => {
+        console.log("Received response from server:", res);
+        if (!res.ok) {
+          console.log("Response not ok, status:", res.status);
+          return res.text().then(text => { throw new Error(text || 'Server error'); });
+        }
+        return res.text();
+      })
+      .then(() => {
+        console.log("Code sent successfully");
+        codeStep = true;
+        document.getElementById('code-container').style.display = '';
+        document.getElementById('action-btn').innerText = 'Verify Code';
+        document.getElementById("message").innerText = "A verification code was sent to your email.";
+      })
+      .catch(err => {
+        console.log("Error in sendLoginCode:", err);
+        document.getElementById("message").innerText = err.message || "Network error. Please try again.";
+      });
+    }
+
+    function sendSignupCode() {
+      console.log("sendSignupCode called");
+      const email = document.getElementById("email").value;
+      console.log("Email value:", email);
+      if (!email) {
+        console.log("No email provided");
+        document.getElementById("message").innerText = "Please enter your email.";
+        return;
+      }
+      console.log("Sending request to /send-code with email:", email);
+      fetch(`${backendURL}/send-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      })
+      .then(res => {
+        console.log("Received response from server:", res);
+        if (!res.ok) {
+          console.log("Response not ok, status:", res.status);
+          return res.text().then(text => { throw new Error(text || 'Server error'); });
+        }
+        return res.text();
+      })
+      .then(() => {
+        console.log("Code sent successfully");
+        codeStep = true;
+        document.getElementById('code-container').style.display = '';
+        document.getElementById('action-btn').innerText = 'Verify Code';
+        document.getElementById("message").innerText = "A verification code was sent to your email.";
+      })
+      .catch(err => {
+        console.log("Error in sendSignupCode:", err);
+        document.getElementById("message").innerText = err.message || "Network error. Please try again.";
+      });
+    }
+
+    function verifyCode() {
+      console.log("verifyCode called");
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const code = document.getElementById("code").value;
+      const messageEl = document.getElementById("message");
+      console.log("Email:", email, "Code:", code);
+
+      if (!code) {
+        console.log("No code provided");
+        messageEl.innerText = "Please enter the code sent to your email.";
+        return;
+      }
+
+      console.log("Sending request to /verify-code");
+      fetch(`${backendURL}/verify-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, isLogin: isLoginMode })
+      })
+      .then(res => {
+        console.log("Received response from /verify-code:", res);
+        if (!res.ok) {
+          console.log("Response not ok, status:", res.status);
+          return res.text().then(text => { throw new Error(text || 'Server error'); });
+        }
+        return res.json();
+      })
+      .then(data => {
+        console.log("Received data from /verify-code:", data);
+        if (data.success) {
+          if (isLoginMode) {
+            // Now check password for login
+            console.log("Checking password for login");
+            fetch(`${backendURL}/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password })
+            })
+            .then(res => {
+              console.log("Received response from /login:", res);
+              if (!res.ok) {
+                console.log("Response not ok, status:", res.status);
+                return res.text().then(text => { throw new Error(text || 'Server error'); });
+              }
+              return res.json();
+            })
+            .then(loginData => {
+              console.log("Received data from /login:", loginData);
+              if (loginData.success) {
+                window.location.href = "/homepage.html";
+              } else {
+                messageEl.style.color = 'red';
+                messageEl.innerText = loginData.message;
+              }
+            })
+            .catch(err => {
+              console.log("Error in login:", err);
+              messageEl.style.color = 'red';
+              messageEl.innerText = err.message || "Network error. Please try again.";
+            });
+          } else {
+            // For signup, go to profile setup
+            console.log("Signup successful, redirecting to profile setup");
+            window.location.href = "/profile-setup.html";
+          }
+        } else {
+          console.log("Verification failed:", data.message);
+          messageEl.style.color = 'red';
+          messageEl.innerText = data.message;
+        }
+      })
+      .catch(err => {
+        console.log("Error in verifyCode:", err);
+        messageEl.style.color = 'red';
+        messageEl.innerText = err.message || "Network error. Please try again.";
+      });
+    }
+  </script>
+</body>
+</html>

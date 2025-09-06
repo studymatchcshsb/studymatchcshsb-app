@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chats</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <div class="main-content">
+      <header class="dashboard-header">
+        <div class="header-icons">
+          <svg class="icon" onclick="window.location.href='/homepage.html'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+        <div class="chats-title">CHATS</div>
+        <a href="/edit-profile.html" class="header-profile">
+          <div class="profile-text">
+            <span id="user-name"></span>
+            <span id="user-details"></span>
+          </div>
+          <div class="profile-pic-container">
+            <div class="profile-initials" id="profile-initials"></div>
+          </div>
+        </a>
+      </header>
+
+      <main class="dashboard-main">
+        <section class="chats-section">
+          <div class="chat-list">
+            <!-- Placeholder chats -->
+            <div class="chat-item" onclick="selectChat('alice@example.com')">
+              <div class="chat-avatar">A</div>
+              <div class="chat-info">
+                <div class="chat-name">Alice Johnson</div>
+                <div class="chat-last-message">Hey, want to study together?</div>
+              </div>
+            </div>
+            <div class="chat-item" onclick="selectChat('bob@example.com')">
+              <div class="chat-avatar">B</div>
+              <div class="chat-info">
+                <div class="chat-name">Bob Smith</div>
+                <div class="chat-last-message">Sure, let's meet at the library.</div>
+              </div>
+            </div>
+            <!-- Add more as needed -->
+          </div>
+        </section>
+        <section class="message-section">
+          <div class="messages" id="messages"></div>
+          <div class="message-input">
+            <input type="text" id="message-input" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const backendURL = window.location.origin;
+    const socket = io();
+
+    let currentUserEmail = '';
+    let selectedRecipient = '';
+
+    // Fetch user profile and set initials
+    async function fetchUserProfile() {
+      try {
+        const response = await fetch(`${backendURL}/get-profile`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+        const data = await response.json();
+        if (data.success) {
+          currentUserEmail = data.user.email;
+          // Set user name and details
+          document.getElementById('user-name').innerText = `${data.user.name} ${data.user.surname}`;
+          document.getElementById('user-details').innerText = `${data.user.grade} - ${data.user.section}`;
+
+          // Set profile initials
+          const initials = data.user.name.charAt(0).toUpperCase();
+          document.getElementById('profile-initials').innerText = initials;
+
+          // Join socket room
+          socket.emit('join', currentUserEmail);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    }
+
+    // Select a chat recipient
+    function selectChat(recipient) {
+      selectedRecipient = recipient;
+      document.getElementById('messages').innerHTML = ''; // Clear messages
+    }
+
+    // Handle sending messages
+    function sendMessage() {
+      const messageInput = document.getElementById('message-input');
+      const message = messageInput.value.trim();
+      if (message && selectedRecipient) {
+        socket.emit('send message', { to: selectedRecipient, message });
+        messageInput.value = '';
+      }
+    }
+
+    // Listen for incoming messages
+    socket.on('receive message', (data) => {
+      const messagesDiv = document.getElementById('messages');
+      const messageEl = document.createElement('div');
+      messageEl.className = 'message';
+      messageEl.innerHTML = `<strong>${data.from}:</strong> ${data.message} <small>${new Date(data.timestamp).toLocaleTimeString()}</small>`;
+      messagesDiv.appendChild(messageEl);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    // Fetch user profile when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      fetchUserProfile();
+    });
+  </script>
+</body>
+</html>

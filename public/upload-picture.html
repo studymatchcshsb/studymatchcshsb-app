@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload Profile Picture</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container profile-display">
+    <h2>Upload Profile Picture?</h2>
+    <div class="profile-info">
+      <div class="profile-picture-placeholder">
+        <img id="preview" src="#" alt="Profile preview" />
+        <span>+</span>
+      </div>
+      <div class="details">
+        <p><strong>Name:</strong> <span id="name"></span></p>
+        <p><strong>Grade:</strong> <span id="grade"></span></p>
+        <p><strong>Section:</strong> <span id="section"></span></p>
+      </div>
+    </div>
+    <input type="file" id="file-upload" accept="image/*" onchange="previewFile()">
+    <button onclick="document.getElementById('file-upload').click();">Upload Picture</button>
+    <button class="button-link" onclick="finishSetup()">Finish Setup</button>
+    <button class="button-link" onclick="skipSetup()" style="background: #7f8c8d;">Skip Setup</button>
+    <p id="final-message"></p>
+  </div>
+
+  <script>
+    const backendURL = "http://localhost:3000";
+    let profileData = {};
+
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      profileData = {
+        name: urlParams.get('name'),
+        surname: urlParams.get('surname'),
+        grade: urlParams.get('grade'),
+        section: urlParams.get('section'),
+        lrn: urlParams.get('lrn'),
+        password: urlParams.get('password')
+      };
+
+      document.getElementById('name').innerText = `${profileData.name} ${profileData.surname}`;
+      document.getElementById('grade').innerText = profileData.grade;
+      document.getElementById('section').innerText = profileData.section;
+    };
+
+    async function finishSetup() {
+      const messageEl = document.getElementById('final-message');
+      messageEl.innerText = "Saving profile...";
+
+
+
+      try {
+        const response = await fetch(`${backendURL}/save-profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message);
+        }
+
+        messageEl.style.color = 'green';
+        messageEl.innerText = "Profile saved! Redirecting...";
+        
+        // Redirect to the homepage after a short delay
+        setTimeout(() => {
+          window.location.href = "/homepage.html";
+        }, 1500);
+
+      } catch (error) {
+        messageEl.style.color = 'red';
+        messageEl.innerText = error.message;
+      }
+    }
+
+    async function skipSetup() {
+      // Redirect to homepage without saving profile
+      window.location.href = "/homepage.html";
+    }
+
+    function previewFile() {
+      const preview = document.getElementById('preview');
+      const file = document.querySelector('input[type=file]').files[0];
+      const reader = new FileReader();
+
+      reader.onloadend = function () {
+        preview.src = reader.result;
+        preview.style.display = 'block';
+      }
+
+      if (file) {
+        reader.readAsDataURL(file);
+      } else {
+        preview.src = "";
+      }
+    }
+  </script>
+</body>
+</html>

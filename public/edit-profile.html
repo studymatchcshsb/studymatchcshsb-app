@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Profile</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Customize Profile</h2>
+    <form id="edit-profile-form">
+      <fieldset>
+        <legend>Strengths</legend>
+        <div class="checkbox-group" id="strengths-group">
+          
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Weaknesses</legend>
+        <div class="checkbox-group" id="weaknesses-group">
+        </div>
+      </fieldset>
+      
+      <button type="submit">Save Changes</button>
+      <a href="/profile.html" class="button-link" style="background: #7f8c8d; margin-top: 10px;">Cancel</a>
+    </form>
+    <p id="form-message"></p>
+  </div>
+
+  <script>
+    const backendURL = "http://localhost:3000";
+    const subjects = ["Filipino", "English", "Science", "Mathematics", "ICT", "ESP", "AP", "MAPEH"];
+
+    function createCheckboxes(containerId, groupName) {
+      const container = document.getElementById(containerId);
+      subjects.forEach(subject => {
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = groupName;
+        checkbox.value = subject;
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(subject));
+        container.appendChild(label);
+      });
+    }
+
+    createCheckboxes('strengths-group', 'strengths');
+    createCheckboxes('weaknesses-group', 'weaknesses');
+
+    // Checkbox selection limit removed.
+
+    document.getElementById('edit-profile-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      const messageEl = document.getElementById('form-message');
+      
+      const strengths = Array.from(document.querySelectorAll('input[name="strengths"]:checked')).map(el => el.value);
+      const weaknesses = Array.from(document.querySelectorAll('input[name="weaknesses"]:checked')).map(el => el.value);
+
+      // In a real app, get user ID from session. We'll simulate with LRN.
+      // The backend now uses the session email, so LRN is not needed here.
+
+      messageEl.innerText = "Saving changes...";
+
+      try {
+        const response = await fetch(`${backendURL}/update-profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ strengths, weaknesses })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message);
+        }
+
+        messageEl.style.color = 'green';
+        messageEl.innerText = "Changes saved successfully! Redirecting...";
+
+        setTimeout(() => {
+          window.location.href = "/profile.html";
+        }, 1500);
+
+      } catch (error) {
+        messageEl.style.color = 'red';
+        messageEl.innerText = error.message;
+      }
+    });
+  </script>
+</body>
+</html>
