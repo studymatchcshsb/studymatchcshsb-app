@@ -454,6 +454,166 @@ app.get('/get-friends', (req, res) => {
   });
 });
 
+// Send help request endpoint
+app.post('/send-help-request', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { grade, subject } = req.body;
+
+  if (!grade || !subject) {
+    return res.status(400).send({ success: false, message: 'Grade and subject are required' });
+  }
+
+  // Get current user info
+  db.findOne({ email: storedEmail }, (err, currentUser) => {
+    if (err) {
+      console.error("Error finding current user:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (!currentUser) {
+      return res.status(404).send({ success: false, message: 'User not found' });
+    }
+
+    // Find all users in the same grade (excluding current user)
+    db.find({ grade: grade, email: { $ne: storedEmail } }, (err, potentialHelpers) => {
+      if (err) {
+        console.error("Error finding potential helpers:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      if (potentialHelpers.length === 0) {
+        return res.send({ success: true, message: 'No users found in your grade level.' });
+      }
+
+      // Create help request notifications for each potential helper
+      const notifications = potentialHelpers.map(helper => ({
+        id: Date.now() + Math.random(),
+        type: 'help_request',
+        fromUser: {
+          name: currentUser.name,
+          surname: currentUser.surname,
+          email: storedEmail,
+          grade: currentUser.grade
+        },
+        subject: subject,
+        timestamp: new Date(),
+        status: 'pending'
+      }));
+
+      // Add notifications to each helper's profile
+      let completed = 0;
+      const total = potentialHelpers.length;
+
+      potentialHelpers.forEach(helper => {
+        db.update(
+          { email: helper.email },
+          { $push: { notifications: notifications.find(n => n.fromUser.email === storedEmail) } },
+          { upsert: true },
+          (err, numReplaced) => {
+            if (err) {
+              console.error("Error adding notification:", err);
+            }
+            completed++;
+            if (completed === total) {
+              // Notify all connected users about new notifications
+              notifications.forEach(notification => {
+                io.to(connectedUsers[helper.email]).emit('new_notification', notification);
+              });
+
+              res.send({
+                success: true,
+                message: `Help request sent to ${total} students in grade ${grade}!`
+              });
+            }
+          }
+        );
+      });
+    });
+  });
+});
+
+// Get notifications endpoint
+app.get('/get-notifications', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  db.findOne({ email: storedEmail }, (err, user) => {
+    if (err) {
+      console.error("Error finding user:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (!user || !user.notifications) {
+      return res.send({ notifications: [] });
+    }
+
+    res.send({ notifications: user.notifications });
+  });
+});
+
+// Handle help request response
+app.post('/respond-help-request', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { notificationId, response, requesterEmail } = req.body;
+
+  if (!notificationId || !response) {
+    return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
+  }
+
+  // Remove the notification from current user's notifications
+  db.update(
+    { email: storedEmail },
+    { $pull: { notifications: { id: notificationId } } },
+    {},
+    (err, numReplaced) => {
+      if (err) {
+        console.error("Error removing notification:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      if (response === 'accept' && requesterEmail) {
+        // Add both users as friends if they accept
+        db.update(
+          { email: storedEmail },
+          { $addToSet: { friends: requesterEmail } },
+          {},
+          (err1) => {
+            if (err1) console.error("Error adding friend:", err1);
+
+            db.update(
+              { email: requesterEmail },
+              { $addToSet: { friends: storedEmail } },
+              {},
+              (err2) => {
+                if (err2) console.error("Error adding friend:", err2);
+
+                // Notify the requester that someone accepted
+                if (connectedUsers[requesterEmail]) {
+                  io.to(connectedUsers[requesterEmail]).emit('help_request_accepted', {
+                    helperEmail: storedEmail,
+                    subject: req.body.subject
+                  });
+                }
+
+                res.send({ success: true, message: 'Help request accepted! Starting chat...' });
+              }
+            );
+          }
+        );
+      } else {
+        res.send({ success: true, message: 'Help request declined.' });
+      }
+    }
+  );
+});
+
 // Test endpoint for email configuration
 app.get('/test-email-config', (req, res) => {
   console.log("--- Testing email configuration ---");

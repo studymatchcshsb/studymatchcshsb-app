@@ -170,30 +170,26 @@
     </div>
   </div>
 
-  <!-- Searching Modal -->
-  <div id="searching-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeSearchingModal()">&times;</span>
-      <h3>Searching for the perfect user to help you...</h3>
-      <div class="searching-content">
-        <div class="spinner"></div>
-        <p>Please wait while we find your study buddy.</p>
-      </div>
-    </div>
-  </div>
 
   <!-- Notifications Modal -->
   <div id="notifications-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeNotificationsModal()">&times;</span>
-      <h3><b>StudyMatch CSHSB</b></h3>
-      <p>This is a sample notification. You will receive such notifications from Comsayanos you have matched with. StudyMatch CSHSB will also remind you of its awesome updates.</p>
-      <p><i>- Gaea Athena A. Ojeda, S.Y 2025-2026</i></p>
-    </div>
+      <div class="modal-content">
+          <span class="close-btn" onclick="closeNotificationsModal()">&times;</span>
+          <h3><b>StudyMatch CSHSB</b></h3>
+          <div id="notifications-list">
+              <!-- Notifications will be loaded here -->
+          </div>
+          <div id="no-notifications" style="text-align: center; color: #666; padding: 20px;">
+              <p>No notifications yet.</p>
+              <p>Help requests from classmates will appear here!</p>
+          </div>
+      </div>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const backendURL = window.location.origin;
+    const socket = io();
 
     function openTodoModal() {
       document.getElementById('todo-modal').style.display = 'block';
@@ -465,15 +461,46 @@
         document.getElementById('confirmation-modal').style.display = 'none';
     }
 
-    function confirmFind(yes) {
+    async function confirmFind(yes) {
         closeConfirmationModal();
         if (yes) {
-            openSearchingModal();
+            // Send help request to all users in the same grade
+            try {
+                const response = await fetch(`${backendURL}/send-help-request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        grade: selectedGrade,
+                        subject: selectedSubject
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to send help request');
+                }
+
+                const data = await response.json();
+                alert(data.message || 'Help request sent successfully!');
+
+                // Close all modals
+                closeGradeModal();
+                closeSubjectModal();
+
+                // Reset selections
+                selectedGrade = null;
+                selectedSubject = null;
+
+            } catch (error) {
+                console.error("Error sending help request:", error);
+                alert('Error sending help request. Please try again.');
+            }
         } else {
             // Go back to homepage - close all modals
             closeGradeModal();
             closeSubjectModal();
-            closeSearchingModal();
+            // Reset selections
+            selectedGrade = null;
+            selectedSubject = null;
         }
     }
 
@@ -481,18 +508,96 @@
         document.getElementById('searching-modal').style.display = 'block';
     }
 
-    function closeSearchingModal() {
-        document.getElementById('searching-modal').style.display = 'none';
-        // Go back to confirmation modal
-        openConfirmationModal();
-    }
 
     function openNotificationsModal() {
         document.getElementById('notifications-modal').style.display = 'block';
+        loadNotifications();
     }
 
     function closeNotificationsModal() {
         document.getElementById('notifications-modal').style.display = 'none';
+    }
+
+    // Load notifications
+    async function loadNotifications() {
+        try {
+            const response = await fetch(`${backendURL}/get-notifications`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch notifications');
+            }
+            const data = await response.json();
+            displayNotifications(data.notifications || []);
+        } catch (error) {
+            console.error("Error loading notifications:", error);
+        }
+    }
+
+    // Display notifications in the modal
+    function displayNotifications(notifications) {
+        const container = document.getElementById('notifications-list');
+        const noNotifications = document.getElementById('no-notifications');
+
+        if (notifications.length === 0) {
+            container.innerHTML = '';
+            noNotifications.style.display = 'block';
+            return;
+        }
+
+        noNotifications.style.display = 'none';
+        container.innerHTML = '';
+
+        notifications.forEach(notification => {
+            if (notification.type === 'help_request') {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'notification-item';
+                notificationDiv.innerHTML = `
+                    <div class="notification-content">
+                        <strong>STUDYMATCH CSHSB</strong><br>
+                        Hi! <strong>${notification.fromUser.name} ${notification.fromUser.surname}</strong> needs help with <strong>${notification.subject}</strong>.
+                        Would you like to help him/her?
+                    </div>
+                    <div class="notification-actions">
+                        <button class="help-btn yes-btn" onclick="respondToHelpRequest('${notification.id}', 'accept', '${notification.fromUser.email}', '${notification.subject}')">Yes</button>
+                        <button class="help-btn no-btn" onclick="respondToHelpRequest('${notification.id}', 'decline')">No</button>
+                    </div>
+                `;
+                container.appendChild(notificationDiv);
+            }
+        });
+    }
+
+    // Handle help request response
+    async function respondToHelpRequest(notificationId, response, requesterEmail, subject) {
+        try {
+            const responseData = await fetch(`${backendURL}/respond-help-request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    notificationId,
+                    response,
+                    requesterEmail,
+                    subject
+                })
+            });
+
+            if (!responseData.ok) {
+                throw new Error('Failed to respond to help request');
+            }
+
+            const data = await responseData.json();
+
+            if (response === 'accept') {
+                alert(data.message);
+                // Redirect to chats page
+                window.location.href = '/chats.html';
+            } else {
+                // Reload notifications
+                loadNotifications();
+            }
+        } catch (error) {
+            console.error("Error responding to help request:", error);
+            alert('Error processing your response. Please try again.');
+        }
     }
 
     // User search and friend functionality
@@ -599,6 +704,9 @@
           const initials = data.user.name.charAt(0).toUpperCase();
           document.getElementById('profile-initials').innerText = initials;
 
+          // Join socket room for real-time notifications
+          joinSocketRoom(data.user.email);
+
           // Check profile completion status
           checkProfileCompletion(data.user);
         }
@@ -624,6 +732,36 @@
       fetchTodos();
       fetchUserProfile();
     });
+
+    // Socket.io event listeners for real-time notifications
+    socket.on('new_notification', (notification) => {
+      console.log('New notification received:', notification);
+      // Show a browser notification if permitted
+      if (Notification.permission === 'granted') {
+        new Notification('StudyMatch CSHSB', {
+          body: `${notification.fromUser.name} needs help with ${notification.subject}`,
+          icon: '/favicon.ico'
+        });
+      }
+      // Reload notifications if modal is open
+      if (document.getElementById('notifications-modal').style.display === 'block') {
+        loadNotifications();
+      }
+    });
+
+    socket.on('help_request_accepted', (data) => {
+      console.log('Help request accepted:', data);
+      alert(`Someone accepted your help request for ${data.subject}! Check your chats.`);
+      // Redirect to chats page
+      setTimeout(() => {
+        window.location.href = '/chats.html';
+      }, 2000);
+    });
+
+    // Join socket room when user profile is loaded
+    function joinSocketRoom(email) {
+      socket.emit('join', email);
+    }
   </script>
 </body>
 </html>

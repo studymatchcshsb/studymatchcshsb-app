@@ -429,6 +429,51 @@ button:hover {
   background: linear-gradient(45deg, #95a5a6, #7f8c8d);
   cursor: default;
 }
+
+/* Help Request Notifications Styles */
+.notification-item {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.notification-content {
+  margin-bottom: 15px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.help-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.help-btn:hover {
+  transform: translateY(-1px);
+}
+
+.help-btn.yes-btn {
+  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  color: white;
+}
+
+.help-btn.no-btn {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  color: white;
+}
 /* --- Profile Page Styles --- */
 .profile-view {
   text-align: center;
