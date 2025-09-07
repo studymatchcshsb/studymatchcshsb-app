@@ -313,6 +313,147 @@ app.post('/logout', (req, res) => {
   res.send({ success: true });
 });
 
+// Search users endpoint
+app.get('/search-users', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const query = req.query.q;
+  if (!query || query.length < 2) {
+    return res.send({ users: [] });
+  }
+
+  // Search for users by name or email (excluding current user)
+  db.find({
+    $or: [
+      { name: new RegExp(query, 'i') },
+      { surname: new RegExp(query, 'i') },
+      { email: new RegExp(query, 'i') }
+    ],
+    email: { $ne: storedEmail } // Exclude current user
+  }, (err, users) => {
+    if (err) {
+      console.error("Error searching users:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    // Return only necessary user info
+    const userResults = users.map(user => ({
+      name: user.name,
+      surname: user.surname,
+      email: user.email,
+      grade: user.grade,
+      section: user.section
+    }));
+
+    res.send({ users: userResults });
+  });
+});
+
+// Add friend endpoint
+app.post('/add-friend', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { friendEmail } = req.body;
+
+  if (!friendEmail) {
+    return res.status(400).send({ success: false, message: 'Friend email is required' });
+  }
+
+  if (friendEmail === storedEmail) {
+    return res.status(400).send({ success: false, message: 'Cannot add yourself as a friend' });
+  }
+
+  // Check if friend exists
+  db.findOne({ email: friendEmail }, (err, friend) => {
+    if (err) {
+      console.error("Error finding friend:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (!friend) {
+      return res.status(404).send({ success: false, message: 'User not found' });
+    }
+
+    // Check if already friends or request pending
+    db.findOne({ email: storedEmail }, (err, currentUser) => {
+      if (err) {
+        console.error("Error finding current user:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      if (!currentUser) {
+        return res.status(404).send({ success: false, message: 'Current user not found' });
+      }
+
+      // Initialize friends array if it doesn't exist
+      if (!currentUser.friends) {
+        currentUser.friends = [];
+      }
+
+      // Check if already friends
+      if (currentUser.friends.includes(friendEmail)) {
+        return res.status(400).send({ success: false, message: 'Already friends with this user' });
+      }
+
+      // Add friend to current user's friends list
+      db.update(
+        { email: storedEmail },
+        { $push: { friends: friendEmail } },
+        {},
+        (err, numReplaced) => {
+          if (err) {
+            console.error("Error adding friend:", err);
+            return res.status(500).send({ success: false, message: 'Server error' });
+          }
+
+          console.log(`Friend added: ${storedEmail} -> ${friendEmail}`);
+          res.send({ success: true, message: 'Friend request sent successfully' });
+        }
+      );
+    });
+  });
+});
+
+// Get friends list endpoint
+app.get('/get-friends', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  db.findOne({ email: storedEmail }, (err, user) => {
+    if (err) {
+      console.error("Error finding user:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (!user || !user.friends) {
+      return res.send({ friends: [] });
+    }
+
+    // Get friend details
+    db.find({ email: { $in: user.friends } }, (err, friends) => {
+      if (err) {
+        console.error("Error finding friends:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const friendDetails = friends.map(friend => ({
+        name: friend.name,
+        surname: friend.surname,
+        email: friend.email,
+        grade: friend.grade,
+        section: friend.section
+      }));
+
+      res.send({ friends: friendDetails });
+    });
+  });
+});
+
 // Test endpoint for email configuration
 app.get('/test-email-config', (req, res) => {
   console.log("--- Testing email configuration ---");

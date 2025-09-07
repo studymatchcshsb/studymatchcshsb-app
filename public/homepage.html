@@ -89,6 +89,20 @@
             <button class="find-btn" onclick="openGradeModal()">Find!</button>
           </div>
         </section>
+
+        <!-- Find Users Section -->
+        <section class="find-users-section">
+          <div class="find-users-content">
+            <h3>Find Study Buddies</h3>
+            <div class="search-container">
+              <input type="text" id="user-search" placeholder="Search by name or email..." oninput="searchUsers()">
+              <button onclick="searchUsers()">🔍</button>
+            </div>
+            <div id="search-results" class="search-results">
+              <!-- Search results will appear here -->
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -479,6 +493,93 @@
 
     function closeNotificationsModal() {
         document.getElementById('notifications-modal').style.display = 'none';
+    }
+
+    // User search and friend functionality
+    async function searchUsers() {
+        const query = document.getElementById('user-search').value.trim();
+        const resultsDiv = document.getElementById('search-results');
+
+        if (query.length < 2) {
+            resultsDiv.innerHTML = '';
+            return;
+        }
+
+        try {
+            const response = await fetch(`${backendURL}/search-users?q=${encodeURIComponent(query)}`);
+            if (!response.ok) {
+                throw new Error('Failed to search users');
+            }
+            const data = await response.json();
+
+            resultsDiv.innerHTML = '';
+
+            if (data.users && data.users.length > 0) {
+                data.users.forEach(user => {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'user-result';
+
+                    const avatar = user.name.charAt(0).toUpperCase();
+                    const friendStatus = getFriendStatus(user.email);
+
+                    userDiv.innerHTML = `
+                        <div class="user-avatar">${avatar}</div>
+                        <div class="user-info">
+                            <div class="user-name">${user.name} ${user.surname}</div>
+                            <div class="user-details">Grade ${user.grade} - ${user.section}</div>
+                        </div>
+                        <button class="add-friend-btn" onclick="addFriend('${user.email}')" id="friend-btn-${user.email}">
+                            ${friendStatus.text}
+                        </button>
+                    `;
+
+                    const btn = userDiv.querySelector('.add-friend-btn');
+                    btn.className = `add-friend-btn ${friendStatus.class}`;
+
+                    resultsDiv.appendChild(userDiv);
+                });
+            } else {
+                resultsDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No users found</p>';
+            }
+        } catch (error) {
+            console.error("Error searching users:", error);
+            resultsDiv.innerHTML = '<p style="text-align: center; color: #e74c3c; padding: 20px;">Error searching users</p>';
+        }
+    }
+
+    function getFriendStatus(email) {
+        // This would normally check against a friends list
+        // For now, return default status
+        return { text: 'Add Friend', class: '' };
+    }
+
+    async function addFriend(email) {
+        const btn = document.getElementById(`friend-btn-${email}`);
+
+        try {
+            const response = await fetch(`${backendURL}/add-friend`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ friendEmail: email })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to add friend');
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                btn.textContent = 'Request Sent';
+                btn.className = 'add-friend-btn pending';
+                btn.disabled = true;
+            } else {
+                alert(data.message || 'Failed to add friend');
+            }
+        } catch (error) {
+            console.error("Error adding friend:", error);
+            alert('Error adding friend. Please try again.');
+        }
     }
 
     // Fetch user profile and set initials

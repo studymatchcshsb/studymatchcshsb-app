@@ -26,23 +26,11 @@
 
       <main class="dashboard-main">
         <section class="chats-section">
-          <div class="chat-list">
-            <!-- Placeholder chats -->
-            <div class="chat-item" onclick="selectChat('alice@example.com')">
-              <div class="chat-avatar">A</div>
-              <div class="chat-info">
-                <div class="chat-name">Alice Johnson</div>
-                <div class="chat-last-message">Hey, want to study together?</div>
-              </div>
+          <div class="chat-list" id="chat-list">
+            <!-- Friends will be loaded here -->
+            <div id="no-friends-message" style="text-align: center; color: #666; padding: 40px;">
+              <p>No friends yet. Add some friends from the homepage to start chatting!</p>
             </div>
-            <div class="chat-item" onclick="selectChat('bob@example.com')">
-              <div class="chat-avatar">B</div>
-              <div class="chat-info">
-                <div class="chat-name">Bob Smith</div>
-                <div class="chat-last-message">Sure, let's meet at the library.</div>
-              </div>
-            </div>
-            <!-- Add more as needed -->
           </div>
         </section>
         <section class="message-section">
@@ -116,9 +104,51 @@
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
 
-    // Fetch user profile when the page loads
+    // Load friends list
+    async function loadFriends() {
+      try {
+        const response = await fetch(`${backendURL}/get-friends`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch friends');
+        }
+        const data = await response.json();
+
+        const chatList = document.getElementById('chat-list');
+        const noFriendsMessage = document.getElementById('no-friends-message');
+
+        if (data.friends && data.friends.length > 0) {
+          noFriendsMessage.style.display = 'none';
+          chatList.innerHTML = '';
+
+          data.friends.forEach(friend => {
+            const chatItem = document.createElement('div');
+            chatItem.className = 'chat-item';
+            chatItem.onclick = () => selectChat(friend.email);
+
+            const avatar = friend.name.charAt(0).toUpperCase();
+
+            chatItem.innerHTML = `
+              <div class="chat-avatar">${avatar}</div>
+              <div class="chat-info">
+                <div class="chat-name">${friend.name} ${friend.surname}</div>
+                <div class="chat-last-message">Click to start chatting</div>
+              </div>
+            `;
+
+            chatList.appendChild(chatItem);
+          });
+        } else {
+          noFriendsMessage.style.display = 'block';
+        }
+      } catch (error) {
+        console.error("Error loading friends:", error);
+      }
+    }
+
+    // Fetch user profile and friends when the page loads
     document.addEventListener('DOMContentLoaded', function() {
       fetchUserProfile();
+      loadFriends();
     });
   </script>
 </body>

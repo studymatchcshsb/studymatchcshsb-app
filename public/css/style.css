@@ -314,6 +314,121 @@ button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4);
 }
+
+/* Find Users Section Styles */
+.find-users-section {
+  flex-basis: 40%;
+  margin-top: 20px;
+}
+
+.find-users-content {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.find-users-content h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  text-align: center;
+}
+
+.search-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.search-container input {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.search-container button {
+  padding: 10px 15px;
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.search-container button:hover {
+  background: linear-gradient(45deg, #2980b9, #21618c);
+}
+
+.search-results {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.user-result {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #3498db;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 15px;
+}
+
+.user-info {
+  flex-grow: 1;
+}
+
+.user-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.user-details {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.add-friend-btn {
+  padding: 8px 15px;
+  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.add-friend-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(46, 204, 113, 0.4);
+}
+
+.add-friend-btn.pending {
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+  cursor: not-allowed;
+}
+
+.add-friend-btn.friends {
+  background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+  cursor: default;
+}
 /* --- Profile Page Styles --- */
 .profile-view {
   text-align: center;
