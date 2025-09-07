@@ -31,7 +31,8 @@
             <h3>Change Password</h3>
             <input type="password" id="current-password" placeholder="Current Password">
             <input type="password" id="new-password" placeholder="New Password">
-            <input type="password" id="confirm-new-password" placeholder="Confirm New Password">
+            <input type="password" id="confirm-new-password" placeholder="Confirm New Password" oninput="validateNewPasswords()">
+            <p id="password-validation-message" style="margin: 5px 0; font-size: 0.9em;"></p>
             <button onclick="changePassword()">Save Changes</button>
             <p id="change-password-message" style="color: red;"></p>
         </div>
@@ -330,6 +331,29 @@
         console.error("Error sending help request:", error);
         alert(`Error: ${error.message}`);
       }
+    }
+
+    function validateNewPasswords() {
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-new-password').value;
+        const messageEl = document.getElementById('password-validation-message');
+        const confirmInput = document.getElementById('confirm-new-password');
+
+        if (confirmPassword === '') {
+            messageEl.innerText = '';
+            confirmInput.style.borderColor = '';
+            return;
+        }
+
+        if (newPassword === confirmPassword) {
+            messageEl.innerText = '✓ Passwords match!';
+            messageEl.style.color = 'green';
+            confirmInput.style.borderColor = 'green';
+        } else {
+            messageEl.innerText = '✗ Passwords do not match';
+            messageEl.style.color = 'red';
+            confirmInput.style.borderColor = 'red';
+        }
     }
 
     async function changePassword() {

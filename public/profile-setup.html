@@ -12,9 +12,6 @@
       <input type="text" id="name" name="name" placeholder="Name (One name, no spaces)" required pattern="[A-Za-z]+" title="Please enter one name without spaces." oninput="capitalizeInput(this)" />
       <input type="text" id="surname" name="surname" placeholder="Surname" required oninput="capitalizeInput(this)" />
       <input type="text" inputmode="numeric" name="lrn" placeholder="LRN (12 digits)" required minlength="12" maxlength="12" pattern="\d{12}" title="Please enter exactly 12 digits for the LRN." />
-      <input type="password" id="password" name="password" placeholder="Password" required />
-      <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm Password" required oninput="validatePasswords()" />
-      <p id="password-match-message" style="margin: 5px 0; font-size: 0.9em;"></p>
       
       <select name="grade" required>
         <option value="" disabled selected>Select Your Grade</option>
@@ -61,14 +58,7 @@
       const form = event.target;
       const formData = new FormData(form);
       const lrn = formData.get('lrn');
-      const password = formData.get('password');
-      const confirmPassword = formData.get('confirm-password');
       const messageEl = document.getElementById('form-message');
-
-      if (password !== confirmPassword) {
-        messageEl.innerText = "Passwords do not match.";
-        return;
-      }
 
       messageEl.innerText = "Checking LRN...";
 
@@ -84,19 +74,14 @@
           throw new Error(errorData.message);
         }
 
-        // Hash the password before sending to the next page
-        const hashedPassword = await hashPassword(password);
-        
         const params = new URLSearchParams();
         for (let pair of formData.entries()) {
           if (pair[0] === 'name') {
             params.append(pair[0], pair[1].trim());
-          } else if (pair[0] !== 'confirm-password') {
+          } else {
             params.append(pair[0], pair[1]);
           }
         }
-        // Add hashed password to params
-        params.append('password', hashedPassword);
         window.location.href = `/upload-picture.html?${params.toString()}`;
 
       } catch (error) {
@@ -104,36 +89,6 @@
       }
     }
 
-    // Simple password hashing function (in a real app, this should be done server-side)
-    async function hashPassword(password) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(password);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    function validatePasswords() {
-      const password = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirm-password').value;
-      const messageEl = document.getElementById('password-match-message');
-
-      if (confirmPassword === '') {
-        messageEl.innerText = '';
-        document.getElementById('confirm-password').style.borderColor = '';
-        return;
-      }
-
-      if (password === confirmPassword) {
-        messageEl.innerText = 'Passwords match!';
-        messageEl.style.color = 'green';
-        document.getElementById('confirm-password').style.borderColor = 'green';
-      } else {
-        messageEl.innerText = 'Passwords do not match.';
-        messageEl.style.color = 'red';
-        document.getElementById('confirm-password').style.borderColor = 'red';
-      }
-    }
   </script>
 </body>
 </html>
