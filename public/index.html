@@ -133,6 +133,20 @@
       });
     }
 
+    function resendCode() {
+      console.log("resendCode called");
+      console.log("isLoginMode:", isLoginMode);
+
+      // Clear any previous messages
+      document.getElementById("message").innerText = "";
+
+      if (isLoginMode) {
+        sendLoginCode();
+      } else {
+        sendSignupCode();
+      }
+    }
+
     function verifyCode() {
       console.log("verifyCode called");
       const email = document.getElementById("email").value;
@@ -202,7 +216,14 @@
         } else {
           console.log("Verification failed:", data.message);
           messageEl.style.color = 'red';
-          messageEl.innerText = data.message;
+
+          // Check if the message contains "Resend Code?" and make it clickable
+          if (data.message.includes("Resend Code?")) {
+            const parts = data.message.split("Resend Code?");
+            messageEl.innerHTML = parts[0] + '<a href="#" onclick="resendCode()" style="color: #3498db; text-decoration: underline;">Resend Code?</a>' + (parts[1] || '');
+          } else {
+            messageEl.innerText = data.message;
+          }
         }
       })
       .catch(err => {
