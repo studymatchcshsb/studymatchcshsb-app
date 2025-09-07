@@ -163,6 +163,71 @@ button:hover {
   padding: 15px 30px;
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
+  position: relative;
+}
+
+.header-search {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.header-search-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-search .search-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.header-search .search-container input {
+  width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  background-color: #f8f9fa;
+}
+
+.header-search .search-container button {
+  padding: 8px 12px;
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.header-search-results {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  width: 300px;
+  z-index: 1000;
+  display: none;
+}
+
+.header-search-results.active {
+  display: block;
 }
 
 .header-icons .icon {
@@ -860,6 +925,57 @@ button:hover {
   }
 }
 
+/* Lower Right Corner KaStudy Button */
+.find-kastudy-corner {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 100;
+}
+
+.find-kastudy-corner .find-content {
+  text-align: center;
+}
+
+.find-kastudy-corner .speech-bubble {
+  position: relative;
+  background: #ffffff;
+  border-radius: .4em;
+  padding: 15px;
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #3498db;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.find-kastudy-corner .speech-bubble:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border: 15px solid transparent;
+  border-top-color: #ffffff;
+  border-bottom: 0;
+  margin-left: -15px;
+  margin-bottom: -15px;
+}
+
+.find-kastudy-corner .find-btn {
+  width: auto;
+  padding: 12px 30px;
+  font-size: 1em;
+  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+
+.find-kastudy-corner .find-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .reminder-content {
@@ -874,5 +990,24 @@ button:hover {
 
   .reminder-text {
     font-size: 0.9em;
+  }
+
+  .find-kastudy-corner {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .find-kastudy-corner .speech-bubble {
+    font-size: 1em;
+    padding: 12px;
+  }
+
+  .find-kastudy-corner .find-btn {
+    padding: 10px 25px;
+    font-size: 0.9em;
+  }
+
+  .header-search .search-container input {
+    width: 150px;
   }
 }
