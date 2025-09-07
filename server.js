@@ -406,7 +406,7 @@ app.get('/search-users', (req, res) => {
   });
 });
 
-// Add friend endpoint
+// Send friend request endpoint
 app.post('/add-friend', (req, res) => {
   if (!storedEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
@@ -433,7 +433,7 @@ app.post('/add-friend', (req, res) => {
       return res.status(404).send({ success: false, message: 'User not found' });
     }
 
-    // Check if already friends or request pending
+    // Get current user info
     db.findOne({ email: storedEmail }, (err, currentUser) => {
       if (err) {
         console.error("Error finding current user:", err);
@@ -444,29 +444,50 @@ app.post('/add-friend', (req, res) => {
         return res.status(404).send({ success: false, message: 'Current user not found' });
       }
 
-      // Initialize friends array if it doesn't exist
-      if (!currentUser.friends) {
-        currentUser.friends = [];
-      }
-
       // Check if already friends
-      if (currentUser.friends.includes(friendEmail)) {
+      if (currentUser.friends && currentUser.friends.includes(friendEmail)) {
         return res.status(400).send({ success: false, message: 'Already friends with this user' });
       }
 
-      // Add friend to current user's friends list
+      // Check if friend request already sent
+      if (friend.notifications && friend.notifications.some(n =>
+        n.type === 'friend_request' && n.fromUser.email === storedEmail && n.status === 'pending'
+      )) {
+        return res.status(400).send({ success: false, message: 'Friend request already sent' });
+      }
+
+      // Create friend request notification
+      const friendRequest = {
+        id: Date.now() + Math.random(),
+        type: 'friend_request',
+        fromUser: {
+          name: currentUser.name,
+          surname: currentUser.surname,
+          email: storedEmail,
+          grade: currentUser.grade
+        },
+        timestamp: new Date(),
+        status: 'pending'
+      };
+
+      // Add notification to friend's profile
       db.update(
-        { email: storedEmail },
-        { $push: { friends: friendEmail } },
-        {},
+        { email: friendEmail },
+        { $push: { notifications: friendRequest } },
+        { upsert: true },
         (err, numReplaced) => {
           if (err) {
-            console.error("Error adding friend:", err);
+            console.error("Error sending friend request:", err);
             return res.status(500).send({ success: false, message: 'Server error' });
           }
 
-          console.log(`Friend added: ${storedEmail} -> ${friendEmail}`);
-          res.send({ success: true, message: 'Friend request sent successfully' });
+          // Notify the friend in real-time if they're online
+          if (connectedUsers[friendEmail]) {
+            io.to(connectedUsers[friendEmail]).emit('new_notification', friendRequest);
+          }
+
+          console.log(`Friend request sent: ${storedEmail} -> ${friendEmail}`);
+          res.send({ success: true, message: 'Friend request sent successfully!' });
         }
       );
     });
@@ -664,6 +685,66 @@ app.post('/respond-help-request', (req, res) => {
         );
       } else {
         res.send({ success: true, message: 'Help request declined.' });
+      }
+    }
+  );
+});
+
+// Handle friend request response
+app.post('/respond-friend-request', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { notificationId, response, requesterEmail } = req.body;
+
+  if (!notificationId || !response) {
+    return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
+  }
+
+  // Remove the notification from current user's notifications
+  db.update(
+    { email: storedEmail },
+    { $pull: { notifications: { id: notificationId } } },
+    {},
+    (err, numReplaced) => {
+      if (err) {
+        console.error("Error removing notification:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      if (response === 'accept' && requesterEmail) {
+        // Add both users as friends if they accept
+        db.update(
+          { email: storedEmail },
+          { $addToSet: { friends: requesterEmail } },
+          {},
+          (err1) => {
+            if (err1) console.error("Error adding friend:", err1);
+
+            db.update(
+              { email: requesterEmail },
+              { $addToSet: { friends: storedEmail } },
+              {},
+              (err2) => {
+                if (err2) console.error("Error adding friend:", err2);
+
+                // Notify the requester that their friend request was accepted
+                if (connectedUsers[requesterEmail]) {
+                  io.to(connectedUsers[requesterEmail]).emit('friend_request_accepted', {
+                    accepterEmail: storedEmail,
+                    accepterName: req.body.accepterName
+                  });
+                }
+
+                res.send({ success: true, message: 'Friend request accepted! You can now chat with each other.' });
+              }
+            );
+          }
+        );
+      } else {
+        // Just remove the notification for deny
+        res.send({ success: true, message: 'Friend request declined.' });
       }
     }
   );

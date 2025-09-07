@@ -564,6 +564,19 @@
                     </div>
                 `;
                 container.appendChild(notificationDiv);
+            } else if (notification.type === 'friend_request') {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'notification-item';
+                notificationDiv.innerHTML = `
+                    <div class="notification-content">
+                        <strong>${notification.fromUser.name} ${notification.fromUser.surname}</strong> sent you a friend request.
+                    </div>
+                    <div class="notification-actions">
+                        <button class="help-btn yes-btn" onclick="respondToFriendRequest('${notification.id}', 'accept', '${notification.fromUser.email}', '${notification.fromUser.name} ${notification.fromUser.surname}')">Accept</button>
+                        <button class="help-btn no-btn" onclick="respondToFriendRequest('${notification.id}', 'decline')">Deny</button>
+                    </div>
+                `;
+                container.appendChild(notificationDiv);
             }
         });
     }
@@ -598,6 +611,40 @@
             }
         } catch (error) {
             console.error("Error responding to help request:", error);
+            alert('Error processing your response. Please try again.');
+        }
+    }
+
+    // Handle friend request response
+    async function respondToFriendRequest(notificationId, response, requesterEmail, accepterName) {
+        try {
+            const responseData = await fetch(`${backendURL}/respond-friend-request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    notificationId,
+                    response,
+                    requesterEmail,
+                    accepterName
+                })
+            });
+
+            if (!responseData.ok) {
+                throw new Error('Failed to respond to friend request');
+            }
+
+            const data = await responseData.json();
+
+            if (response === 'accept') {
+                alert(data.message);
+                // Redirect to chats page
+                window.location.href = '/chats.html';
+            } else {
+                // Reload notifications
+                loadNotifications();
+            }
+        } catch (error) {
+            console.error("Error responding to friend request:", error);
             alert('Error processing your response. Please try again.');
         }
     }
@@ -768,6 +815,15 @@
     socket.on('help_request_accepted', (data) => {
       console.log('Help request accepted:', data);
       alert(`Someone accepted your help request for ${data.subject}! Check your chats.`);
+      // Redirect to chats page
+      setTimeout(() => {
+        window.location.href = '/chats.html';
+      }, 2000);
+    });
+
+    socket.on('friend_request_accepted', (data) => {
+      console.log('Friend request accepted:', data);
+      alert(`${data.accepterName} accepted your friend request! You can now chat with each other.`);
       // Redirect to chats page
       setTimeout(() => {
         window.location.href = '/chats.html';
