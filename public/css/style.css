@@ -653,3 +653,66 @@ button:hover {
 .message-input button:hover {
   background: linear-gradient(45deg, #2980b9, #21618c);
 }
+
+/* Profile Completion Reminder Styles */
+.profile-reminder {
+  flex-basis: 40%;
+  margin-top: 20px;
+}
+
+.reminder-content {
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border: 2px solid #f1c40f;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 4px 15px rgba(241, 196, 15, 0.2);
+  animation: slideIn 0.5s ease-out;
+}
+
+.reminder-icon {
+  font-size: 2.5em;
+  flex-shrink: 0;
+}
+
+.reminder-text {
+  color: #8b4513;
+  font-size: 0.95em;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.reminder-text strong {
+  color: #d2691e;
+  font-weight: 700;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .reminder-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .reminder-icon {
+    font-size: 2em;
+  }
+
+  .reminder-text {
+    font-size: 0.9em;
+  }
+}

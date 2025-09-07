@@ -62,6 +62,16 @@
           <button class="add-list-btn" onclick="openTodoModal()">+</button>
         </section>
 
+        <!-- Profile Completion Reminder -->
+        <div id="profile-reminder" class="profile-reminder" style="display: none;">
+          <div class="reminder-content">
+            <div class="reminder-icon">📝</div>
+            <div class="reminder-text">
+              <strong>STUDYMATCH CSHSB:</strong> Finish setting up your profile by updating the subjects you are good at and need help with. You can see this through clicking your profile at the top right corner of your Homepage.
+            </div>
+          </div>
+        </div>
+
         <!-- Add To-Do Modal -->
         <div id="todo-modal" class="modal" style="display:none;">
           <div class="modal-content">
@@ -459,13 +469,28 @@
           // Set user name and details
           document.getElementById('user-name').innerText = `${data.user.name} ${data.user.surname}`;
           document.getElementById('user-details').innerText = `${data.user.grade} - ${data.user.section}`;
-          
+
           // Set profile initials
           const initials = data.user.name.charAt(0).toUpperCase();
           document.getElementById('profile-initials').innerText = initials;
+
+          // Check profile completion status
+          checkProfileCompletion(data.user);
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
+      }
+    }
+
+    // Check if user has completed their profile (has strengths and weaknesses)
+    function checkProfileCompletion(user) {
+      const reminder = document.getElementById('profile-reminder');
+
+      // Show reminder if user doesn't have strengths or weaknesses set
+      if (!user.strengths || user.strengths.length === 0 || !user.weaknesses || user.weaknesses.length === 0) {
+        reminder.style.display = 'block';
+      } else {
+        reminder.style.display = 'none';
       }
     }
 
