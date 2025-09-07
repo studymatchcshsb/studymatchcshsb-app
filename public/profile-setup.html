@@ -58,15 +58,21 @@
       const form = event.target;
       const formData = new FormData(form);
       const lrn = formData.get('lrn');
+      const firstName = formData.get('name');
+      const surname = formData.get('surname');
       const messageEl = document.getElementById('form-message');
 
-      messageEl.innerText = "Checking LRN...";
+      messageEl.innerText = "Validating LRN and name...";
 
       try {
         const response = await fetch(`${backendURL}/check-lrn`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lrn })
+          body: JSON.stringify({
+            lrn: lrn,
+            firstName: firstName,
+            surname: surname
+          })
         });
 
         if (!response.ok) {
@@ -86,6 +92,7 @@
 
       } catch (error) {
         messageEl.innerText = error.message;
+        messageEl.style.color = 'red';
       }
     }
 

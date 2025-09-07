@@ -137,18 +137,42 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/check-lrn', (req, res) => {
-  const { lrn } = req.body;
+  const { lrn, firstName, surname } = req.body;
+
+  if (!firstName || !surname) {
+    return res.status(400).send({ success: false, message: 'First name and surname are required for LRN validation.' });
+  }
+
   fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
     if (err) {
       console.error("Error reading LRN file:", err);
       return res.status(500).send({ success: false, message: 'Server error checking LRN.' });
     }
-    const allowedLrns = JSON.parse(data).allowed;
-    if (allowedLrns.includes(lrn)) {
-      res.send({ success: true });
-    } else {
-      res.status(403).send({ success: false, message: 'This LRN is not authorized to register.' });
+
+    const lrnData = JSON.parse(data);
+    const student = lrnData.students.find(s => s.lrn === lrn);
+
+    if (!student) {
+      return res.status(403).send({ success: false, message: 'This LRN is not authorized to register.' });
     }
+
+    // Check if LRN is already used
+    if (student.used) {
+      return res.status(403).send({ success: false, message: 'This LRN has already been registered. Each LRN can only be used once.' });
+    }
+
+    // Check if name matches (case-insensitive)
+    const nameMatches = student.firstName.toLowerCase() === firstName.toLowerCase().trim() &&
+                       student.surname.toLowerCase() === surname.toLowerCase().trim();
+
+    if (!nameMatches) {
+      return res.status(403).send({
+        success: false,
+        message: `LRN ${lrn} is only valid for ${student.firstName} ${student.surname}. Please check your name and try again.`
+      });
+    }
+
+    res.send({ success: true });
   });
 });
 
@@ -165,13 +189,44 @@ app.post('/save-profile', (req, res) => {
     createdAt: new Date()
   };
 
-  db.insert(profileData, (err, newDoc) => {
+  // First, mark the LRN as used
+  fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
     if (err) {
-      console.error("Error saving profile:", err);
+      console.error("Error reading LRN file:", err);
       return res.status(500).send({ success: false, message: 'Server error saving profile.' });
     }
-    console.log("Profile saved successfully:", newDoc);
-    res.send({ success: true, message: 'Profile saved!' });
+
+    const lrnData = JSON.parse(data);
+    const studentIndex = lrnData.students.findIndex(s => s.lrn === req.body.lrn);
+
+    if (studentIndex === -1) {
+      return res.status(400).send({ success: false, message: 'Invalid LRN.' });
+    }
+
+    // Mark LRN as used
+    lrnData.students[studentIndex].used = true;
+
+    // Write back to file
+    fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
+      if (err) {
+        console.error("Error updating LRN file:", err);
+        return res.status(500).send({ success: false, message: 'Server error saving profile.' });
+      }
+
+      // Now save the profile to database
+      db.insert(profileData, (err, newDoc) => {
+        if (err) {
+          console.error("Error saving profile:", err);
+          // If database save fails, we should revert the LRN status
+          lrnData.students[studentIndex].used = false;
+          fs.writeFileSync('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8');
+          return res.status(500).send({ success: false, message: 'Server error saving profile.' });
+        }
+
+        console.log("Profile saved successfully:", newDoc);
+        res.send({ success: true, message: 'Profile saved successfully!' });
+      });
+    });
   });
 });
 

@@ -1,16 +1,70 @@
 {
-  "allowed": [
-    "000000000000",
-    "111111111111",
-    "112938150044",
-    "112431150012",
-    "403729150395",
-    "403729150053",
-    "112932150367",
-    "433568150065",
-    "112938150013",
-    "112932150367",
-    "112935150047",
-    "433568150051"
+  "students": [
+    {
+      "lrn": "000000000000",
+      "firstName": "John",
+      "surname": "Doe",
+      "used": false
+    },
+    {
+      "lrn": "111111111111",
+      "firstName": "Study",
+      "surname": "Match",
+      "used": false
+    },
+    {
+      "lrn": "112938150044",
+      "firstName": "Maria",
+      "surname": "Garcia",
+      "used": false
+    },
+    {
+      "lrn": "112431150012",
+      "firstName": "Juan",
+      "surname": "Santos",
+      "used": false
+    },
+    {
+      "lrn": "403729150395",
+      "firstName": "Ana",
+      "surname": "Reyes",
+      "used": false
+    },
+    {
+      "lrn": "403729150053",
+      "firstName": "Pedro",
+      "surname": "Cruz",
+      "used": false
+    },
+    {
+      "lrn": "112932150367",
+      "firstName": "Rosa",
+      "surname": "Dela Cruz",
+      "used": false
+    },
+    {
+      "lrn": "433568150065",
+      "firstName": "Miguel",
+      "surname": "Rodriguez",
+      "used": false
+    },
+    {
+      "lrn": "112938150013",
+      "firstName": "Carmen",
+      "surname": "Torres",
+      "used": false
+    },
+    {
+      "lrn": "112935150047",
+      "firstName": "Antonio",
+      "surname": "Flores",
+      "used": false
+    },
+    {
+      "lrn": "433568150051",
+      "firstName": "Isabella",
+      "surname": "Morales",
+      "used": false
+    }
   ]
 }
