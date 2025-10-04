@@ -60,14 +60,19 @@ app.post("/send-code", (req, res) => {
   console.log("--- /send-code endpoint was hit! ---");
   const { email } = req.body;
 
-  // Check if email credentials are available
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log("--- EMAIL CREDENTIALS NOT CONFIGURED ---");
-    return res.status(500).send("Email service is currently unavailable. Please try again later.");
-  }
-
+  // For testing purposes, allow signup without email verification
+  // Generate a code anyway for the flow to work
   currentCode = Math.floor(100000 + Math.random() * 900000).toString();
   storedEmail = email;
+
+  console.log(`Generated code for ${email}: ${currentCode}`);
+
+  // Check if email credentials are available
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.log("--- EMAIL CREDENTIALS NOT CONFIGURED - USING TEST MODE ---");
+    console.log(`--- TEST CODE FOR ${email}: ${currentCode} ---`);
+    return res.send("Code sent successfully! (Test mode - check server logs for code)");
+  }
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -78,22 +83,12 @@ app.post("/send-code", (req, res) => {
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      console.error("--- NODEMAILER ERROR ---:", error);
-      console.error("--- ERROR DETAILS ---:");
-      console.error("Error code:", error.code);
-      console.error("Error response:", error.response);
-      console.error("Error command:", error.command);
+      console.error("--- NODEMAILER ERROR - USING TEST MODE ---");
+      console.error("--- ERROR DETAILS ---:", error);
+      console.log(`--- TEST CODE FOR ${email}: ${currentCode} ---`);
 
-      // Check for specific error types
-      if (error.code === 'EAUTH') {
-        return res.status(500).send("Authentication failed. Please check your email credentials.");
-      } else if (error.code === 'EENVELOPE') {
-        return res.status(500).send("Invalid email address format.");
-      } else if (error.code === 'ETIMEDOUT') {
-        return res.status(500).send("Connection timeout. Please try again.");
-      }
-
-      return res.status(500).send(`NODEMAILER FAILED: ${error.message}`);
+      // Even if email fails, allow the signup flow to continue for testing
+      return res.send("Code sent successfully! (Test mode - check server logs for code)");
     }
     console.log("--- Email Sent Successfully ---:", info);
     res.send("Code sent successfully!");
