@@ -41,19 +41,31 @@ const transporter = nodemailer.createTransport({
   debug: true   // Include SMTP traffic in the logs
 });
 
-// Verify transporter configuration on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("--- EMAIL TRANSPORTER VERIFICATION FAILED ---");
-    console.error("Error details:", error);
-  } else {
-    console.log("--- EMAIL TRANSPORTER VERIFICATION SUCCESSFUL ---");
-  }
-});
+// Verify transporter configuration on startup (don't crash if it fails)
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error("--- EMAIL TRANSPORTER VERIFICATION FAILED ---");
+      console.error("Error details:", error);
+      console.log("--- Server will continue without email functionality ---");
+    } else {
+      console.log("--- EMAIL TRANSPORTER VERIFICATION SUCCESSFUL ---");
+    }
+  });
+} else {
+  console.log("--- EMAIL CREDENTIALS NOT FOUND - EMAIL FEATURES DISABLED ---");
+}
 
 app.post("/send-code", (req, res) => {
   console.log("--- /send-code endpoint was hit! ---");
   const { email } = req.body;
+
+  // Check if email credentials are available
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.log("--- EMAIL CREDENTIALS NOT CONFIGURED ---");
+    return res.status(500).send("Email service is currently unavailable. Please try again later.");
+  }
+
   currentCode = Math.floor(100000 + Math.random() * 900000).toString();
   storedEmail = email;
 
@@ -71,7 +83,7 @@ app.post("/send-code", (req, res) => {
       console.error("Error code:", error.code);
       console.error("Error response:", error.response);
       console.error("Error command:", error.command);
-      
+
       // Check for specific error types
       if (error.code === 'EAUTH') {
         return res.status(500).send("Authentication failed. Please check your email credentials.");
@@ -80,7 +92,7 @@ app.post("/send-code", (req, res) => {
       } else if (error.code === 'ETIMEDOUT') {
         return res.status(500).send("Connection timeout. Please try again.");
       }
-      
+
       return res.status(500).send(`NODEMAILER FAILED: ${error.message}`);
     }
     console.log("--- Email Sent Successfully ---:", info);
