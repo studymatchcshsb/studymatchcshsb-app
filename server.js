@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require("express");
 const nodemailer = require("nodemailer");
+const sgMail = require('@sendgrid/mail');
 const cors = require("cors");
 const fs = require('fs');
 const Datastore = require('nedb');
@@ -115,11 +116,19 @@ async function requireAuth(req, res, next) {
   next();
 }
 
-// Enhanced transporter with detailed logging
+// Initialize SendGrid
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log("--- SENDGRID INITIALIZED SUCCESSFULLY ---");
+} else {
+  console.log("--- SENDGRID API KEY NOT FOUND - EMAIL FEATURES DISABLED ---");
+}
+
+// Fallback Gmail transporter (for backward compatibility)
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
-  secure: false, // true for 465, false for other ports
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -127,26 +136,11 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-  logger: true, // Enable logging
-  debug: true   // Include SMTP traffic in the logs
+  logger: true,
+  debug: true
 });
 
-// Verify transporter configuration on startup (don't crash if it fails)
-if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error("--- EMAIL TRANSPORTER VERIFICATION FAILED ---");
-      console.error("Error details:", error);
-      console.log("--- Server will continue without email functionality ---");
-    } else {
-      console.log("--- EMAIL TRANSPORTER VERIFICATION SUCCESSFUL ---");
-    }
-  });
-} else {
-  console.log("--- EMAIL CREDENTIALS NOT FOUND - EMAIL FEATURES DISABLED ---");
-}
-
-app.post("/send-code", (req, res) => {
+app.post("/send-code", async (req, res) => {
   console.log("--- /send-code endpoint was hit! ---");
   const { email } = req.body;
 
@@ -154,6 +148,49 @@ app.post("/send-code", (req, res) => {
   currentCode = Math.floor(100000 + Math.random() * 900000).toString();
   storedEmail = email;
 
+  console.log(`Generated code ${currentCode} for ${email}`);
+
+  // Try SendGrid first (preferred)
+  if (process.env.SENDGRID_API_KEY) {
+    try {
+      const msg = {
+        to: email,
+        from: {
+          email: 'noreply@studymatch.app',
+          name: 'StudyMatch'
+        },
+        subject: 'Your StudyMatch Verification Code',
+        text: `Your verification code is: ${currentCode}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #3498db;">StudyMatch Verification</h2>
+            <p>Hello!</p>
+            <p>Your verification code is:</p>
+            <div style="background-color: #f8f9fa; padding: 20px; text-align: center; margin: 20px 0;">
+              <span style="font-size: 24px; font-weight: bold; color: #e74c3c;">${currentCode}</span>
+            </div>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn't request this code, please ignore this email.</p>
+            <hr style="margin: 30px 0;">
+            <p style="color: #7f8c8d; font-size: 12px;">StudyMatch - Real-time Study Buddy Matching</p>
+          </div>
+        `,
+      };
+
+      await sgMail.send(msg);
+      console.log("--- VERIFICATION EMAIL SENT VIA SENDGRID ---");
+      console.log("Email sent to:", email);
+      console.log("Code:", currentCode);
+      return res.send("Verification code sent to your email!");
+    } catch (error) {
+      console.error("--- SENDGRID EMAIL ERROR ---");
+      console.error("Error:", error.message);
+      // Fall back to Gmail if SendGrid fails
+    }
+  }
+
+  // Fallback to Gmail
+  console.log("--- FALLING BACK TO GMAIL ---");
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -163,23 +200,24 @@ app.post("/send-code", (req, res) => {
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      console.error("--- EMAIL SEND ERROR ---");
+      console.error("--- GMAIL EMAIL SEND ERROR ---");
       console.error("Error code:", error.code);
       console.error("Error response:", error.response);
       console.error("Error message:", error.message);
-      console.error("Full error:", error);
 
       // Provide more specific error messages
       if (error.code === 'EAUTH') {
         return res.status(500).send("Email authentication failed. Please check Gmail app password.");
       } else if (error.code === 'ENOTFOUND') {
         return res.status(500).send("Email server not found. Please try again later.");
+      } else if (error.code === 'ETIMEDOUT') {
+        return res.status(500).send("Email server timeout. Please try again later.");
       } else {
         return res.status(500).send(`Email error: ${error.message}`);
       }
     }
 
-    console.log("--- VERIFICATION EMAIL SENT ---");
+    console.log("--- VERIFICATION EMAIL SENT VIA GMAIL ---");
     console.log("Email sent to:", email);
     console.log("Code:", currentCode);
     console.log("Message ID:", info.messageId);
