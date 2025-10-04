@@ -150,17 +150,29 @@ app.post("/send-code", (req, res) => {
   console.log("--- /send-code endpoint was hit! ---");
   const { email } = req.body;
 
-  // TEST MODE: Always use fixed code for easy testing
-  currentCode = "123456"; // Fixed test code
+  // Generate a random 6-digit code
+  currentCode = Math.floor(100000 + Math.random() * 900000).toString();
   storedEmail = email;
 
-  console.log(`=== TEST MODE ACTIVATED ===`);
-  console.log(`Email: ${email}`);
-  console.log(`Verification Code: ${currentCode}`);
-  console.log(`==========================`);
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Your StudyMatch Verification Code",
+    text: `Your verification code is: ${currentCode}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
+  };
 
-  // Show the code directly to the user for testing
-  res.send(`TEST MODE: Use verification code: ${currentCode}`);
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("--- EMAIL SEND ERROR ---");
+      console.error("Error details:", error);
+      return res.status(500).send("Failed to send verification code. Please try again.");
+    }
+
+    console.log("--- VERIFICATION EMAIL SENT ---");
+    console.log("Email sent to:", email);
+    console.log("Code:", currentCode);
+    res.send("Verification code sent to your email!");
+  });
 });
 
 app.post("/verify-code", (req, res) => {
