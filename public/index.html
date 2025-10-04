@@ -234,9 +234,10 @@
               messageEl.innerText = err.message || "Network error. Please try again.";
             });
           } else {
-            // For signup, go to profile setup
+            // For signup, go to profile setup with password
             console.log("Signup successful, redirecting to profile setup");
-            window.location.href = "/profile-setup.html";
+            const passwordParam = encodeURIComponent(password);
+            window.location.href = `/profile-setup.html?password=${passwordParam}`;
           }
         } else {
           console.log("Verification failed:", data.message);

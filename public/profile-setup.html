@@ -80,6 +80,10 @@
           throw new Error(errorData.message);
         }
 
+        // Get password from URL parameters (passed from index.html)
+        const urlParams = new URLSearchParams(window.location.search);
+        const password = urlParams.get('password');
+
         const params = new URLSearchParams();
         for (let pair of formData.entries()) {
           if (pair[0] === 'name') {
@@ -87,6 +91,10 @@
           } else {
             params.append(pair[0], pair[1]);
           }
+        }
+        // Add password to parameters
+        if (password) {
+          params.append('password', password);
         }
         window.location.href = `/upload-picture.html?${params.toString()}`;
 

@@ -382,6 +382,16 @@ app.post('/save-profile', (req, res) => {
         }
 
         console.log("Profile saved successfully:", newDoc);
+
+        // Create session for the new user
+        try {
+          await createSession(storedEmail, res);
+          console.log("Session created for new user:", storedEmail);
+        } catch (sessionError) {
+          console.error("Session creation failed:", sessionError);
+          // Don't fail the profile creation if session creation fails
+        }
+
         res.send({ success: true, message: 'Profile saved successfully!' });
       });
     });
