@@ -2,56 +2,110 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Create Quiz - StudyMatch</title>
+  <title>Quiz Manager - StudyMatch</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <div class="quiz-creation-container">
+  <div class="quiz-manager-container">
     <header class="quiz-header">
       <button class="back-btn" onclick="window.location.href='/homepage.html'">← Back to Dashboard</button>
-      <h1>Create Your Quiz</h1>
+      <h1>My Quiz Library</h1>
     </header>
 
-    <div class="quiz-creation-content">
-      <!-- Quiz Settings -->
-      <div class="quiz-settings">
-        <div class="setting-group">
-          <label for="quiz-folder">Folder Name:</label>
-          <input type="text" id="quiz-folder" placeholder="e.g., Math Quizzes" value="My Quizzes">
+    <div class="quiz-manager-content">
+      <!-- Sidebar with folders -->
+      <div class="quiz-sidebar">
+        <div class="sidebar-header">
+          <h3>Folders</h3>
+          <button class="create-folder-btn" onclick="showCreateFolderModal()">+ New Folder</button>
         </div>
-        <div class="setting-group">
-          <label for="quiz-name">Quiz Name:</label>
-          <input type="text" id="quiz-name" placeholder="e.g., Algebra Basics" value="New Quiz">
-        </div>
-      </div>
-
-      <!-- Flashcard Creation Area -->
-      <div class="flashcard-creator">
-        <h3>Add Questions</h3>
-        <div class="flashcard-input">
-          <div class="question-section">
-            <label>Question/Description:</label>
-            <textarea id="question-input" placeholder="Enter your question or description here..."></textarea>
-          </div>
-          <div class="answer-section">
-            <label>Answer:</label>
-            <textarea id="answer-input" placeholder="Enter the correct answer here..."></textarea>
-          </div>
-          <button class="add-card-btn" onclick="addFlashcard()">+ Add Card</button>
+        <div id="folders-list" class="folders-list">
+          <!-- Folders will be loaded here -->
         </div>
       </div>
 
-      <!-- Quiz Preview/List -->
-      <div class="quiz-preview">
-        <h3>Your Quiz Cards <span id="card-count">(0 cards)</span></h3>
-        <div id="flashcards-list" class="flashcards-list">
-          <!-- Flashcards will be added here -->
+      <!-- Main content area -->
+      <div class="quiz-main-content">
+        <!-- Default view - folder contents or quiz creation -->
+        <div id="main-view" class="main-view">
+          <div class="welcome-message">
+            <h2>Welcome to Quiz Manager</h2>
+            <p>Create folders to organize your quizzes, then add flashcards to build your study materials.</p>
+            <button class="create-first-quiz-btn" onclick="showCreateFolderModal()">Create Your First Folder</button>
+          </div>
         </div>
 
-        <div class="quiz-actions" id="quiz-actions" style="display: none;">
-          <button class="review-btn" onclick="startReview()">Review Quiz</button>
-          <button class="save-btn" onclick="saveQuiz()">Save Quiz</button>
+        <!-- Quiz creation view -->
+        <div id="quiz-creation-view" class="quiz-creation-view" style="display: none;">
+          <div class="creation-header">
+            <h3>Creating Quiz in: <span id="current-folder-name"></span></h3>
+            <button class="cancel-creation-btn" onclick="cancelQuizCreation()">Cancel</button>
+          </div>
+
+          <!-- Quiz Settings -->
+          <div class="quiz-settings">
+            <div class="setting-group">
+              <label for="quiz-name">Quiz Name:</label>
+              <input type="text" id="quiz-name" placeholder="e.g., Algebra Basics" value="New Quiz">
+            </div>
+          </div>
+
+          <!-- Flashcard Creation Area -->
+          <div class="flashcard-creator">
+            <h3>Add Questions</h3>
+            <div class="flashcard-input">
+              <div class="question-section">
+                <label>Question/Description:</label>
+                <textarea id="question-input" placeholder="Enter your question or description here..."></textarea>
+              </div>
+              <div class="answer-section">
+                <label>Answer:</label>
+                <textarea id="answer-input" placeholder="Enter the correct answer here..."></textarea>
+              </div>
+              <button class="add-card-btn" onclick="addFlashcard()">+ Add Card</button>
+            </div>
+          </div>
+
+          <!-- Quiz Preview/List -->
+          <div class="quiz-preview">
+            <h3>Your Quiz Cards <span id="card-count">(0 cards)</span></h3>
+            <div id="flashcards-list" class="flashcards-list">
+              <!-- Flashcards will be added here -->
+            </div>
+
+            <div class="quiz-actions" id="quiz-actions" style="display: none;">
+              <button class="review-btn" onclick="startReview()">Review Quiz</button>
+              <button class="save-btn" onclick="saveQuiz()">Save Quiz</button>
+            </div>
+          </div>
         </div>
+
+        <!-- Quiz viewing view -->
+        <div id="quiz-view" class="quiz-view" style="display: none;">
+          <div class="quiz-view-header">
+            <h3 id="view-quiz-title"></h3>
+            <div class="quiz-view-actions">
+              <button class="review-saved-btn" onclick="reviewSavedQuiz()">Review Quiz</button>
+              <button class="back-to-folder-btn" onclick="backToFolder()">Back to Folder</button>
+            </div>
+          </div>
+          <div id="quiz-questions-list" class="quiz-questions-list">
+            <!-- Questions will be loaded here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Folder Modal -->
+  <div id="create-folder-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeCreateFolderModal()">&times;</span>
+      <h2>Create New Folder</h2>
+      <input type="text" id="new-folder-name" placeholder="Enter folder name..." maxlength="50">
+      <div class="modal-actions">
+        <button onclick="createFolder()">Create Folder</button>
+        <button onclick="closeCreateFolderModal()">Cancel</button>
       </div>
     </div>
   </div>
@@ -115,11 +169,210 @@
   </div>
 
   <script>
+    let currentFolder = null;
+    let userQuizzes = [];
     let flashcards = [];
     let currentReviewIndex = 0;
     let reviewMode = '';
     let correctAnswers = 0;
+    let currentQuizData = null;
 
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      loadUserQuizzes();
+    });
+
+    // Load user's saved quizzes
+    async function loadUserQuizzes() {
+      try {
+        const response = await fetch(`${window.location.origin}/get-quizzes`);
+        if (!response.ok) {
+          throw new Error('Failed to load quizzes');
+        }
+        const data = await response.json();
+        userQuizzes = data.quizzes || [];
+        displayFolders();
+      } catch (error) {
+        console.error('Error loading quizzes:', error);
+        // Continue with empty quiz list
+        userQuizzes = [];
+        displayFolders();
+      }
+    }
+
+    // Display folders in sidebar
+    function displayFolders() {
+      const foldersList = document.getElementById('folders-list');
+      foldersList.innerHTML = '';
+
+      // Group quizzes by folder
+      const folders = {};
+      userQuizzes.forEach(quiz => {
+        if (!folders[quiz.folderName]) {
+          folders[quiz.folderName] = [];
+        }
+        folders[quiz.folderName].push(quiz);
+      });
+
+      // Add "Create Quiz" option at the top
+      const createQuizItem = document.createElement('div');
+      createQuizItem.className = 'folder-item create-quiz-item';
+      createQuizItem.innerHTML = `
+        <div class="folder-icon">📝</div>
+        <div class="folder-info">
+          <div class="folder-name">Create New Quiz</div>
+          <div class="folder-count">Start creating</div>
+        </div>
+      `;
+      createQuizItem.onclick = () => startQuizCreation();
+      foldersList.appendChild(createQuizItem);
+
+      // Display existing folders
+      Object.keys(folders).forEach(folderName => {
+        const folderQuizzes = folders[folderName];
+        const folderItem = document.createElement('div');
+        folderItem.className = 'folder-item';
+        folderItem.innerHTML = `
+          <div class="folder-icon">📁</div>
+          <div class="folder-info">
+            <div class="folder-name">${folderName}</div>
+            <div class="folder-count">${folderQuizzes.length} quiz${folderQuizzes.length !== 1 ? 'es' : ''}</div>
+          </div>
+        `;
+        folderItem.onclick = () => openFolder(folderName, folderQuizzes);
+        foldersList.appendChild(folderItem);
+      });
+
+      // Show welcome message if no folders
+      if (Object.keys(folders).length === 0) {
+        document.getElementById('main-view').style.display = 'block';
+      }
+    }
+
+    // Show create folder modal
+    function showCreateFolderModal() {
+      document.getElementById('create-folder-modal').style.display = 'block';
+      document.getElementById('new-folder-name').focus();
+    }
+
+    // Close create folder modal
+    function closeCreateFolderModal() {
+      document.getElementById('create-folder-modal').style.display = 'none';
+      document.getElementById('new-folder-name').value = '';
+    }
+
+    // Create new folder
+    function createFolder() {
+      const folderName = document.getElementById('new-folder-name').value.trim();
+      if (!folderName) {
+        alert('Please enter a folder name.');
+        return;
+      }
+
+      // Check if folder already exists
+      const existingFolder = userQuizzes.find(quiz => quiz.folderName === folderName);
+      if (existingFolder) {
+        alert('A folder with this name already exists.');
+        return;
+      }
+
+      closeCreateFolderModal();
+      currentFolder = folderName;
+      startQuizCreation();
+    }
+
+    // Start quiz creation in a folder
+    function startQuizCreation() {
+      if (!currentFolder) {
+        // If no folder selected, prompt to create one
+        showCreateFolderModal();
+        return;
+      }
+
+      document.getElementById('main-view').style.display = 'none';
+      document.getElementById('quiz-view').style.display = 'none';
+      document.getElementById('quiz-creation-view').style.display = 'block';
+
+      document.getElementById('current-folder-name').textContent = currentFolder;
+      flashcards = [];
+      updateFlashcardsList();
+    }
+
+    // Cancel quiz creation
+    function cancelQuizCreation() {
+      document.getElementById('quiz-creation-view').style.display = 'none';
+      document.getElementById('main-view').style.display = 'block';
+      flashcards = [];
+      currentFolder = null;
+    }
+
+    // Open a folder and show its quizzes
+    function openFolder(folderName, quizzes) {
+      currentFolder = folderName;
+      document.getElementById('main-view').style.display = 'none';
+      document.getElementById('quiz-creation-view').style.display = 'none';
+      document.getElementById('quiz-view').style.display = 'none';
+
+      const mainView = document.getElementById('main-view');
+      mainView.innerHTML = `
+        <div class="folder-view">
+          <div class="folder-header">
+            <h2>${folderName}</h2>
+            <button class="create-quiz-in-folder-btn" onclick="startQuizCreation()">+ Create Quiz</button>
+          </div>
+          <div class="quizzes-list">
+            ${quizzes.map(quiz => `
+              <div class="quiz-file-item" onclick="openQuiz('${quiz.quizName}', ${JSON.stringify(quiz).replace(/"/g, '"')})">
+                <div class="quiz-file-icon">📄</div>
+                <div class="quiz-file-info">
+                  <div class="quiz-file-name">${quiz.quizName}</div>
+                  <div class="quiz-file-count">${quiz.flashcards.length} questions</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      mainView.style.display = 'block';
+    }
+
+    // Open a specific quiz
+    function openQuiz(quizName, quizData) {
+      currentQuizData = JSON.parse(quizData.replace(/"/g, '"'));
+      document.getElementById('main-view').style.display = 'none';
+      document.getElementById('quiz-view').style.display = 'block';
+
+      document.getElementById('view-quiz-title').textContent = quizName;
+
+      const questionsList = document.getElementById('quiz-questions-list');
+      questionsList.innerHTML = currentQuizData.flashcards.map((card, index) => `
+        <div class="question-item">
+          <div class="question-number">Question ${index + 1}</div>
+          <div class="question-text">${card.question}</div>
+          <div class="question-answer">Answer: ${card.answer}</div>
+        </div>
+      `).join('');
+    }
+
+    // Back to folder view
+    function backToFolder() {
+      document.getElementById('quiz-view').style.display = 'none';
+      const quizzesInFolder = userQuizzes.filter(quiz => quiz.folderName === currentFolder);
+      openFolder(currentFolder, quizzesInFolder);
+    }
+
+    // Review saved quiz
+    function reviewSavedQuiz() {
+      if (!currentQuizData || !currentQuizData.flashcards.length) {
+        alert('No questions found in this quiz.');
+        return;
+      }
+
+      flashcards = currentQuizData.flashcards;
+      document.getElementById('review-modal').style.display = 'block';
+    }
+
+    // Flashcard creation functions
     function addFlashcard() {
       const question = document.getElementById('question-input').value.trim();
       const answer = document.getElementById('answer-input').value.trim();
@@ -192,6 +445,47 @@
       }
     }
 
+    async function saveQuiz() {
+      if (flashcards.length === 0) {
+        alert('Please add at least one flashcard before saving.');
+        return;
+      }
+
+      const quizName = document.getElementById('quiz-name').value.trim() || 'New Quiz';
+
+      const quizData = {
+        folderName: currentFolder,
+        quizName: quizName,
+        flashcards: flashcards,
+        createdAt: new Date()
+      };
+
+      try {
+        const response = await fetch(`${window.location.origin}/save-quiz`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(quizData)
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save quiz');
+        }
+
+        const result = await response.json();
+        alert('Quiz saved successfully!');
+
+        // Reload quizzes and go back to folder view
+        await loadUserQuizzes();
+        const quizzesInFolder = userQuizzes.filter(quiz => quiz.folderName === currentFolder);
+        openFolder(currentFolder, quizzesInFolder);
+
+      } catch (error) {
+        console.error('Error saving quiz:', error);
+        alert('Error saving quiz. Please try again.');
+      }
+    }
+
+    // Review functions (same as before)
     function startReview() {
       if (flashcards.length === 0) {
         alert('Please add at least one flashcard to review.');
@@ -216,7 +510,7 @@
 
     function startQuizReview() {
       closeReviewModal();
-      document.querySelector('.quiz-creation-container').style.display = 'none';
+      document.querySelector('.quiz-manager-container').style.display = 'none';
       document.getElementById('quiz-review').style.display = 'block';
 
       currentReviewIndex = 0;
@@ -365,46 +659,10 @@
 
     function backToCreation() {
       document.getElementById('quiz-review').style.display = 'none';
-      document.querySelector('.quiz-creation-container').style.display = 'block';
+      document.querySelector('.quiz-manager-container').style.display = 'block';
       document.querySelector('.question-display').style.display = 'block';
       document.getElementById('review-results').style.display = 'none';
       document.querySelector('.question-display').style.backgroundColor = '';
-    }
-
-    async function saveQuiz() {
-      if (flashcards.length === 0) {
-        alert('Please add at least one flashcard before saving.');
-        return;
-      }
-
-      const folderName = document.getElementById('quiz-folder').value.trim() || 'My Quizzes';
-      const quizName = document.getElementById('quiz-name').value.trim() || 'New Quiz';
-
-      const quizData = {
-        folderName: folderName,
-        quizName: quizName,
-        flashcards: flashcards,
-        createdAt: new Date()
-      };
-
-      try {
-        const response = await fetch(`${window.location.origin}/save-quiz`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(quizData)
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to save quiz');
-        }
-
-        const result = await response.json();
-        alert('Quiz saved successfully!');
-
-      } catch (error) {
-        console.error('Error saving quiz:', error);
-        alert('Error saving quiz. Please try again.');
-      }
     }
   </script>
 </body>
