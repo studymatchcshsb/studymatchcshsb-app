@@ -7,6 +7,8 @@ const Datastore = require('nedb');
 const bcrypt = require('bcryptjs');
 const http = require('http');
 const socketIo = require('socket.io');
+const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
 const saltRounds = 10;
 
 console.log("--- SERVER.JS HAS BEEN UPDATED! ---");
@@ -15,15 +17,103 @@ console.log("--- If you see this, the new code is running. ---");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.static("public"));
 
 const db = new Datastore({ filename: 'users.db', autoload: true });
 const todosDb = new Datastore({ filename: 'todos.db', autoload: true });
+const sessionsDb = new Datastore({ filename: 'sessions.db', autoload: true });
 
 let currentCode = "";
 let storedEmail = "";
+
+// Session management functions
+function generateSessionId() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function getUserFromSession(req) {
+  const sessionId = req.cookies.sessionId;
+  if (!sessionId) return null;
+
+  return new Promise((resolve, reject) => {
+    sessionsDb.findOne({ sessionId }, (err, session) => {
+      if (err) {
+        console.error('Session lookup error:', err);
+        return resolve(null);
+      }
+
+      if (!session || session.expires < Date.now()) {
+        if (session && session.expires < Date.now()) {
+          // Clean up expired session
+          sessionsDb.remove({ sessionId }, {}, () => {});
+        }
+        return resolve(null);
+      }
+
+      resolve(session.email);
+    });
+  });
+}
+
+function createSession(email, res) {
+  const sessionId = generateSessionId();
+  const expires = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
+
+  const session = {
+    sessionId,
+    email,
+    expires,
+    createdAt: new Date()
+  };
+
+  return new Promise((resolve, reject) => {
+    sessionsDb.insert(session, (err) => {
+      if (err) {
+        console.error('Session creation error:', err);
+        return reject(err);
+      }
+
+      // Set HTTP-only cookie
+      res.cookie('sessionId', sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      });
+
+      resolve();
+    });
+  });
+}
+
+function destroySession(req, res) {
+  const sessionId = req.cookies.sessionId;
+  if (sessionId) {
+    sessionsDb.remove({ sessionId }, {}, (err) => {
+      if (err) console.error('Session removal error:', err);
+    });
+  }
+
+  res.clearCookie('sessionId');
+}
+
+// Middleware to check authentication
+async function requireAuth(req, res, next) {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+
+  req.userEmail = userEmail;
+  storedEmail = userEmail; // For backward compatibility
+  next();
+}
 
 // Enhanced transporter with detailed logging
 const transporter = nodemailer.createTransport({
@@ -100,18 +190,24 @@ app.post("/verify-code", (req, res) => {
   });
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
-  db.findOne({ email: email }, (err, user) => {
+  db.findOne({ email: email }, async (err, user) => {
     if (err || !user) {
       return res.status(401).send({ success: false, message: 'Invalid email or password.' });
     }
 
-    bcrypt.compare(password, user.password, (err, result) => {
+    bcrypt.compare(password, user.password, async (err, result) => {
       if (result) {
-        storedEmail = user.email; // Store email on successful login
-        res.send({ success: true });
+        try {
+          await createSession(user.email, res);
+          storedEmail = user.email; // Store email on successful login
+          res.send({ success: true });
+        } catch (error) {
+          console.error('Session creation error:', error);
+          res.status(500).send({ success: false, message: 'Login failed. Please try again.' });
+        }
       } else {
         res.status(401).send({ success: false, message: 'Invalid email or password.' });
       }
@@ -347,8 +443,20 @@ app.post('/change-password', (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
+  destroySession(req, res);
   storedEmail = "";
   res.send({ success: true });
+});
+
+// Check if user is logged in
+app.get('/check-session', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (userEmail) {
+    storedEmail = userEmail; // For backward compatibility
+    res.send({ loggedIn: true, email: userEmail });
+  } else {
+    res.send({ loggedIn: false });
+  }
 });
 
 // Search users endpoint

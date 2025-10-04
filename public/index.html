@@ -31,6 +31,31 @@
     let isLoginMode = false;
     let codeStep = false; // Track if we're in code entry step
 
+    // Check if user is already logged in on page load
+    async function checkExistingSession() {
+      try {
+        const response = await fetch(`${backendURL}/check-session`, {
+          method: 'GET',
+          credentials: 'include' // Important for cookies
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.loggedIn) {
+            // User is already logged in, redirect to homepage
+            window.location.href = '/homepage.html';
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('Session check failed:', error);
+        // Continue with normal flow if session check fails
+      }
+    }
+
+    // Check session when page loads
+    document.addEventListener('DOMContentLoaded', checkExistingSession);
+
     function toggleMode() {
       console.log("toggleMode called");
       console.log("isLoginMode before:", isLoginMode);

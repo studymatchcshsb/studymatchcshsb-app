@@ -192,8 +192,38 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const backendURL = window.location.origin;
-    const socket = io();
+  const backendURL = window.location.origin;
+  const socket = io();
+
+  // Check if user is logged in on page load
+  async function checkAuthentication() {
+    try {
+      const response = await fetch(`${backendURL}/check-session`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        // Not authenticated, redirect to login
+        window.location.href = '/index.html';
+        return;
+      }
+
+      const data = await response.json();
+      if (!data.loggedIn) {
+        // Not authenticated, redirect to login
+        window.location.href = '/index.html';
+        return;
+      }
+
+      // User is authenticated, continue with page load
+      console.log('User authenticated:', data.email);
+    } catch (error) {
+      console.log('Authentication check failed:', error);
+      // On error, redirect to login to be safe
+      window.location.href = '/index.html';
+    }
+  }
 
     function openTodoModal() {
       document.getElementById('todo-modal').style.display = 'block';
@@ -793,7 +823,8 @@
     }
 
     // Fetch todos and user profile when the page loads
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
+      await checkAuthentication(); // Check auth first
       fetchTodos();
       fetchUserProfile();
     });
