@@ -164,13 +164,25 @@ app.post("/send-code", (req, res) => {
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error("--- EMAIL SEND ERROR ---");
-      console.error("Error details:", error);
-      return res.status(500).send("Failed to send verification code. Please try again.");
+      console.error("Error code:", error.code);
+      console.error("Error response:", error.response);
+      console.error("Error message:", error.message);
+      console.error("Full error:", error);
+
+      // Provide more specific error messages
+      if (error.code === 'EAUTH') {
+        return res.status(500).send("Email authentication failed. Please check Gmail app password.");
+      } else if (error.code === 'ENOTFOUND') {
+        return res.status(500).send("Email server not found. Please try again later.");
+      } else {
+        return res.status(500).send(`Email error: ${error.message}`);
+      }
     }
 
     console.log("--- VERIFICATION EMAIL SENT ---");
     console.log("Email sent to:", email);
     console.log("Code:", currentCode);
+    console.log("Message ID:", info.messageId);
     res.send("Verification code sent to your email!");
   });
 });
