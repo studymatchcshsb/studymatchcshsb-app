@@ -185,12 +185,14 @@
     // Load user's saved quizzes
     async function loadUserQuizzes() {
       try {
+        console.log('Loading user quizzes...');
         const response = await fetch(`${window.location.origin}/get-quizzes`);
         if (!response.ok) {
-          throw new Error('Failed to load quizzes');
+          throw new Error(`Failed to load quizzes: ${response.status}`);
         }
         const data = await response.json();
         userQuizzes = data.quizzes || [];
+        console.log('Loaded quizzes:', userQuizzes);
         displayFolders();
       } catch (error) {
         console.error('Error loading quizzes:', error);
@@ -543,6 +545,7 @@
     }
 
     function generateMultipleChoice(card) {
+      console.log('Generating multiple choice for:', card);
       const choices = [card.answer];
       const allAnswers = flashcards.map(c => c.answer).filter(a => a !== card.answer);
 
@@ -566,7 +569,14 @@
         [choices[i], choices[j]] = [choices[j], choices[i]];
       }
 
+      console.log('Generated choices:', choices);
+
       const container = document.getElementById('choices-container');
+      if (!container) {
+        console.error('choices-container not found!');
+        return;
+      }
+
       container.innerHTML = '';
 
       choices.forEach((choice, index) => {
@@ -576,6 +586,8 @@
         button.onclick = () => submitMultipleChoiceAnswer(choice, card.answer);
         container.appendChild(button);
       });
+
+      console.log('Multiple choice options created');
     }
 
     function checkEnter(event) {

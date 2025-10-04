@@ -144,6 +144,8 @@ button:hover {
   color: #7f8c8d;
   cursor: pointer;
   transition: color 0.3s;
+  opacity: 1;
+  visibility: visible;
 }
 
 .sidebar .icon:hover {
