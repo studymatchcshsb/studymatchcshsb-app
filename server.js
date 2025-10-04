@@ -750,6 +750,61 @@ app.post('/respond-friend-request', (req, res) => {
   );
 });
 
+// Quiz endpoints
+app.post('/save-quiz', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { folderName, quizName, flashcards } = req.body;
+
+  if (!folderName || !quizName || !flashcards || flashcards.length === 0) {
+    return res.status(400).send({ success: false, message: 'Missing required quiz data' });
+  }
+
+  const quizData = {
+    folderName,
+    quizName,
+    flashcards,
+    createdAt: new Date()
+  };
+
+  // Find user and add quiz to their quizzes array
+  db.update(
+    { email: storedEmail },
+    { $push: { quizzes: quizData } },
+    { upsert: true },
+    (err, numReplaced) => {
+      if (err) {
+        console.error("Error saving quiz:", err);
+        return res.status(500).send({ success: false, message: 'Server error saving quiz' });
+      }
+
+      console.log(`Quiz "${quizName}" saved for user ${storedEmail}`);
+      res.send({ success: true, message: 'Quiz saved successfully' });
+    }
+  );
+});
+
+app.get('/get-quizzes', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  db.findOne({ email: storedEmail }, (err, user) => {
+    if (err) {
+      console.error("Error finding user:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (!user || !user.quizzes) {
+      return res.send({ quizzes: [] });
+    }
+
+    res.send({ quizzes: user.quizzes });
+  });
+});
+
 // Test endpoint for email configuration
 app.get('/test-email-config', (req, res) => {
   console.log("--- Testing email configuration ---");

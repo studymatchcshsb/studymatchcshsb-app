@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Quiz - StudyMatch</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="quiz-creation-container">
+    <header class="quiz-header">
+      <button class="back-btn" onclick="window.location.href='/homepage.html'">← Back to Dashboard</button>
+      <h1>Create Your Quiz</h1>
+    </header>
+
+    <div class="quiz-creation-content">
+      <!-- Quiz Settings -->
+      <div class="quiz-settings">
+        <div class="setting-group">
+          <label for="quiz-folder">Folder Name:</label>
+          <input type="text" id="quiz-folder" placeholder="e.g., Math Quizzes" value="My Quizzes">
+        </div>
+        <div class="setting-group">
+          <label for="quiz-name">Quiz Name:</label>
+          <input type="text" id="quiz-name" placeholder="e.g., Algebra Basics" value="New Quiz">
+        </div>
+      </div>
+
+      <!-- Flashcard Creation Area -->
+      <div class="flashcard-creator">
+        <h3>Add Questions</h3>
+        <div class="flashcard-input">
+          <div class="question-section">
+            <label>Question/Description:</label>
+            <textarea id="question-input" placeholder="Enter your question or description here..."></textarea>
+          </div>
+          <div class="answer-section">
+            <label>Answer:</label>
+            <textarea id="answer-input" placeholder="Enter the correct answer here..."></textarea>
+          </div>
+          <button class="add-card-btn" onclick="addFlashcard()">+ Add Card</button>
+        </div>
+      </div>
+
+      <!-- Quiz Preview/List -->
+      <div class="quiz-preview">
+        <h3>Your Quiz Cards <span id="card-count">(0 cards)</span></h3>
+        <div id="flashcards-list" class="flashcards-list">
+          <!-- Flashcards will be added here -->
+        </div>
+
+        <div class="quiz-actions" id="quiz-actions" style="display: none;">
+          <button class="review-btn" onclick="startReview()">Review Quiz</button>
+          <button class="save-btn" onclick="saveQuiz()">Save Quiz</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div id="review-modal" class="modal" style="display:none;">
+    <div class="modal-content review-modal-content">
+      <span class="close-btn" onclick="closeReviewModal()">&times;</span>
+      <h2>Review Your Quiz</h2>
+
+      <div class="review-options">
+        <button class="review-option-btn" onclick="startIdentificationReview()">Identification</button>
+        <button class="review-option-btn" onclick="startMultipleChoiceReview()">Multiple Choice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quiz Review Interface -->
+  <div id="quiz-review" class="quiz-review" style="display:none;">
+    <div class="review-header">
+      <button class="back-to-creation-btn" onclick="backToCreation()">← Back to Creation</button>
+      <h2 id="review-title">Quiz Review</h2>
+      <div class="review-progress">
+        <span id="current-question">1</span> / <span id="total-questions">0</span>
+      </div>
+    </div>
+
+    <div class="question-display">
+      <div class="question-text" id="question-text"></div>
+
+      <!-- Identification Mode -->
+      <div id="identification-mode" class="answer-mode" style="display:none;">
+        <input type="text" id="identification-answer" placeholder="Type your answer here..." onkeypress="checkEnter(event)">
+        <button onclick="submitIdentificationAnswer()">Submit Answer</button>
+      </div>
+
+      <!-- Multiple Choice Mode -->
+      <div id="multiple-choice-mode" class="answer-mode" style="display:none;">
+        <div id="choices-container" class="choices-container">
+          <!-- Choices will be generated here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="review-results" id="review-results" style="display:none;">
+      <div class="result-summary">
+        <h3>Quiz Complete!</h3>
+        <div class="score-display">
+          <div class="score-circle" id="score-circle">
+            <span id="score-percentage">0%</span>
+          </div>
+          <div class="score-details">
+            <p id="correct-answers">0 correct</p>
+            <p id="total-answers">out of 0 questions</p>
+          </div>
+        </div>
+        <button class="review-again-btn" onclick="reviewAgain()">Review Again</button>
+        <button class="back-to-creation-btn" onclick="backToCreation()">Back to Creation</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let flashcards = [];
+    let currentReviewIndex = 0;
+    let reviewMode = '';
+    let correctAnswers = 0;
+
+    function addFlashcard() {
+      const question = document.getElementById('question-input').value.trim();
+      const answer = document.getElementById('answer-input').value.trim();
+
+      if (!question || !answer) {
+        alert('Please fill in both question and answer fields.');
+        return;
+      }
+
+      const flashcard = {
+        id: Date.now(),
+        question: question,
+        answer: answer
+      };
+
+      flashcards.push(flashcard);
+      updateFlashcardsList();
+      clearInputs();
+      showQuizActions();
+    }
+
+    function updateFlashcardsList() {
+      const list = document.getElementById('flashcards-list');
+      const count = document.getElementById('card-count');
+
+      list.innerHTML = '';
+      count.textContent = `(${flashcards.length} cards)`;
+
+      flashcards.forEach((card, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'flashcard-item';
+        cardElement.innerHTML = `
+          <div class="card-content">
+            <div class="card-question">${card.question}</div>
+            <div class="card-answer">${card.answer}</div>
+          </div>
+          <div class="card-actions">
+            <button onclick="editCard(${index})">Edit</button>
+            <button onclick="deleteCard(${index})">Delete</button>
+          </div>
+        `;
+        list.appendChild(cardElement);
+      });
+    }
+
+    function clearInputs() {
+      document.getElementById('question-input').value = '';
+      document.getElementById('answer-input').value = '';
+      document.getElementById('question-input').focus();
+    }
+
+    function showQuizActions() {
+      if (flashcards.length > 0) {
+        document.getElementById('quiz-actions').style.display = 'block';
+      }
+    }
+
+    function editCard(index) {
+      const card = flashcards[index];
+      document.getElementById('question-input').value = card.question;
+      document.getElementById('answer-input').value = card.answer;
+      deleteCard(index);
+    }
+
+    function deleteCard(index) {
+      flashcards.splice(index, 1);
+      updateFlashcardsList();
+      if (flashcards.length === 0) {
+        document.getElementById('quiz-actions').style.display = 'none';
+      }
+    }
+
+    function startReview() {
+      if (flashcards.length === 0) {
+        alert('Please add at least one flashcard to review.');
+        return;
+      }
+      document.getElementById('review-modal').style.display = 'block';
+    }
+
+    function closeReviewModal() {
+      document.getElementById('review-modal').style.display = 'none';
+    }
+
+    function startIdentificationReview() {
+      reviewMode = 'identification';
+      startQuizReview();
+    }
+
+    function startMultipleChoiceReview() {
+      reviewMode = 'multiple-choice';
+      startQuizReview();
+    }
+
+    function startQuizReview() {
+      closeReviewModal();
+      document.querySelector('.quiz-creation-container').style.display = 'none';
+      document.getElementById('quiz-review').style.display = 'block';
+
+      currentReviewIndex = 0;
+      correctAnswers = 0;
+      document.getElementById('total-questions').textContent = flashcards.length;
+
+      showQuestion();
+    }
+
+    function showQuestion() {
+      if (currentReviewIndex >= flashcards.length) {
+        showResults();
+        return;
+      }
+
+      const card = flashcards[currentReviewIndex];
+      document.getElementById('current-question').textContent = currentReviewIndex + 1;
+      document.getElementById('question-text').textContent = card.question;
+
+      if (reviewMode === 'identification') {
+        document.getElementById('identification-mode').style.display = 'block';
+        document.getElementById('multiple-choice-mode').style.display = 'none';
+        document.getElementById('identification-answer').value = '';
+        document.getElementById('identification-answer').focus();
+      } else if (reviewMode === 'multiple-choice') {
+        document.getElementById('identification-mode').style.display = 'none';
+        document.getElementById('multiple-choice-mode').style.display = 'block';
+        generateMultipleChoice(card);
+      }
+    }
+
+    function generateMultipleChoice(card) {
+      const choices = [card.answer];
+      const allAnswers = flashcards.map(c => c.answer).filter(a => a !== card.answer);
+
+      // Add 3 random wrong answers
+      while (choices.length < 4 && allAnswers.length > 0) {
+        const randomIndex = Math.floor(Math.random() * allAnswers.length);
+        const wrongAnswer = allAnswers.splice(randomIndex, 1)[0];
+        if (!choices.includes(wrongAnswer)) {
+          choices.push(wrongAnswer);
+        }
+      }
+
+      // If we don't have enough wrong answers, add generic ones
+      while (choices.length < 4) {
+        choices.push(`Wrong answer ${choices.length}`);
+      }
+
+      // Shuffle choices
+      for (let i = choices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [choices[i], choices[j]] = [choices[j], choices[i]];
+      }
+
+      const container = document.getElementById('choices-container');
+      container.innerHTML = '';
+
+      choices.forEach((choice, index) => {
+        const button = document.createElement('button');
+        button.className = 'choice-btn';
+        button.textContent = choice;
+        button.onclick = () => submitMultipleChoiceAnswer(choice, card.answer);
+        container.appendChild(button);
+      });
+    }
+
+    function checkEnter(event) {
+      if (event.key === 'Enter') {
+        submitIdentificationAnswer();
+      }
+    }
+
+    function submitIdentificationAnswer() {
+      const userAnswer = document.getElementById('identification-answer').value.trim();
+      const correctAnswer = flashcards[currentReviewIndex].answer;
+
+      checkAnswer(userAnswer, correctAnswer);
+    }
+
+    function submitMultipleChoiceAnswer(selectedAnswer, correctAnswer) {
+      checkAnswer(selectedAnswer, correctAnswer);
+    }
+
+    function checkAnswer(userAnswer, correctAnswer) {
+      const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+
+      if (isCorrect) {
+        correctAnswers++;
+        showFeedback(true);
+      } else {
+        showFeedback(false, correctAnswer);
+      }
+
+      setTimeout(() => {
+        currentReviewIndex++;
+        showQuestion();
+      }, 2000);
+    }
+
+    function showFeedback(isCorrect, correctAnswer = '') {
+      const questionDisplay = document.querySelector('.question-display');
+
+      if (isCorrect) {
+        questionDisplay.style.backgroundColor = '#d4edda';
+        questionDisplay.innerHTML = `
+          <div class="feedback correct">
+            <h3>✅ Correct!</h3>
+            <p>The answer was: <strong>${flashcards[currentReviewIndex].answer}</strong></p>
+          </div>
+        `;
+      } else {
+        questionDisplay.style.backgroundColor = '#f8d7da';
+        questionDisplay.innerHTML = `
+          <div class="feedback incorrect">
+            <h3>❌ Incorrect</h3>
+            <p>Your answer: <strong>${document.getElementById('identification-answer')?.value || 'Selected option'}</strong></p>
+            <p>Correct answer: <strong>${correctAnswer}</strong></p>
+          </div>
+        `;
+      }
+    }
+
+    function showResults() {
+      document.querySelector('.question-display').style.display = 'none';
+      document.getElementById('review-results').style.display = 'block';
+
+      const percentage = Math.round((correctAnswers / flashcards.length) * 100);
+      document.getElementById('score-percentage').textContent = `${percentage}%`;
+      document.getElementById('correct-answers').textContent = `${correctAnswers} correct`;
+      document.getElementById('total-answers').textContent = `out of ${flashcards.length} questions`;
+
+      const scoreCircle = document.getElementById('score-circle');
+      scoreCircle.style.background = `conic-gradient(#4CAF50 ${percentage}%, #f0f0f0 ${percentage}%)`;
+    }
+
+    function reviewAgain() {
+      document.getElementById('review-results').style.display = 'none';
+      document.querySelector('.question-display').style.display = 'block';
+      document.querySelector('.question-display').style.backgroundColor = '';
+
+      currentReviewIndex = 0;
+      correctAnswers = 0;
+      showQuestion();
+    }
+
+    function backToCreation() {
+      document.getElementById('quiz-review').style.display = 'none';
+      document.querySelector('.quiz-creation-container').style.display = 'block';
+      document.querySelector('.question-display').style.display = 'block';
+      document.getElementById('review-results').style.display = 'none';
+      document.querySelector('.question-display').style.backgroundColor = '';
+    }
+
+    async function saveQuiz() {
+      if (flashcards.length === 0) {
+        alert('Please add at least one flashcard before saving.');
+        return;
+      }
+
+      const folderName = document.getElementById('quiz-folder').value.trim() || 'My Quizzes';
+      const quizName = document.getElementById('quiz-name').value.trim() || 'New Quiz';
+
+      const quizData = {
+        folderName: folderName,
+        quizName: quizName,
+        flashcards: flashcards,
+        createdAt: new Date()
+      };
+
+      try {
+        const response = await fetch(`${window.location.origin}/save-quiz`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(quizData)
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save quiz');
+        }
+
+        const result = await response.json();
+        alert('Quiz saved successfully!');
+
+      } catch (error) {
+        console.error('Error saving quiz:', error);
+        alert('Error saving quiz. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>
