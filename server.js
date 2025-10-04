@@ -144,6 +144,20 @@ app.post("/send-code", async (req, res) => {
   console.log("--- /send-code endpoint was hit! ---");
   const { email } = req.body;
 
+  // TEST MODE: Always show code directly for easy testing
+  currentCode = "123456"; // Fixed test code
+  storedEmail = email;
+
+  console.log(`=== TEST MODE ACTIVATED ===`);
+  console.log(`Email: ${email}`);
+  console.log(`Verification Code: ${currentCode}`);
+  console.log(`==========================`);
+
+  // Show the code directly to the user for testing
+  res.send(`TEST MODE: Use verification code: ${currentCode}`);
+
+  // TODO: Uncomment below when SendGrid is properly configured
+  /*
   // Generate a random 6-digit code
   currentCode = Math.floor(100000 + Math.random() * 900000).toString();
   storedEmail = email;
@@ -223,6 +237,7 @@ app.post("/send-code", async (req, res) => {
     console.log("Message ID:", info.messageId);
     res.send("Verification code sent to your email!");
   });
+  */
 });
 
 app.post("/verify-code", (req, res) => {
