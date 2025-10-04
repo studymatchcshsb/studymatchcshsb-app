@@ -150,15 +150,17 @@ app.post("/send-code", (req, res) => {
   console.log("--- /send-code endpoint was hit! ---");
   const { email } = req.body;
 
-  // Always use test mode for now - generate predictable code for testing
-  currentCode = "123456"; // Fixed test code for easy testing
+  // TEST MODE: Always use fixed code for easy testing
+  currentCode = "123456"; // Fixed test code
   storedEmail = email;
 
-  console.log(`=== TEST MODE: Code for ${email} is: ${currentCode} ===`);
-  console.log(`=== USE CODE: ${currentCode} ===`);
+  console.log(`=== TEST MODE ACTIVATED ===`);
+  console.log(`Email: ${email}`);
+  console.log(`Verification Code: ${currentCode}`);
+  console.log(`==========================`);
 
-  // Always return success with test code
-  res.send("Code sent successfully! (Test mode - use code: 123456)");
+  // Show the code directly to the user for testing
+  res.send(`TEST MODE: Use verification code: ${currentCode}`);
 });
 
 app.post("/verify-code", (req, res) => {
