@@ -60,39 +60,15 @@ app.post("/send-code", (req, res) => {
   console.log("--- /send-code endpoint was hit! ---");
   const { email } = req.body;
 
-  // For testing purposes, allow signup without email verification
-  // Generate a code anyway for the flow to work
-  currentCode = Math.floor(100000 + Math.random() * 900000).toString();
+  // Always use test mode for now - generate predictable code for testing
+  currentCode = "123456"; // Fixed test code for easy testing
   storedEmail = email;
 
-  console.log(`Generated code for ${email}: ${currentCode}`);
+  console.log(`=== TEST MODE: Code for ${email} is: ${currentCode} ===`);
+  console.log(`=== USE CODE: ${currentCode} ===`);
 
-  // Check if email credentials are available
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log("--- EMAIL CREDENTIALS NOT CONFIGURED - USING TEST MODE ---");
-    console.log(`--- TEST CODE FOR ${email}: ${currentCode} ---`);
-    return res.send("Code sent successfully! (Test mode - check server logs for code)");
-  }
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Your Verification Code",
-    text: `Your verification code is: ${currentCode}`,
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("--- NODEMAILER ERROR - USING TEST MODE ---");
-      console.error("--- ERROR DETAILS ---:", error);
-      console.log(`--- TEST CODE FOR ${email}: ${currentCode} ---`);
-
-      // Even if email fails, allow the signup flow to continue for testing
-      return res.send("Code sent successfully! (Test mode - check server logs for code)");
-    }
-    console.log("--- Email Sent Successfully ---:", info);
-    res.send("Code sent successfully!");
-  });
+  // Always return success with test code
+  res.send("Code sent successfully! (Test mode - use code: 123456)");
 });
 
 app.post("/verify-code", (req, res) => {
