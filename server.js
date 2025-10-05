@@ -140,7 +140,7 @@ const transporter = nodemailer.createTransport({
   debug: true
 });
 
-app.post("/send-code", (req, res) => {
+app.post("/send-code", async (req, res) => {
   console.log("--- /send-code endpoint was hit! ---");
   const { email } = req.body;
 
@@ -150,15 +150,52 @@ app.post("/send-code", (req, res) => {
 
   console.log(`Generated code ${currentCode} for ${email}`);
 
-  // TEMPORARY: Show code directly for testing (Gmail is blocked on Render)
-  console.log("--- TEMPORARY: SHOWING CODE DIRECTLY ---");
-  console.log(`TEST MODE: Verification code for ${email} is: ${currentCode}`);
-  res.send(`TEST MODE: Your verification code is: ${currentCode} (Check console/Render logs)`);
+  // Try SendGrid first (preferred for production)
+  if (process.env.SENDGRID_API_KEY) {
+    try {
+      const sgMail = require('@sendgrid/mail');
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-  // TODO: Uncomment when email service is properly configured
-  /*
-  // Use Gmail as primary method
-  console.log("--- SENDING VIA GMAIL ---");
+      const msg = {
+        to: email,
+        from: {
+          email: 'noreply@studymatch.app', // Change this to your verified sender
+          name: 'StudyMatch'
+        },
+        subject: 'Your StudyMatch Verification Code',
+        text: `Your verification code is: ${currentCode}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #3498db;">StudyMatch Verification</h2>
+            <p>Hello!</p>
+            <p>Your verification code is:</p>
+            <div style="background-color: #f8f9fa; padding: 20px; text-align: center; margin: 20px 0;">
+              <span style="font-size: 24px; font-weight: bold; color: #e74c3c;">${currentCode}</span>
+            </div>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn't request this code, please ignore this email.</p>
+            <hr style="margin: 30px 0;">
+            <p style="color: #7f8c8d; font-size: 12px;">StudyMatch - Real-time Study Buddy Matching</p>
+          </div>
+        `,
+      };
+
+      await sgMail.send(msg);
+      console.log("--- VERIFICATION EMAIL SENT VIA SENDGRID ---");
+      console.log("Email sent to:", email);
+      console.log("Code:", currentCode);
+      return res.send("Verification code sent to your email!");
+    } catch (error) {
+      console.error("--- SENDGRID EMAIL ERROR ---");
+      console.error("Error:", error.message);
+      console.error("Code:", error.code);
+      console.error("Response:", error.response);
+      // Fall back to Gmail if SendGrid fails
+    }
+  }
+
+  // Fallback to Gmail
+  console.log("--- FALLING BACK TO GMAIL ---");
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -205,7 +242,6 @@ app.post("/send-code", (req, res) => {
     console.log("Message ID:", info.messageId);
     res.send("Verification code sent to your email!");
   });
-  */
 });
 
 app.post("/verify-code", (req, res) => {
