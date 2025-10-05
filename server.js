@@ -150,7 +150,14 @@ app.post("/send-code", (req, res) => {
 
   console.log(`Generated code ${currentCode} for ${email}`);
 
-  // Use Gmail as primary method (SendGrid was causing issues)
+  // TEMPORARY: Show code directly for testing (Gmail is blocked on Render)
+  console.log("--- TEMPORARY: SHOWING CODE DIRECTLY ---");
+  console.log(`TEST MODE: Verification code for ${email} is: ${currentCode}`);
+  res.send(`TEST MODE: Your verification code is: ${currentCode} (Check console/Render logs)`);
+
+  // TODO: Uncomment when email service is properly configured
+  /*
+  // Use Gmail as primary method
   console.log("--- SENDING VIA GMAIL ---");
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -198,6 +205,7 @@ app.post("/send-code", (req, res) => {
     console.log("Message ID:", info.messageId);
     res.send("Verification code sent to your email!");
   });
+  */
 });
 
 app.post("/verify-code", (req, res) => {
