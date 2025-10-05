@@ -65,7 +65,8 @@
       messageEl.innerText = "Validating LRN and name...";
 
       try {
-        const response = await fetch(`${backendURL}/check-lrn`, {
+        // First, validate LRN
+        const lrnResponse = await fetch(`${backendURL}/check-lrn`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -75,8 +76,8 @@
           })
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
+        if (!lrnResponse.ok) {
+          const errorData = await lrnResponse.json();
           throw new Error(errorData.message);
         }
 
@@ -84,19 +85,41 @@
         const urlParams = new URLSearchParams(window.location.search);
         const password = urlParams.get('password');
 
-        const params = new URLSearchParams();
-        for (let pair of formData.entries()) {
-          if (pair[0] === 'name') {
-            params.append(pair[0], pair[1].trim());
-          } else {
-            params.append(pair[0], pair[1]);
-          }
+        if (!password) {
+          throw new Error('Password not found. Please go back and sign up again.');
         }
-        // Add password to parameters
-        if (password) {
-          params.append('password', password);
+
+        messageEl.innerText = "Saving profile...";
+
+        // Prepare profile data
+        const profileData = {
+          name: formData.get('name').trim(),
+          surname: formData.get('surname'),
+          lrn: formData.get('lrn'),
+          grade: formData.get('grade'),
+          section: formData.get('section'),
+          password: password
+        };
+
+        // Save profile directly
+        const saveResponse = await fetch(`${backendURL}/save-profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData)
+        });
+
+        if (!saveResponse.ok) {
+          const errorData = await saveResponse.json();
+          throw new Error(errorData.message);
         }
-        window.location.href = `/upload-picture.html?${params.toString()}`;
+
+        messageEl.style.color = 'green';
+        messageEl.innerText = "Profile saved! Redirecting...";
+
+        // Redirect to homepage after a short delay
+        setTimeout(() => {
+          window.location.href = "/homepage.html";
+        }, 1500);
 
       } catch (error) {
         messageEl.innerText = error.message;
