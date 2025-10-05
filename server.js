@@ -159,7 +159,7 @@ app.post("/send-code", async (req, res) => {
       const msg = {
         to: email,
         from: {
-          email: 'noreply@studymatch.app', // Change this to your verified sender
+          email: 'test@example.com', // Use a verified sender or your SendGrid verified email
           name: 'StudyMatch'
         },
         subject: 'Your StudyMatch Verification Code',
@@ -189,7 +189,7 @@ app.post("/send-code", async (req, res) => {
       console.error("--- SENDGRID EMAIL ERROR ---");
       console.error("Error:", error.message);
       console.error("Code:", error.code);
-      console.error("Response:", error.response);
+      console.error("Response body:", error.response?.body);
       // Fall back to Gmail if SendGrid fails
     }
   }
