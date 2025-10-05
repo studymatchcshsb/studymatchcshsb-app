@@ -8,16 +8,17 @@
 <body>
   <div class="quiz-manager-container">
     <header class="quiz-header">
-      <button class="back-btn" onclick="window.location.href='/homepage.html'">← Back to Dashboard</button>
-      <h1>My Quiz Library</h1>
+      <div class="header-content">
+        <button class="back-btn centered-back-btn" onclick="window.location.href='/homepage.html'">← Back to Dashboard</button>
+        <h1>Make your mock-quiz today!</h1>
+      </div>
     </header>
 
     <div class="quiz-manager-content">
       <!-- Sidebar with folders -->
       <div class="quiz-sidebar">
         <div class="sidebar-header">
-          <h3>Folders</h3>
-          <button class="create-folder-btn" onclick="showCreateFolderModal()">+ New Folder</button>
+          <button class="create-folder-btn" onclick="showCreateFolderModal()">Create Folder</button>
         </div>
         <div id="folders-list" class="folders-list">
           <!-- Folders will be loaded here -->
@@ -216,33 +217,38 @@
         folders[quiz.folderName].push(quiz);
       });
 
-      // Add "Create Quiz" option at the top
-      const createQuizItem = document.createElement('div');
-      createQuizItem.className = 'folder-item create-quiz-item';
-      createQuizItem.innerHTML = `
-        <div class="folder-icon">📝</div>
-        <div class="folder-info">
-          <div class="folder-name">Create New Quiz</div>
-          <div class="folder-count">Start creating</div>
-        </div>
-      `;
-      createQuizItem.onclick = () => startQuizCreation();
-      foldersList.appendChild(createQuizItem);
-
-      // Display existing folders
+      // Display existing folders and their quizzes
       Object.keys(folders).forEach(folderName => {
         const folderQuizzes = folders[folderName];
+
+        // Add folder item
         const folderItem = document.createElement('div');
         folderItem.className = 'folder-item';
         folderItem.innerHTML = `
           <div class="folder-icon">📁</div>
           <div class="folder-info">
             <div class="folder-name">${folderName}</div>
-            <div class="folder-count">${folderQuizzes.length} quiz${folderQuizzes.length !== 1 ? 'es' : ''}</div>
           </div>
         `;
         folderItem.onclick = () => openFolder(folderName, folderQuizzes);
         foldersList.appendChild(folderItem);
+
+        // Add quiz files under this folder
+        folderQuizzes.forEach(quiz => {
+          const quizItem = document.createElement('div');
+          quizItem.className = 'quiz-file-item sidebar-quiz-item';
+          quizItem.innerHTML = `
+            <div class="quiz-file-icon">📄</div>
+            <div class="quiz-file-info">
+              <div class="quiz-file-name">${quiz.quizName}</div>
+            </div>
+          `;
+          quizItem.onclick = (e) => {
+            e.stopPropagation(); // Prevent folder click
+            openQuiz(quiz.quizName, JSON.stringify(quiz).replace(/"/g, '"'));
+          };
+          foldersList.appendChild(quizItem);
+        });
       });
 
       // Show welcome message if no folders
@@ -308,7 +314,7 @@
       currentFolder = null;
     }
 
-    // Open a folder and show its quizzes
+    // Open a folder and show its contents
     function openFolder(folderName, quizzes) {
       currentFolder = folderName;
       document.getElementById('main-view').style.display = 'none';
@@ -320,10 +326,10 @@
         <div class="folder-view">
           <div class="folder-header">
             <h2>${folderName}</h2>
-            <button class="create-quiz-in-folder-btn" onclick="startQuizCreation()">+ Create Quiz</button>
+            <button class="create-quiz-in-folder-btn" onclick="startQuizCreation()">Create Quiz File</button>
           </div>
           <div class="quizzes-list">
-            ${quizzes.map(quiz => `
+            ${quizzes.length === 0 ? '<p class="no-quizzes">No quiz files yet. Click "Create Quiz File" to get started!</p>' : quizzes.map(quiz => `
               <div class="quiz-file-item" onclick="openQuiz('${quiz.quizName}', ${JSON.stringify(quiz).replace(/"/g, '"')})">
                 <div class="quiz-file-icon">📄</div>
                 <div class="quiz-file-info">

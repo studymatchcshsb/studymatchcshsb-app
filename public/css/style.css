@@ -986,12 +986,23 @@ button:hover {
 }
 
 .quiz-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  text-align: center;
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 2px solid #e0e0e0;
+}
+
+.quiz-header .header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.centered-back-btn {
+  margin: 0 auto;
+  display: block;
+  width: auto;
 }
 
 .back-btn {
@@ -1454,10 +1465,13 @@ button:hover {
   background: #28a745;
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
+  font-weight: bold;
+  width: 100%;
+  margin-bottom: 15px;
 }
 
 .create-folder-btn:hover {
@@ -1629,6 +1643,40 @@ button:hover {
 .quiz-file-count {
   color: #666;
   font-size: 14px;
+}
+
+/* Sidebar quiz items (files under folders) */
+.sidebar-quiz-item {
+  margin-left: 20px;
+  margin-bottom: 8px;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: 1px solid #e0e0e0;
+  background: #f8f9fa;
+}
+
+.sidebar-quiz-item:hover {
+  background-color: #e9ecef;
+}
+
+.sidebar-quiz-item .quiz-file-icon {
+  font-size: 16px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-quiz-item .quiz-file-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  color: #333;
+}
+
+.sidebar-quiz-item .quiz-file-count {
+  font-size: 12px;
+  color: #666;
 }
 
 .quiz-creation-view {
