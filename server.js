@@ -339,62 +339,69 @@ app.post('/check-lrn', (req, res) => {
 });
 
 app.post('/save-profile', (req, res) => {
-  // Password should already be hashed from the frontend
-  const profileData = {
-    name: req.body.name,
-    surname: req.body.surname,
-    lrn: req.body.lrn,
-    grade: req.body.grade,
-    section: req.body.section,
-    email: storedEmail,
-    password: req.body.password, // Already hashed from frontend
-    createdAt: new Date()
-  };
-
-  // First, mark the LRN as used
-  fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
+  // Hash the password on the server for security
+  bcrypt.hash(req.body.password, saltRounds, (err, hash) => {
     if (err) {
-      console.error("Error reading LRN file:", err);
-      return res.status(500).send({ success: false, message: 'Server error saving profile.' });
+      console.error("Error hashing password:", err);
+      return res.status(500).send({ success: false, message: 'Server error hashing password.' });
     }
 
-    const lrnData = JSON.parse(data);
-    const studentIndex = lrnData.students.findIndex(s => s.lrn === req.body.lrn);
+    const profileData = {
+      name: req.body.name,
+      surname: req.body.surname,
+      lrn: req.body.lrn,
+      grade: req.body.grade,
+      section: req.body.section,
+      email: storedEmail,
+      password: hash, // Now properly hashed
+      createdAt: new Date()
+    };
 
-    if (studentIndex === -1) {
-      return res.status(400).send({ success: false, message: 'Invalid LRN.' });
-    }
-
-    // Mark LRN as used
-    lrnData.students[studentIndex].used = true;
-
-    // Write back to file
-    fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
+    // First, mark the LRN as used
+    fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
       if (err) {
-        console.error("Error updating LRN file:", err);
+        console.error("Error reading LRN file:", err);
         return res.status(500).send({ success: false, message: 'Server error saving profile.' });
       }
 
-      // Now save the profile to database
-      db.insert(profileData, (err, newDoc) => {
+      const lrnData = JSON.parse(data);
+      const studentIndex = lrnData.students.findIndex(s => s.lrn === req.body.lrn);
+
+      if (studentIndex === -1) {
+        return res.status(400).send({ success: false, message: 'Invalid LRN.' });
+      }
+
+      // Mark LRN as used
+      lrnData.students[studentIndex].used = true;
+
+      // Write back to file
+      fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
         if (err) {
-          console.error("Error saving profile:", err);
-          // If database save fails, we should revert the LRN status
-          lrnData.students[studentIndex].used = false;
-          fs.writeFileSync('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8');
+          console.error("Error updating LRN file:", err);
           return res.status(500).send({ success: false, message: 'Server error saving profile.' });
         }
 
-        console.log("Profile saved successfully:", newDoc);
+        // Now save the profile to database
+        db.insert(profileData, (err, newDoc) => {
+          if (err) {
+            console.error("Error saving profile:", err);
+            // If database save fails, we should revert the LRN status
+            lrnData.students[studentIndex].used = false;
+            fs.writeFileSync('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8');
+            return res.status(500).send({ success: false, message: 'Server error saving profile.' });
+          }
 
-        // Create session for the new user
-        createSession(storedEmail, res).then(() => {
-          console.log("Session created for new user:", storedEmail);
-          res.send({ success: true, message: 'Profile saved successfully!' });
-        }).catch((sessionError) => {
-          console.error("Session creation failed:", sessionError);
-          // Still send success since profile was saved
-          res.send({ success: true, message: 'Profile saved successfully!' });
+          console.log("Profile saved successfully:", newDoc);
+
+          // Create session for the new user
+          createSession(storedEmail, res).then(() => {
+            console.log("Session created for new user:", storedEmail);
+            res.send({ success: true, message: 'Profile saved successfully!' });
+          }).catch((sessionError) => {
+            console.error("Session creation failed:", sessionError);
+            // Still send success since profile was saved
+            res.send({ success: true, message: 'Profile saved successfully!' });
+          });
         });
       });
     });
