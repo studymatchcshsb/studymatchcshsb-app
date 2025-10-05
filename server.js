@@ -16,7 +16,7 @@ console.log("--- SERVER.JS HAS BEEN UPDATED! ---");
 console.log("--- If you see this, the new code is running. ---");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 app.use(cors({
   origin: true,
@@ -159,7 +159,7 @@ app.post("/send-code", async (req, res) => {
       const msg = {
         to: email,
         from: {
-          email: 'test@example.com', // Use a verified sender or your SendGrid verified email
+          email: 'studymatchcshsb@gmail.com', // Your verified SendGrid sender email
           name: 'StudyMatch'
         },
         subject: 'Your StudyMatch Verification Code',
