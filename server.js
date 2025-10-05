@@ -685,7 +685,7 @@ app.post('/add-friend', (req, res) => {
   });
 });
 
-// Get friends list endpoint
+// Get friends list endpoint with recent messages
 app.get('/get-friends', (req, res) => {
   if (!storedEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
@@ -708,15 +708,47 @@ app.get('/get-friends', (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error' });
       }
 
-      const friendDetails = friends.map(friend => ({
-        name: friend.name,
-        surname: friend.surname,
-        email: friend.email,
-        grade: friend.grade,
-        section: friend.section
-      }));
+      // Get recent message for each friend
+      let processedFriends = 0;
+      const friendDetails = [];
 
-      res.send({ friends: friendDetails });
+      if (friends.length === 0) {
+        return res.send({ friends: [] });
+      }
+
+      friends.forEach(friend => {
+        // Find the most recent message between current user and this friend
+        messagesDb.find({
+          $or: [
+            { from: storedEmail, to: friend.email },
+            { from: friend.email, to: storedEmail }
+          ]
+        }).sort({ timestamp: -1 }).limit(1, (err, messages) => {
+          if (err) {
+            console.error("Error finding recent message:", err);
+          }
+
+          const recentMessage = messages && messages.length > 0 ? messages[0] : null;
+
+          friendDetails.push({
+            name: friend.name,
+            surname: friend.surname,
+            email: friend.email,
+            grade: friend.grade,
+            section: friend.section,
+            recentMessage: recentMessage ? {
+              message: recentMessage.message,
+              timestamp: recentMessage.timestamp,
+              from: recentMessage.from === storedEmail ? 'You' : `${friend.name} ${friend.surname}`
+            } : null
+          });
+
+          processedFriends++;
+          if (processedFriends === friends.length) {
+            res.send({ friends: friendDetails });
+          }
+        });
+      });
     });
   });
 });
