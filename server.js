@@ -814,7 +814,7 @@ app.post('/send-help-request', (req, res) => {
       // Create help request notifications for each potential helper
       const notifications = potentialHelpers.map(helper => ({
         id: Date.now() + Math.random(),
-        type: 'help_request',
+        type: 'kastudy_request',
         fromUser: {
           name: currentUser.name,
           surname: currentUser.surname,
@@ -823,7 +823,8 @@ app.post('/send-help-request', (req, res) => {
         },
         subject: subject,
         timestamp: new Date(),
-        status: 'pending'
+        status: 'pending',
+        message: `Good day, ${helper.name}! ${currentUser.name} ${currentUser.surname} would like to ask for help with ${subject}. Would you be able to help them?`
       }));
 
       // Add notifications to each helper's profile
@@ -843,7 +844,9 @@ app.post('/send-help-request', (req, res) => {
             if (completed === total) {
               // Notify all connected users about new notifications
               notifications.forEach(notification => {
-                io.to(connectedUsers[helper.email]).emit('new_notification', notification);
+                if (connectedUsers[helper.email]) {
+                  io.to(connectedUsers[helper.email]).emit('new_notification', notification);
+                }
               });
 
               res.send({
@@ -917,15 +920,134 @@ app.post('/respond-help-request', (req, res) => {
               (err2) => {
                 if (err2) console.error("Error adding friend:", err2);
 
-                // Notify the requester that someone accepted
-                if (connectedUsers[requesterEmail]) {
-                  io.to(connectedUsers[requesterEmail]).emit('help_request_accepted', {
-                    helperEmail: storedEmail,
-                    subject: req.body.subject
-                  });
-                }
+                // Get helper's name for the notification
+                db.findOne({ email: storedEmail }, (err, helper) => {
+                  if (err) {
+                    console.error("Error finding helper:", err);
+                    return res.status(500).send({ success: false, message: 'Server error' });
+                  }
 
-                res.send({ success: true, message: 'Help request accepted! Starting chat...' });
+                  // Send notification to requester
+                  const successNotification = {
+                    id: Date.now() + Math.random(),
+                    type: 'kastudy_accepted',
+                    fromUser: {
+                      name: helper.name,
+                      surname: helper.surname,
+                      email: storedEmail
+                    },
+                    subject: req.body.subject,
+                    timestamp: new Date(),
+                    message: `Hello, ${req.body.requesterName}! We bring good news! ${helper.name} ${helper.surname} wants to help you!`
+                  };
+
+                  db.update(
+                    { email: requesterEmail },
+                    { $push: { notifications: successNotification } },
+                    { upsert: true },
+                    (err, numReplaced) => {
+                      if (err) {
+                        console.error("Error sending success notification:", err);
+                      }
+
+                      // Notify the requester in real-time
+                      if (connectedUsers[requesterEmail]) {
+                        io.to(connectedUsers[requesterEmail]).emit('new_notification', successNotification);
+                      }
+
+                      res.send({ success: true, message: 'Help request accepted! Starting chat...' });
+                    }
+                  );
+                });
+              }
+            );
+          }
+        );
+      } else {
+        res.send({ success: true, message: 'Help request declined.' });
+      }
+    }
+  );
+});
+
+// Handle kastudy request response
+app.post('/respond-kastudy-request', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { notificationId, response, requesterEmail, subject, requesterName } = req.body;
+
+  if (!notificationId || !response) {
+    return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
+  }
+
+  // Remove the notification from current user's notifications
+  db.update(
+    { email: storedEmail },
+    { $pull: { notifications: { id: notificationId } } },
+    {},
+    (err, numReplaced) => {
+      if (err) {
+        console.error("Error removing notification:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      if (response === 'accept' && requesterEmail) {
+        // Add both users as friends if they accept
+        db.update(
+          { email: storedEmail },
+          { $addToSet: { friends: requesterEmail } },
+          {},
+          (err1) => {
+            if (err1) console.error("Error adding friend:", err1);
+
+            db.update(
+              { email: requesterEmail },
+              { $addToSet: { friends: storedEmail } },
+              {},
+              (err2) => {
+                if (err2) console.error("Error adding friend:", err2);
+
+                // Get helper's name for the notification
+                db.findOne({ email: storedEmail }, (err, helper) => {
+                  if (err) {
+                    console.error("Error finding helper:", err);
+                    return res.status(500).send({ success: false, message: 'Server error' });
+                  }
+
+                  // Send notification to requester
+                  const successNotification = {
+                    id: Date.now() + Math.random(),
+                    type: 'kastudy_accepted',
+                    fromUser: {
+                      name: helper.name,
+                      surname: helper.surname,
+                      email: storedEmail
+                    },
+                    subject: subject,
+                    timestamp: new Date(),
+                    message: `Hello, ${requesterName}! We bring good news! ${helper.name} ${helper.surname} wants to help you!`
+                  };
+
+                  db.update(
+                    { email: requesterEmail },
+                    { $push: { notifications: successNotification } },
+                    { upsert: true },
+                    (err, numReplaced) => {
+                      if (err) {
+                        console.error("Error sending success notification:", err);
+                      }
+
+                      // Notify the requester in real-time
+                      if (connectedUsers[requesterEmail]) {
+                        io.to(connectedUsers[requesterEmail]).emit('new_notification', successNotification);
+                      }
+
+                      res.send({ success: true, message: 'Help request accepted! Starting chat...' });
+                    }
+                  );
+                });
               }
             );
           }

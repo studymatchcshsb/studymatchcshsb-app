@@ -596,6 +596,33 @@
                     </div>
                 `;
                 container.appendChild(notificationDiv);
+            } else if (notification.type === 'kastudy_request') {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'notification-item';
+                notificationDiv.innerHTML = `
+                    <div class="notification-content">
+                        <strong>STUDYMATCH CSHSB</strong><br>
+                        ${notification.message}
+                    </div>
+                    <div class="notification-actions">
+                        <button class="help-btn yes-btn" onclick="respondToKastudyRequest('${notification.id}', 'accept', '${notification.fromUser.email}', '${notification.subject}', '${notification.fromUser.name} ${notification.fromUser.surname}')">Yes</button>
+                        <button class="help-btn no-btn" onclick="respondToKastudyRequest('${notification.id}', 'decline')">No</button>
+                    </div>
+                `;
+                container.appendChild(notificationDiv);
+            } else if (notification.type === 'kastudy_accepted') {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'notification-item';
+                notificationDiv.innerHTML = `
+                    <div class="notification-content">
+                        <strong>STUDYMATCH CSHSB</strong><br>
+                        ${notification.message}
+                    </div>
+                    <div class="notification-actions">
+                        <button class="help-btn yes-btn" onclick="window.location.href='/chats.html'" style="width: 100%; background: #3498db; color: white;">Start Chatting</button>
+                    </div>
+                `;
+                container.appendChild(notificationDiv);
             } else if (notification.type === 'friend_request') {
                 const notificationDiv = document.createElement('div');
                 notificationDiv.className = 'notification-item';
@@ -677,6 +704,41 @@
             }
         } catch (error) {
             console.error("Error responding to friend request:", error);
+            alert('Error processing your response. Please try again.');
+        }
+    }
+
+    // Handle kastudy request response
+    async function respondToKastudyRequest(notificationId, response, requesterEmail, subject, requesterName) {
+        try {
+            const responseData = await fetch(`${backendURL}/respond-kastudy-request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    notificationId,
+                    response,
+                    requesterEmail,
+                    subject,
+                    requesterName
+                })
+            });
+
+            if (!responseData.ok) {
+                throw new Error('Failed to respond to kastudy request');
+            }
+
+            const data = await responseData.json();
+
+            if (response === 'accept') {
+                alert(data.message);
+                // Redirect to chats page
+                window.location.href = '/chats.html';
+            } else {
+                // Reload notifications
+                loadNotifications();
+            }
+        } catch (error) {
+            console.error("Error responding to kastudy request:", error);
             alert('Error processing your response. Please try again.');
         }
     }
