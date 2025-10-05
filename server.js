@@ -29,6 +29,7 @@ app.use(express.static("public"));
 const db = new Datastore({ filename: 'users.db', autoload: true });
 const todosDb = new Datastore({ filename: 'todos.db', autoload: true });
 const sessionsDb = new Datastore({ filename: 'sessions.db', autoload: true });
+const messagesDb = new Datastore({ filename: 'messages.db', autoload: true });
 
 let currentCode = "";
 let storedEmail = "";
@@ -720,6 +721,30 @@ app.get('/get-friends', (req, res) => {
   });
 });
 
+// Get messages between two users
+app.get('/get-messages/:friendEmail', (req, res) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const friendEmail = req.params.friendEmail;
+
+  // Find messages between current user and friend
+  messagesDb.find({
+    $or: [
+      { from: storedEmail, to: friendEmail },
+      { from: friendEmail, to: storedEmail }
+    ]
+  }).sort({ timestamp: 1 }, (err, messages) => {
+    if (err) {
+      console.error("Error finding messages:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    res.send({ messages });
+  });
+});
+
 // Send help request endpoint
 app.post('/send-help-request', (req, res) => {
   if (!storedEmail) {
@@ -1045,13 +1070,52 @@ io.on('connection', (socket) => {
   socket.on('send message', (data) => {
     const { to, message } = data;
     const from = socket.email;
-    const recipientSocket = connectedUsers[to];
+    const timestamp = new Date();
 
-    if (recipientSocket) {
-      io.to(recipientSocket).emit('receive message', { from, message, timestamp: new Date() });
-    }
-    // Also emit to sender for consistency
-    socket.emit('receive message', { from, message, timestamp: new Date() });
+    // Store message in database
+    const messageData = {
+      from,
+      to,
+      message,
+      timestamp,
+      conversationId: [from, to].sort().join('_') // Unique ID for conversation
+    };
+
+    messagesDb.insert(messageData, (err, newDoc) => {
+      if (err) {
+        console.error("Error saving message:", err);
+        return;
+      }
+
+      // Get sender's name and surname for display
+      db.findOne({ email: from }, (err, sender) => {
+        if (err) {
+          console.error("Error finding sender:", err);
+          return;
+        }
+
+        const senderName = sender ? `${sender.name} ${sender.surname}` : from;
+
+        // Emit to recipient if online
+        const recipientSocket = connectedUsers[to];
+        if (recipientSocket) {
+          io.to(recipientSocket).emit('receive message', {
+            from: senderName,
+            fromEmail: from,
+            message,
+            timestamp
+          });
+        }
+
+        // Emit to sender for consistency
+        socket.emit('receive message', {
+          from: senderName,
+          fromEmail: from,
+          message,
+          timestamp
+        });
+      });
+    });
   });
 
   socket.on('disconnect', () => {

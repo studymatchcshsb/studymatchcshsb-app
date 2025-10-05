@@ -51,6 +51,7 @@
 
     let currentUserEmail = '';
     let selectedRecipient = '';
+    let userNames = {}; // Store user names for display
 
     // Fetch user profile and set initials
     async function fetchUserProfile() {
@@ -78,10 +79,46 @@
       }
     }
 
-    // Select a chat recipient
-    function selectChat(recipient) {
-      selectedRecipient = recipient;
-      document.getElementById('messages').innerHTML = ''; // Clear messages
+    // Select a chat recipient and load message history
+    async function selectChat(recipientEmail) {
+      selectedRecipient = recipientEmail;
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Loading messages...</div>';
+
+      try {
+        const response = await fetch(`${backendURL}/get-messages/${recipientEmail}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch messages');
+        }
+        const data = await response.json();
+
+        messagesDiv.innerHTML = ''; // Clear loading message
+
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach(msg => {
+            displayMessage(msg);
+          });
+        } else {
+          messagesDiv.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No messages yet. Start the conversation!</div>';
+        }
+      } catch (error) {
+        console.error("Error loading messages:", error);
+        messagesDiv.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Failed to load messages.</div>';
+      }
+    }
+
+    // Display a message in the chat
+    function displayMessage(msg) {
+      const messagesDiv = document.getElementById('messages');
+      const messageEl = document.createElement('div');
+      messageEl.className = 'message';
+
+      const isFromCurrentUser = msg.from === currentUserEmail;
+      const displayName = isFromCurrentUser ? 'You' : (userNames[msg.from] || msg.from);
+
+      messageEl.innerHTML = `<strong>${displayName}:</strong> ${msg.message} <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>`;
+      messagesDiv.appendChild(messageEl);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
     // Handle sending messages
@@ -96,12 +133,19 @@
 
     // Listen for incoming messages
     socket.on('receive message', (data) => {
-      const messagesDiv = document.getElementById('messages');
-      const messageEl = document.createElement('div');
-      messageEl.className = 'message';
-      messageEl.innerHTML = `<strong>${data.from}:</strong> ${data.message} <small>${new Date(data.timestamp).toLocaleTimeString()}</small>`;
-      messagesDiv.appendChild(messageEl);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      // Store the user name for future reference
+      if (data.fromEmail && data.from !== 'You') {
+        userNames[data.fromEmail] = data.from;
+      }
+
+      // Only display if this message is for the currently selected recipient
+      if (selectedRecipient && (data.fromEmail === selectedRecipient || data.fromEmail === currentUserEmail)) {
+        displayMessage({
+          from: data.fromEmail,
+          message: data.message,
+          timestamp: data.timestamp
+        });
+      }
     });
 
     // Load friends list
@@ -121,6 +165,9 @@
           chatList.innerHTML = '';
 
           data.friends.forEach(friend => {
+            // Store user names for message display
+            userNames[friend.email] = `${friend.name} ${friend.surname}`;
+
             const chatItem = document.createElement('div');
             chatItem.className = 'chat-item';
             chatItem.onclick = () => selectChat(friend.email);
