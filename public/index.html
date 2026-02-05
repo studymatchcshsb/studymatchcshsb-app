@@ -104,6 +104,35 @@
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+const backendURL = window.location.origin;
+
+// Check if user is already logged in on page load
+async function checkIfLoggedIn() {
+  try {
+    const response = await fetch(`${backendURL}/check-session`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.loggedIn) {
+        // User is logged in, redirect based on profile completion
+        if (data.profileComplete) {
+          window.location.href = '/homepage.html';
+        } else {
+          window.location.href = '/profile-setup.html';
+        }
+      }
+    }
+  } catch (error) {
+    console.log('Not logged in or session check failed');
+  }
+}
+
+// Check on page load
+checkIfLoggedIn();
+
 // Toggle between login and register forms
 $('#show-login').click(function(e) {
   e.preventDefault();
