@@ -652,8 +652,8 @@ app.get('/get-messages/:friendEmail', async (req, res) => {
   });
 });
 
-// Send help request endpoint
-app.post('/send-help-request', async (req, res) => {
+// Find a Study Buddy (KaStudy) endpoint - sends notifications to other users
+app.post('/find-kastudy', async (req, res) => {
   const userEmail = await getUserFromSession(req);
   if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
@@ -698,7 +698,7 @@ app.post('/send-help-request', async (req, res) => {
       }
 
       // Create help request notifications for each potential helper
-      const notifications = potentialHelpers.map(helper => ({
+      const notifications = potentialHelpers.map(helper) => ({
         id: Date.now() + Math.random(),
         type: 'help_request',
         fromUser: {
@@ -710,7 +710,7 @@ app.post('/send-help-request', async (req, res) => {
         timestamp: new Date(),
         status: 'pending',
         message: `${currentUser.username} needs help in ${subject}. Would you like to help them?`
-      }));
+      });
 
       // Add notifications to each helper's profile
       let completed = 0;

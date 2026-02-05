@@ -502,13 +502,14 @@
         if (yes) {
             // Send help request to all users in the same grade
             try {
-                const response = await fetch(`${backendURL}/send-help-request`, {
+                const response = await fetch(`${backendURL}/find-kastudy`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         grade: selectedGrade,
                         subject: selectedSubject
-                    })
+                    }),
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
