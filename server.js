@@ -1,7 +1,5 @@
 require('dotenv').config();
 const express = require("express");
-const nodemailer = require("nodemailer");
-const sgMail = require('@sendgrid/mail');
 const cors = require("cors");
 const fs = require('fs');
 const Datastore = require('nedb');
@@ -12,8 +10,7 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const saltRounds = 10;
 
-console.log("--- SERVER.JS HAS BEEN UPDATED! ---");
-console.log("--- If you see this, the new code is running. ---");
+console.log("--- SERVER.JS UPDATED - NOTIFICATION-BASED VERIFICATION ENABLED ---");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -31,8 +28,9 @@ const todosDb = new Datastore({ filename: 'todos.db', autoload: true });
 const sessionsDb = new Datastore({ filename: 'sessions.db', autoload: true });
 const messagesDb = new Datastore({ filename: 'messages.db', autoload: true });
 
-let currentCode = "";
 let storedEmail = "";
+let currentCode = "";
+let codeEmail = "";
 
 // Session management functions
 function generateSessionId() {
@@ -117,141 +115,42 @@ async function requireAuth(req, res, next) {
   next();
 }
 
-// Initialize SendGrid
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  console.log("--- SENDGRID INITIALIZED SUCCESSFULLY ---");
-} else {
-  console.log("--- SENDGRID API KEY NOT FOUND - USING GMAIL FALLBACK ---");
-}
-
-// Fallback Gmail transporter (for backward compatibility)
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-  logger: true,
-  debug: true
-});
-
-app.post("/send-code", async (req, res) => {
-  console.log("--- /send-code endpoint was hit! ---");
+// Send verification code - displays in notification instead of email
+app.post('/send-code', (req, res) => {
   const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).send({ success: false, message: 'Email is required.' });
+  }
 
   // Generate a random 6-digit code
   currentCode = Math.floor(100000 + Math.random() * 900000).toString();
-  storedEmail = email;
+  codeEmail = email;
 
-  console.log(`Generated code ${currentCode} for ${email}`);
+  console.log(`Generated verification code ${currentCode} for ${email}`);
 
-  // Try SendGrid first (preferred for production)
-  if (process.env.SENDGRID_API_KEY) {
-    try {
-      const sgMail = require('@sendgrid/mail');
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-      const msg = {
-        to: email,
-        from: {
-          email: 'studymatchcshsb@gmail.com', // Your verified SendGrid sender email
-          name: 'StudyMatch'
-        },
-        subject: 'Your StudyMatch Verification Code',
-        text: `Your verification code is: ${currentCode}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #3498db;">StudyMatch Verification</h2>
-            <p>Hello!</p>
-            <p>Your verification code is:</p>
-            <div style="background-color: #f8f9fa; padding: 20px; text-align: center; margin: 20px 0;">
-              <span style="font-size: 24px; font-weight: bold; color: #e74c3c;">${currentCode}</span>
-            </div>
-            <p>This code will expire in 10 minutes.</p>
-            <p>If you didn't request this code, please ignore this email.</p>
-            <hr style="margin: 30px 0;">
-            <p style="color: #7f8c8d; font-size: 12px;">StudyMatch - Real-time Study Buddy Matching</p>
-          </div>
-        `,
-      };
-
-      await sgMail.send(msg);
-      console.log("--- VERIFICATION EMAIL SENT VIA SENDGRID ---");
-      console.log("Email sent to:", email);
-      console.log("Code:", currentCode);
-      return res.send("Verification code sent to your email!");
-    } catch (error) {
-      console.error("--- SENDGRID EMAIL ERROR ---");
-      console.error("Error:", error.message);
-      console.error("Code:", error.code);
-      console.error("Response body:", error.response?.body);
-      // Fall back to Gmail if SendGrid fails
-    }
-  }
-
-  // Fallback to Gmail
-  console.log("--- FALLING BACK TO GMAIL ---");
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Your StudyMatch Verification Code",
-    text: `Your verification code is: ${currentCode}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #3498db;">StudyMatch Verification</h2>
-        <p>Hello!</p>
-        <p>Your verification code is:</p>
-        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; margin: 20px 0;">
-          <span style="font-size: 24px; font-weight: bold; color: #e74c3c;">${currentCode}</span>
-        </div>
-        <p>This code will expire in 10 minutes.</p>
-        <p>If you didn't request this code, please ignore this email.</p>
-        <hr style="margin: 30px 0;">
-        <p style="color: #7f8c8d; font-size: 12px;">StudyMatch - Real-time Study Buddy Matching</p>
-      </div>
-    `,
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("--- GMAIL EMAIL SEND ERROR ---");
-      console.error("Error code:", error.code);
-      console.error("Error response:", error.response);
-      console.error("Error message:", error.message);
-
-      // Provide more specific error messages
-      if (error.code === 'EAUTH') {
-        return res.status(500).send("Email authentication failed. Please check Gmail app password.");
-      } else if (error.code === 'ENOTFOUND') {
-        return res.status(500).send("Email server not found. Please try again later.");
-      } else if (error.code === 'ETIMEDOUT') {
-        return res.status(500).send("Email server timeout. Please try again later.");
-      } else {
-        return res.status(500).send(`Email error: ${error.message}`);
-      }
-    }
-
-    console.log("--- VERIFICATION EMAIL SENT VIA GMAIL ---");
-    console.log("Email sent to:", email);
-    console.log("Code:", currentCode);
-    console.log("Message ID:", info.messageId);
-    res.send("Verification code sent to your email!");
+  // Return the code to be displayed in a notification
+  res.send({ 
+    success: true, 
+    code: currentCode,
+    message: 'Verification code generated successfully.'
   });
 });
 
-app.post("/verify-code", (req, res) => {
+// Verify code endpoint
+app.post('/verify-code', (req, res) => {
   const { email, code, isLogin } = req.body;
 
-  if (email !== storedEmail || code !== currentCode) {
-    return res.send({ success: false, message: "Verification Code entered is wrong. Resend Code?" });
+  if (!email || !code) {
+    return res.status(400).send({ success: false, message: 'Email and code are required.' });
   }
 
+  // Check if code matches
+  if (email !== codeEmail || code !== currentCode) {
+    return res.send({ success: false, message: "Verification code is incorrect. Please try again." });
+  }
+
+  // Check if user exists in database
   db.findOne({ email: email }, (err, user) => {
     if (err) {
       console.error("Database error:", err);
@@ -259,18 +158,79 @@ app.post("/verify-code", (req, res) => {
     }
 
     if (isLogin) {
+      // For login, user must exist
       if (user) {
+        storedEmail = email;
         res.send({ success: true, isNewUser: false });
       } else {
         res.send({ success: false, message: "No account found with this email. Please sign up." });
       }
-    } else { // Sign up
+    } else {
+      // For signup, user must not exist
       if (user) {
         res.send({ success: false, message: "An account with this email already exists. Please log in." });
       } else {
+        storedEmail = email;
         res.send({ success: true, isNewUser: true });
       }
     }
+  });
+});
+
+// Registration endpoint - saves user directly to database
+app.post('/register', async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).send({ success: false, message: 'All fields are required.' });
+  }
+
+  // Check if user already exists
+  db.findOne({ email: email }, async (err, existingUser) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).send({ success: false, message: "Server error." });
+    }
+
+    if (existingUser) {
+      return res.status(400).send({ success: false, message: "An account with this email already exists. Please log in." });
+    }
+
+    // Hash the password
+    bcrypt.hash(password, saltRounds, async (err, hash) => {
+      if (err) {
+        console.error("Error hashing password:", err);
+        return res.status(500).send({ success: false, message: 'Server error during registration.' });
+      }
+
+      // Create initial user record
+      const userData = {
+        name: name,
+        email: email,
+        password: hash,
+        createdAt: new Date(),
+        profileComplete: false // Flag to indicate profile setup is needed
+      };
+
+      db.insert(userData, async (err, newDoc) => {
+        if (err) {
+          console.error("Error saving user:", err);
+          return res.status(500).send({ success: false, message: 'Server error saving user.' });
+        }
+
+        console.log("User registered successfully:", email);
+
+        // Create session for the new user
+        try {
+          await createSession(email, res);
+          storedEmail = email;
+          res.send({ success: true, message: 'Registration successful!' });
+        } catch (sessionError) {
+          console.error("Session creation failed:", sessionError);
+          res.send({ success: true, message: 'Registration successful! Please log in.' });
+        }
+      });
+    });
   });
 });
 
@@ -340,70 +300,59 @@ app.post('/check-lrn', (req, res) => {
 });
 
 app.post('/save-profile', (req, res) => {
-  // Hash the password on the server for security
-  bcrypt.hash(req.body.password, saltRounds, (err, hash) => {
+  if (!storedEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized. Please log in again.' });
+  }
+
+  const profileData = {
+    surname: req.body.surname,
+    username: req.body.username,
+    lrn: req.body.lrn,
+    grade: req.body.grade,
+    section: req.body.section,
+    profileComplete: true
+  };
+
+  // First, mark the LRN as used
+  fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
     if (err) {
-      console.error("Error hashing password:", err);
-      return res.status(500).send({ success: false, message: 'Server error hashing password.' });
+      console.error("Error reading LRN file:", err);
+      return res.status(500).send({ success: false, message: 'Server error saving profile.' });
     }
 
-    const profileData = {
-      name: req.body.name,
-      surname: req.body.surname,
-      lrn: req.body.lrn,
-      grade: req.body.grade,
-      section: req.body.section,
-      email: storedEmail,
-      password: hash, // Now properly hashed
-      createdAt: new Date()
-    };
+    const lrnData = JSON.parse(data);
+    const studentIndex = lrnData.students.findIndex(s => s.lrn === req.body.lrn);
 
-    // First, mark the LRN as used
-    fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
+    if (studentIndex === -1) {
+      return res.status(400).send({ success: false, message: 'Invalid LRN.' });
+    }
+
+    // Mark LRN as used
+    lrnData.students[studentIndex].used = true;
+
+    // Write back to file
+    fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
       if (err) {
-        console.error("Error reading LRN file:", err);
+        console.error("Error updating LRN file:", err);
         return res.status(500).send({ success: false, message: 'Server error saving profile.' });
       }
 
-      const lrnData = JSON.parse(data);
-      const studentIndex = lrnData.students.findIndex(s => s.lrn === req.body.lrn);
-
-      if (studentIndex === -1) {
-        return res.status(400).send({ success: false, message: 'Invalid LRN.' });
-      }
-
-      // Mark LRN as used
-      lrnData.students[studentIndex].used = true;
-
-      // Write back to file
-      fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
+      // Now update the user profile in database
+      db.update({ email: storedEmail }, { $set: profileData }, {}, (err, numReplaced) => {
         if (err) {
-          console.error("Error updating LRN file:", err);
+          console.error("Error updating profile:", err);
+          // If database update fails, revert the LRN status
+          lrnData.students[studentIndex].used = false;
+          fs.writeFileSync('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8');
           return res.status(500).send({ success: false, message: 'Server error saving profile.' });
         }
 
-        // Now save the profile to database
-        db.insert(profileData, (err, newDoc) => {
-          if (err) {
-            console.error("Error saving profile:", err);
-            // If database save fails, we should revert the LRN status
-            lrnData.students[studentIndex].used = false;
-            fs.writeFileSync('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8');
-            return res.status(500).send({ success: false, message: 'Server error saving profile.' });
-          }
+        if (numReplaced === 0) {
+          return res.status(404).send({ success: false, message: 'User not found.' });
+        }
 
-          console.log("Profile saved successfully:", newDoc);
-
-          // Create session for the new user
-          createSession(storedEmail, res).then(() => {
-            console.log("Session created for new user:", storedEmail);
-            res.send({ success: true, message: 'Profile saved successfully!' });
-          }).catch((sessionError) => {
-            console.error("Session creation failed:", sessionError);
-            // Still send success since profile was saved
-            res.send({ success: true, message: 'Profile saved successfully!' });
-          });
-        });
+        console.log("Profile saved successfully for:", storedEmail);
+        res.send({ success: true, message: 'Profile saved successfully!' });
       });
     });
   });
@@ -559,193 +508,75 @@ app.get('/check-session', async (req, res) => {
   }
 });
 
-// Search users endpoint
-app.get('/search-users', (req, res) => {
+
+
+// Get conversations list endpoint with recent messages
+app.get('/get-conversations', (req, res) => {
   if (!storedEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
-  const query = req.query.q;
-  if (!query || query.length < 2) {
-    return res.send({ users: [] });
-  }
-
-  // Search for users by name or email (excluding current user)
-  db.find({
+  // Find distinct emails that the user has messages with
+  messagesDb.find({
     $or: [
-      { name: new RegExp(query, 'i') },
-      { surname: new RegExp(query, 'i') },
-      { email: new RegExp(query, 'i') }
-    ],
-    email: { $ne: storedEmail } // Exclude current user
-  }, (err, users) => {
+      { from: storedEmail },
+      { to: storedEmail }
+    ]
+  }, (err, messages) => {
     if (err) {
-      console.error("Error searching users:", err);
+      console.error("Error finding messages:", err);
       return res.status(500).send({ success: false, message: 'Server error' });
     }
 
-    // Return only necessary user info
-    const userResults = users.map(user => ({
-      name: user.name,
-      surname: user.surname,
-      email: user.email,
-      grade: user.grade,
-      section: user.section
-    }));
+    // Get unique conversation partners
+    const conversationEmails = [...new Set(
+      messages.flatMap(msg => [msg.from, msg.to]).filter(email => email !== storedEmail)
+    )];
 
-    res.send({ users: userResults });
-  });
-});
-
-// Send friend request endpoint
-app.post('/add-friend', (req, res) => {
-  if (!storedEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  const { friendEmail } = req.body;
-
-  if (!friendEmail) {
-    return res.status(400).send({ success: false, message: 'Friend email is required' });
-  }
-
-  if (friendEmail === storedEmail) {
-    return res.status(400).send({ success: false, message: 'Cannot add yourself as a friend' });
-  }
-
-  // Check if friend exists
-  db.findOne({ email: friendEmail }, (err, friend) => {
-    if (err) {
-      console.error("Error finding friend:", err);
-      return res.status(500).send({ success: false, message: 'Server error' });
+    if (conversationEmails.length === 0) {
+      return res.send({ conversations: [] });
     }
 
-    if (!friend) {
-      return res.status(404).send({ success: false, message: 'User not found' });
-    }
-
-    // Get current user info
-    db.findOne({ email: storedEmail }, (err, currentUser) => {
+    // Get user details for conversation partners
+    db.find({ email: { $in: conversationEmails } }, (err, users) => {
       if (err) {
-        console.error("Error finding current user:", err);
+        console.error("Error finding users:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
       }
 
-      if (!currentUser) {
-        return res.status(404).send({ success: false, message: 'Current user not found' });
-      }
+      // Get recent message for each conversation
+      let processedConversations = 0;
+      const conversationDetails = [];
 
-      // Check if already friends
-      if (currentUser.friends && currentUser.friends.includes(friendEmail)) {
-        return res.status(400).send({ success: false, message: 'Already friends with this user' });
-      }
-
-      // Check if friend request already sent
-      if (friend.notifications && friend.notifications.some(n =>
-        n.type === 'friend_request' && n.fromUser.email === storedEmail && n.status === 'pending'
-      )) {
-        return res.status(400).send({ success: false, message: 'Friend request already sent' });
-      }
-
-      // Create friend request notification
-      const friendRequest = {
-        id: Date.now() + Math.random(),
-        type: 'friend_request',
-        fromUser: {
-          name: currentUser.name,
-          surname: currentUser.surname,
-          email: storedEmail,
-          grade: currentUser.grade
-        },
-        timestamp: new Date(),
-        status: 'pending'
-      };
-
-      // Add notification to friend's profile
-      db.update(
-        { email: friendEmail },
-        { $push: { notifications: friendRequest } },
-        { upsert: true },
-        (err, numReplaced) => {
-          if (err) {
-            console.error("Error sending friend request:", err);
-            return res.status(500).send({ success: false, message: 'Server error' });
-          }
-
-          // Notify the friend in real-time if they're online
-          if (connectedUsers[friendEmail]) {
-            io.to(connectedUsers[friendEmail]).emit('new_notification', friendRequest);
-          }
-
-          console.log(`Friend request sent: ${storedEmail} -> ${friendEmail}`);
-          res.send({ success: true, message: 'Friend request sent successfully!' });
-        }
-      );
-    });
-  });
-});
-
-// Get friends list endpoint with recent messages
-app.get('/get-friends', (req, res) => {
-  if (!storedEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  db.findOne({ email: storedEmail }, (err, user) => {
-    if (err) {
-      console.error("Error finding user:", err);
-      return res.status(500).send({ success: false, message: 'Server error' });
-    }
-
-    if (!user || !user.friends) {
-      return res.send({ friends: [] });
-    }
-
-    // Get friend details
-    db.find({ email: { $in: user.friends } }, (err, friends) => {
-      if (err) {
-        console.error("Error finding friends:", err);
-        return res.status(500).send({ success: false, message: 'Server error' });
-      }
-
-      // Get recent message for each friend
-      let processedFriends = 0;
-      const friendDetails = [];
-
-      if (friends.length === 0) {
-        return res.send({ friends: [] });
-      }
-
-      friends.forEach(friend => {
-        // Find the most recent message between current user and this friend
+      users.forEach(user => {
+        // Find the most recent message between current user and this user
         messagesDb.find({
           $or: [
-            { from: storedEmail, to: friend.email },
-            { from: friend.email, to: storedEmail }
+            { from: storedEmail, to: user.email },
+            { from: user.email, to: storedEmail }
           ]
-        }).sort({ timestamp: -1 }).limit(1, (err, messages) => {
+        }).sort({ timestamp: -1 }).limit(1, (err, recentMessages) => {
           if (err) {
             console.error("Error finding recent message:", err);
           }
 
-          const recentMessage = messages && messages.length > 0 ? messages[0] : null;
+          const recentMessage = recentMessages && recentMessages.length > 0 ? recentMessages[0] : null;
 
-          friendDetails.push({
-            name: friend.name,
-            surname: friend.surname,
-            email: friend.email,
-            grade: friend.grade,
-            section: friend.section,
+          conversationDetails.push({
+            username: user.username,
+            email: user.email,
+            grade: user.grade,
+            section: user.section,
             recentMessage: recentMessage ? {
               message: recentMessage.message,
               timestamp: recentMessage.timestamp,
-              from: recentMessage.from === storedEmail ? 'You' : `${friend.name} ${friend.surname}`
+              from: recentMessage.from === storedEmail ? 'You' : user.username
             } : null
           });
 
-          processedFriends++;
-          if (processedFriends === friends.length) {
-            res.send({ friends: friendDetails });
+          processedConversations++;
+          if (processedConversations === users.length) {
+            res.send({ conversations: conversationDetails });
           }
         });
       });
@@ -800,8 +631,8 @@ app.post('/send-help-request', (req, res) => {
       return res.status(404).send({ success: false, message: 'User not found' });
     }
 
-    // Find all users in the same grade (excluding current user)
-    db.find({ grade: grade, email: { $ne: storedEmail } }, (err, potentialHelpers) => {
+    // Find all users in grades 7-10 (excluding current user)
+    db.find({ grade: { $in: ['7', '8', '9', '10'] }, email: { $ne: storedEmail } }, (err, potentialHelpers) => {
       if (err) {
         console.error("Error finding potential helpers:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
@@ -816,15 +647,14 @@ app.post('/send-help-request', (req, res) => {
         id: Date.now() + Math.random(),
         type: 'kastudy_request',
         fromUser: {
-          name: currentUser.name,
-          surname: currentUser.surname,
+          username: currentUser.username,
           email: storedEmail,
           grade: currentUser.grade
         },
         subject: subject,
         timestamp: new Date(),
         status: 'pending',
-        message: `Good day, ${helper.name}! ${currentUser.name} ${currentUser.surname} would like to ask for help with ${subject}. Would you be able to help them?`
+        message: `Good day, ${helper.username}! ${currentUser.username} (Grade ${currentUser.grade}) would like to ask for help with ${subject}. Would you be able to help them?`
       }));
 
       // Add notifications to each helper's profile
@@ -851,7 +681,7 @@ app.post('/send-help-request', (req, res) => {
 
               res.send({
                 success: true,
-                message: `Help request sent to ${total} students in grade ${grade}!`
+                message: `Help request sent to ${total} students across all grades (7-10)!`
               });
             }
           }
@@ -905,64 +735,45 @@ app.post('/respond-help-request', (req, res) => {
       }
 
       if (response === 'accept' && requesterEmail) {
-        // Add both users as friends if they accept
-        db.update(
-          { email: storedEmail },
-          { $addToSet: { friends: requesterEmail } },
-          {},
-          (err1) => {
-            if (err1) console.error("Error adding friend:", err1);
-
-            db.update(
-              { email: requesterEmail },
-              { $addToSet: { friends: storedEmail } },
-              {},
-              (err2) => {
-                if (err2) console.error("Error adding friend:", err2);
-
-                // Get helper's name for the notification
-                db.findOne({ email: storedEmail }, (err, helper) => {
-                  if (err) {
-                    console.error("Error finding helper:", err);
-                    return res.status(500).send({ success: false, message: 'Server error' });
-                  }
-
-                  // Send notification to requester
-                  const successNotification = {
-                    id: Date.now() + Math.random(),
-                    type: 'kastudy_accepted',
-                    fromUser: {
-                      name: helper.name,
-                      surname: helper.surname,
-                      email: storedEmail
-                    },
-                    subject: req.body.subject,
-                    timestamp: new Date(),
-                    message: `Hello, ${req.body.requesterName}! We bring good news! ${helper.name} ${helper.surname} wants to help you!`
-                  };
-
-                  db.update(
-                    { email: requesterEmail },
-                    { $push: { notifications: successNotification } },
-                    { upsert: true },
-                    (err, numReplaced) => {
-                      if (err) {
-                        console.error("Error sending success notification:", err);
-                      }
-
-                      // Notify the requester in real-time
-                      if (connectedUsers[requesterEmail]) {
-                        io.to(connectedUsers[requesterEmail]).emit('new_notification', successNotification);
-                      }
-
-                      res.send({ success: true, message: 'Help request accepted! Starting chat...' });
-                    }
-                  );
-                });
-              }
-            );
+        // Get helper's name for the notification
+        db.findOne({ email: storedEmail }, (err, helper) => {
+          if (err) {
+            console.error("Error finding helper:", err);
+            return res.status(500).send({ success: false, message: 'Server error' });
           }
-        );
+
+          // Send notification to requester
+          const successNotification = {
+            id: Date.now() + Math.random(),
+            type: 'kastudy_accepted',
+            fromUser: {
+              name: helper.name,
+              surname: helper.surname,
+              email: storedEmail
+            },
+            subject: req.body.subject,
+            timestamp: new Date(),
+            message: `Hello, ${req.body.requesterName}! We bring good news! ${helper.name} ${helper.surname} wants to help you!`
+          };
+
+          db.update(
+            { email: requesterEmail },
+            { $push: { notifications: successNotification } },
+            { upsert: true },
+            (err, numReplaced) => {
+              if (err) {
+                console.error("Error sending success notification:", err);
+              }
+
+              // Notify the requester in real-time
+              if (connectedUsers[requesterEmail]) {
+                io.to(connectedUsers[requesterEmail]).emit('new_notification', successNotification);
+              }
+
+              res.send({ success: true, message: 'Help request accepted! Starting chat...' });
+            }
+          );
+        });
       } else {
         res.send({ success: true, message: 'Help request declined.' });
       }
@@ -994,64 +805,44 @@ app.post('/respond-kastudy-request', (req, res) => {
       }
 
       if (response === 'accept' && requesterEmail) {
-        // Add both users as friends if they accept
-        db.update(
-          { email: storedEmail },
-          { $addToSet: { friends: requesterEmail } },
-          {},
-          (err1) => {
-            if (err1) console.error("Error adding friend:", err1);
-
-            db.update(
-              { email: requesterEmail },
-              { $addToSet: { friends: storedEmail } },
-              {},
-              (err2) => {
-                if (err2) console.error("Error adding friend:", err2);
-
-                // Get helper's name for the notification
-                db.findOne({ email: storedEmail }, (err, helper) => {
-                  if (err) {
-                    console.error("Error finding helper:", err);
-                    return res.status(500).send({ success: false, message: 'Server error' });
-                  }
-
-                  // Send notification to requester
-                  const successNotification = {
-                    id: Date.now() + Math.random(),
-                    type: 'kastudy_accepted',
-                    fromUser: {
-                      name: helper.name,
-                      surname: helper.surname,
-                      email: storedEmail
-                    },
-                    subject: subject,
-                    timestamp: new Date(),
-                    message: `Hello, ${requesterName}! We bring good news! ${helper.name} ${helper.surname} wants to help you!`
-                  };
-
-                  db.update(
-                    { email: requesterEmail },
-                    { $push: { notifications: successNotification } },
-                    { upsert: true },
-                    (err, numReplaced) => {
-                      if (err) {
-                        console.error("Error sending success notification:", err);
-                      }
-
-                      // Notify the requester in real-time
-                      if (connectedUsers[requesterEmail]) {
-                        io.to(connectedUsers[requesterEmail]).emit('new_notification', successNotification);
-                      }
-
-                      res.send({ success: true, message: 'Help request accepted! Starting chat...' });
-                    }
-                  );
-                });
-              }
-            );
+        // Get helper's name for the notification
+        db.findOne({ email: storedEmail }, (err, helper) => {
+          if (err) {
+            console.error("Error finding helper:", err);
+            return res.status(500).send({ success: false, message: 'Server error' });
           }
-        );
+
+          // Send notification to requester
+          const successNotification = {
+            id: Date.now() + Math.random(),
+            type: 'kastudy_accepted',
+            fromUser: {
+              username: helper.username,
+              email: storedEmail
+            },
+            subject: subject,
+            timestamp: new Date(),
+            message: `Hello, ${requesterName}! We bring good news! ${helper.username} wants to help you!`
+          };
+
+          db.update(
+            { email: requesterEmail },
+            { $push: { notifications: successNotification } },
+            { upsert: true },
+            (err, numReplaced) => {
+              if (err) {
+                console.error("Error sending success notification:", err);
+              }
+
+              // Notify the requester in real-time
+              if (connectedUsers[requesterEmail]) {
+                io.to(connectedUsers[requesterEmail]).emit('new_notification', successNotification);
+              }
+
+              res.send({ success: true, message: 'Help request accepted! Starting chat...' });
+            }
+          );
+        });
       } else {
         res.send({ success: true, message: 'Help request declined.' });
       }
@@ -1059,65 +850,6 @@ app.post('/respond-kastudy-request', (req, res) => {
   );
 });
 
-// Handle friend request response
-app.post('/respond-friend-request', (req, res) => {
-  if (!storedEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  const { notificationId, response, requesterEmail } = req.body;
-
-  if (!notificationId || !response) {
-    return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
-  }
-
-  // Remove the notification from current user's notifications
-  db.update(
-    { email: storedEmail },
-    { $pull: { notifications: { id: notificationId } } },
-    {},
-    (err, numReplaced) => {
-      if (err) {
-        console.error("Error removing notification:", err);
-        return res.status(500).send({ success: false, message: 'Server error' });
-      }
-
-      if (response === 'accept' && requesterEmail) {
-        // Add both users as friends if they accept
-        db.update(
-          { email: storedEmail },
-          { $addToSet: { friends: requesterEmail } },
-          {},
-          (err1) => {
-            if (err1) console.error("Error adding friend:", err1);
-
-            db.update(
-              { email: requesterEmail },
-              { $addToSet: { friends: storedEmail } },
-              {},
-              (err2) => {
-                if (err2) console.error("Error adding friend:", err2);
-
-                // Notify the requester that their friend request was accepted
-                if (connectedUsers[requesterEmail]) {
-                  io.to(connectedUsers[requesterEmail]).emit('friend_request_accepted', {
-                    accepterEmail: storedEmail,
-                    accepterName: req.body.accepterName
-                  });
-                }
-
-                res.send({ success: true, message: 'Friend request accepted! You can now chat with each other.' });
-              }
-            );
-          }
-        );
-      } else {
-        // Just remove the notification for deny
-        res.send({ success: true, message: 'Friend request declined.' });
-      }
-    }
-  );
-});
 
 // Quiz endpoints
 app.post('/save-quiz', (req, res) => {
@@ -1174,38 +906,6 @@ app.get('/get-quizzes', (req, res) => {
   });
 });
 
-// Test endpoint for email configuration
-app.get('/test-email-config', (req, res) => {
-  console.log("--- Testing email configuration ---");
-  console.log("EMAIL_USER:", process.env.EMAIL_USER);
-  console.log("EMAIL_PASS length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
-  
-  // Verify environment variables are loaded
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    return res.status(500).send("Email configuration missing in environment variables");
-  }
-  
-  // Test transporter
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error("--- EMAIL CONFIGURATION TEST FAILED ---");
-      console.error("Error details:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Email configuration test failed",
-        error: error.message,
-        code: error.code
-      });
-    } else {
-      console.log("--- EMAIL CONFIGURATION TEST SUCCESSFUL ---");
-      res.json({
-        success: true,
-        message: "Email configuration is working correctly"
-      });
-    }
-  });
-});
-
 const server = http.createServer(app);
 const io = socketIo(server);
 
@@ -1241,20 +941,20 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // Get sender's name and surname for display
+      // Get sender's username for display
       db.findOne({ email: from }, (err, sender) => {
         if (err) {
           console.error("Error finding sender:", err);
           return;
         }
 
-        const senderName = sender ? `${sender.name} ${sender.surname}` : from;
+        const senderUsername = sender ? sender.username : from;
 
         // Emit to recipient if online
         const recipientSocket = connectedUsers[to];
         if (recipientSocket) {
           io.to(recipientSocket).emit('receive message', {
-            from: senderName,
+            from: senderUsername,
             fromEmail: from,
             message,
             timestamp
@@ -1263,7 +963,7 @@ io.on('connection', (socket) => {
 
         // Emit to sender for consistency
         socket.emit('receive message', {
-          from: senderName,
+          from: senderUsername,
           fromEmail: from,
           message,
           timestamp
@@ -1281,5 +981,6 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`--- Nodemon server running at http://localhost:${PORT} ---`);
+  console.log(`--- Server running at http://localhost:${PORT} ---`);
+  console.log(`--- Notification-based verification enabled (no email sending) ---`);
 });
