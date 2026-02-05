@@ -681,7 +681,7 @@ app.post('/send-help-request', async (req, res) => {
       // Create help request notifications for each potential helper
       const notifications = potentialHelpers.map(helper => ({
         id: Date.now() + Math.random(),
-        type: 'kastudy_request',
+        type: 'help_request',
         fromUser: {
           username: currentUser.username,
           email: userEmail,
@@ -690,7 +690,7 @@ app.post('/send-help-request', async (req, res) => {
         subject: subject,
         timestamp: new Date(),
         status: 'pending',
-        message: `Good day, ${helper.username}! ${currentUser.username} (Grade ${currentUser.grade}) would like to ask for help with ${subject}. Would you be able to help them?`
+        message: `${currentUser.username} needs help in ${subject}. Would you like to help them?`
       }));
 
       // Add notifications to each helper's profile
@@ -791,7 +791,7 @@ app.post('/respond-help-request', async (req, res) => {
             },
             subject: req.body.subject,
             timestamp: new Date(),
-            message: `Hello, ${req.body.requesterName}! We bring good news! ${helper.name} ${helper.surname} wants to help you!`
+            message: `${helper.username} accepted your help request for ${req.body.subject}! Start chatting now!`
           };
 
           db.update(

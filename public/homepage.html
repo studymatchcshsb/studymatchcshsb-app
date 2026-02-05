@@ -593,8 +593,7 @@
                 notificationDiv.innerHTML = `
                     <div class="notification-content">
                         <strong>STUDYMATCH CSHSB</strong><br>
-                        Hi! <strong>${notification.fromUser.username}</strong> needs help with <strong>${notification.subject}</strong>.
-                        Would you like to help him/her?
+                        ${notification.message}
                     </div>
                     <div class="notification-actions">
                         <button class="help-btn yes-btn" onclick="respondToHelpRequest('${notification.id}', 'accept', '${notification.fromUser.email}', '${notification.subject}')">Yes</button>
@@ -633,7 +632,7 @@
         });
 
     // Handle help request response
-    async function respondToHelpRequest(notificationId, response, requesterEmail, subject) {
+    async function respondToHelpRequest(notificationId, response, requesterEmail, subject, requesterName) {
         try {
             const responseData = await fetch(`${backendURL}/respond-help-request`, {
                 method: 'POST',
@@ -642,7 +641,8 @@
                     notificationId,
                     response,
                     requesterEmail,
-                    subject
+                    subject,
+                    requesterName
                 })
             });
 
