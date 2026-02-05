@@ -714,6 +714,7 @@
         }
         const data = await response.json();
         if (data.success) {
+          console.log('User profile loaded:', data.user);
           // Set user name and details
           document.getElementById('user-name').innerText = data.user.username;
           document.getElementById('user-details').innerText = `${data.user.grade} - ${data.user.section}`;
