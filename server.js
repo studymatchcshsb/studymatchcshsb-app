@@ -82,8 +82,8 @@ function createSession(email, res) {
       // Set HTTP-only cookie
       res.cookie('sessionId', sessionId, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production (HTTPS)
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for cross-site cookies with secure
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
 
