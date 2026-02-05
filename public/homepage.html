@@ -263,6 +263,7 @@
     }
 
     async function fetchTodos() {
+      console.log('fetchTodos() called');
       try {
         const response = await fetch(`${backendURL}/get-todos`, {
           credentials: 'include'
@@ -744,9 +745,15 @@
 
     // Fetch todos and user profile when the page loads
     document.addEventListener('DOMContentLoaded', async function() {
-      await checkAuthentication(); // Check auth first
-      fetchTodos();
-      fetchUserProfile();
+      console.log('DOMContentLoaded - starting auth check');
+      try {
+        await checkAuthentication();
+        console.log('Auth check passed, fetching todos and profile');
+        fetchTodos();
+        fetchUserProfile();
+      } catch (error) {
+        console.error('Error in DOMContentLoaded:', error);
+      }
     });
 
     // Socket.io event listeners for real-time notifications
