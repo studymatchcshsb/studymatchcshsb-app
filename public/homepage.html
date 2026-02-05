@@ -284,7 +284,7 @@
               ${todo.title}
               <span class="delete-btn" onclick="deleteTodo('${todo._id}')">&times;</span>
             </h3>
-            <p>${todo.items.join('<br>')}</p>
+            <p>${Array.isArray(todo.items) ? todo.items.join('<br>') : ''}</p>
           `;
           container.appendChild(todoEl);
         });
@@ -629,6 +629,7 @@
                 container.appendChild(notificationDiv);
             }
         });
+    }
 
     // Handle help request response
     async function respondToHelpRequest(notificationId, response, requesterEmail, subject, requesterName) {
@@ -787,7 +788,6 @@
     function joinSocketRoom(email) {
       socket.emit('join', email);
     }
-  }
   </script>
 </body>
 </html>

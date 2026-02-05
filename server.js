@@ -28,6 +28,9 @@ const todosDb = new Datastore({ filename: 'todos.db', autoload: true });
 const sessionsDb = new Datastore({ filename: 'sessions.db', autoload: true });
 const messagesDb = new Datastore({ filename: 'messages.db', autoload: true });
 
+// Store connected users (declared early for use in endpoints)
+const connectedUsers = {};
+
 let storedEmail = "";
 let currentCode = "";
 let codeEmail = "";
@@ -136,7 +139,7 @@ app.post('/send-code', (req, res) => {
   currentCode = Math.floor(100000 + Math.random() * 900000).toString();
   codeEmail = email;
 
-  console.log(`Generated verification code ${currentCode} for ${email}`);
+  console.log("Generated verification code " + currentCode + " for " + email);
 
   // Return the code to be displayed in a notification
   res.send({ 
@@ -300,7 +303,7 @@ app.post('/check-lrn', (req, res) => {
     if (!nameMatches) {
       return res.status(403).send({
         success: false,
-        message: `LRN ${lrn} is only valid for ${student.firstName} ${student.surname}. Please check your name and try again.`
+        message: "LRN " + lrn + " is only valid for " + student.firstName + " " + student.surname + ". Please check your name and try again."
       });
     }
 
@@ -389,7 +392,7 @@ app.post('/update-profile', async (req, res) => {
     if (numReplaced === 0) {
       return res.status(404).send({ success: false, message: 'User not found.' });
     }
-    console.log(`Profile updated for email: ${userEmail}`);
+    console.log("Profile updated for email: " + userEmail);
     res.send({ success: true, message: 'Profile updated successfully!' });
   });
 });
@@ -463,30 +466,11 @@ app.get('/get-profile', async (req, res) => {
   });
 });
 
-app.post('/send-help-request', (req, res) => {
-  const { message } = req.body;
-
-  if (!storedEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: process.env.EMAIL_USER, // Send to admin
-    subject: `StudyMatch Help Request from ${storedEmail}`,
-    text: `A new help request has been submitted by ${storedEmail}:\n\n${message}`,
-    replyTo: storedEmail
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("--- HELP REQUEST EMAIL ERROR ---:", error);
-      return res.status(500).send({ success: false, message: 'Failed to send help request.' });
-    }
-    console.log("--- Help Request Email Sent ---:", info);
-    res.send({ success: true });
-  });
-});
+// Note: The send-help-request endpoint uses 'transporter' which is not defined.
+// This functionality requires nodemailer to be configured.
+// If you need email functionality, uncomment the following and configure nodemailer:
+// const nodemailer = require('nodemailer');
+// const transporter = nodemailer.createTransport({ /* your config */ });
 
 app.post('/change-password', async (req, res) => {
   const { currentPassword, newPassword } = req.body;
@@ -549,7 +533,6 @@ app.get('/check-session', async (req, res) => {
     res.send({ loggedIn: false });
   }
 });
-
 
 
 // Get conversations list endpoint with recent messages
@@ -677,7 +660,6 @@ app.post('/find-kastudy', async (req, res) => {
     }
 
     // Find all users in grades 7-10 (excluding current user)
-    // Grade can be stored as number or string, so we check both
     const userGrade = currentUser.grade ? currentUser.grade.toString() : null;
     const gradesToSearch = userGrade ? ['7', '8', '9', '10'].filter(g => g !== userGrade) : ['7', '8', '9', '10'];
     
@@ -697,8 +679,8 @@ app.post('/find-kastudy', async (req, res) => {
         return res.send({ success: true, message: 'No users found in your grade level.' });
       }
 
-      // Create help request notifications for each potential helper
-      const notifications = potentialHelpers.map(helper => ({
+      // Create notification object (single notification for all helpers)
+      const notification = {
         id: Date.now() + Math.random(),
         type: 'help_request',
         fromUser: {
@@ -709,17 +691,17 @@ app.post('/find-kastudy', async (req, res) => {
         subject: subject,
         timestamp: new Date(),
         status: 'pending',
-        message: `${currentUser.username} needs help in ${subject}. Would you like to help them?`
-      });
+        message: currentUser.username + " needs help in " + subject + ". Would you like to help them?"
+      };
 
-      // Add notifications to each helper's profile
+      // Add notification to each helper's profile
       let completed = 0;
       const total = potentialHelpers.length;
 
       potentialHelpers.forEach(helper => {
         db.update(
           { email: helper.email },
-          { $push: { notifications: notifications.find(n => n.fromUser.email === userEmail) } },
+          { $push: { notifications: notification } },
           { upsert: true },
           (err, numReplaced) => {
             if (err) {
@@ -727,16 +709,16 @@ app.post('/find-kastudy', async (req, res) => {
             }
             completed++;
             if (completed === total) {
-              // Notify all connected users about new notifications
-              notifications.forEach(notification => {
-                if (connectedUsers[helper.email]) {
-                  io.to(connectedUsers[helper.email]).emit('new_notification', notification);
+              // Notify all connected helpers about new notifications
+              potentialHelpers.forEach(helperToNotify => {
+                if (connectedUsers[helperToNotify.email]) {
+                  io.to(connectedUsers[helperToNotify.email]).emit('new_notification', notification);
                 }
               });
 
               res.send({
                 success: true,
-                message: `Help request sent to ${total} students across all grades (7-10)!`
+                message: "Help request sent to " + total + " students across all grades (7-10)!"
               });
             }
           }
@@ -810,7 +792,7 @@ app.post('/respond-help-request', async (req, res) => {
             },
             subject: req.body.subject,
             timestamp: new Date(),
-            message: `${helper.username} accepted your help request for ${req.body.subject}! Start chatting now!`
+            message: helper.username + " accepted your help request for " + req.body.subject + "! Start chatting now!"
           };
 
           db.update(
@@ -880,7 +862,7 @@ app.post('/respond-kastudy-request', async (req, res) => {
             },
             subject: subject,
             timestamp: new Date(),
-            message: `Hello, ${requesterName}! We bring good news! ${helper.username} wants to help you!`
+            message: "Hello, " + requesterName + "! We bring good news! " + helper.username + " wants to help you!"
           };
 
           db.update(
@@ -940,7 +922,7 @@ app.post('/save-quiz', async (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error saving quiz' });
       }
 
-      console.log(`Quiz "${quizName}" saved for user ${userEmail}`);
+      console.log('Quiz "' + quizName + '" saved for user ' + userEmail);
       res.send({ success: true, message: 'Quiz saved successfully' });
     }
   );
@@ -969,16 +951,13 @@ app.get('/get-quizzes', async (req, res) => {
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Store connected users
-const connectedUsers = {};
-
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('join', (email) => {
     connectedUsers[email] = socket.id;
     socket.email = email;
-    console.log(`${email} joined with socket ${socket.id}`);
+    console.log(email + ' joined with socket ' + socket.id);
   });
 
   socket.on('send message', (data) => {
@@ -1035,12 +1014,12 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if (socket.email) {
       delete connectedUsers[socket.email];
-      console.log(`${socket.email} disconnected`);
+      console.log(socket.email + ' disconnected');
     }
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`--- Server running at http://localhost:${PORT} ---`);
-  console.log(`--- Notification-based verification enabled (no email sending) ---`);
+  console.log("--- Server running at http://localhost:" + PORT + " ---");
+  console.log("--- Notification-based verification enabled (no email sending) ---");
 });
