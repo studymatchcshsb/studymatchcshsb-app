@@ -39,6 +39,9 @@ function generateSessionId() {
 
 function getUserFromSession(req) {
   const sessionId = req.cookies.sessionId;
+  console.log('Checking session, sessionId:', sessionId ? 'exists' : 'missing');
+  console.log('All cookies:', req.cookies);
+  
   if (!sessionId) return null;
 
   return new Promise((resolve, reject) => {
@@ -50,12 +53,14 @@ function getUserFromSession(req) {
 
       if (!session || session.expires < Date.now()) {
         if (session && session.expires < Date.now()) {
+          console.log('Session expired for:', session.email);
           // Clean up expired session
           sessionsDb.remove({ sessionId }, {}, () => {});
         }
         return resolve(null);
       }
 
+      console.log('Session found for:', session.email);
       resolve(session.email);
     });
   });
@@ -82,11 +87,15 @@ function createSession(email, res) {
       // Set HTTP-only cookie
       res.cookie('sessionId', sessionId, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production (HTTPS)
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for cross-site cookies with secure
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        secure: true, // Always use secure cookies (Render uses HTTPS)
+        sameSite: 'lax', // 'lax' is more compatible than 'none'
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        path: '/' // Ensure cookie is available for all paths
       });
 
+      console.log('Session created for:', email, 'with sessionId:', sessionId);
+      console.log('Cookie settings: httpOnly=true, secure=true, sameSite=lax, maxAge=30days');
+      
       resolve();
     });
   });
