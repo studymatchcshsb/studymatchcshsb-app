@@ -397,19 +397,25 @@ app.post('/update-profile', async (req, res) => {
 // To-Do List Endpoints
 app.get('/get-todos', async (req, res) => {
   const userEmail = await getUserFromSession(req);
+  console.log('[/get-todos] userEmail:', userEmail);
   if (!userEmail) {
+    console.log('[/get-todos] No session found, returning 401');
     return res.status(401).send([]);
   }
+  console.log('[/get-todos] Fetching todos for:', userEmail);
   todosDb.find({ userEmail: userEmail }, (err, docs) => {
     if (err) {
+      console.error('[/get-todos] Database error:', err);
       return res.status(500).send([]);
     }
+    console.log('[/get-todos] Found todos:', docs.length);
     res.send(docs);
   });
 });
 
 app.post('/add-todo', async (req, res) => {
   const userEmail = await getUserFromSession(req);
+  console.log('[/add-todo] userEmail:', userEmail);
   if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
@@ -420,10 +426,13 @@ app.post('/add-todo', async (req, res) => {
     userEmail: userEmail,
     createdAt: new Date()
   };
+  console.log('[/add-todo] Creating todo:', newTodo);
   todosDb.insert(newTodo, (err, doc) => {
     if (err) {
+      console.error('[/add-todo] Database error:', err);
       return res.status(500).send({ success: false, message: 'Server error' });
     }
+    console.log('[/add-todo] Todo created successfully, id:', doc._id);
     res.send({ success: true, todo: doc });
   });
 });
@@ -668,7 +677,17 @@ app.post('/send-help-request', async (req, res) => {
     }
 
     // Find all users in grades 7-10 (excluding current user)
-    db.find({ grade: { $in: ['7', '8', '9', '10'] }, email: { $ne: userEmail } }, (err, potentialHelpers) => {
+    // Grade can be stored as number or string, so we check both
+    const userGrade = currentUser.grade ? currentUser.grade.toString() : null;
+    const gradesToSearch = userGrade ? ['7', '8', '9', '10'].filter(g => g !== userGrade) : ['7', '8', '9', '10'];
+    
+    db.find({ 
+      $or: [
+        { grade: { $in: gradesToSearch } },
+        { grade: { $in: gradesToSearch.map(g => parseInt(g)) } }
+      ], 
+      email: { $ne: userEmail } 
+    }, (err, potentialHelpers) => {
       if (err) {
         console.error("Error finding potential helpers:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
