@@ -299,12 +299,17 @@ app.post('/check-lrn', (req, res) => {
   });
 });
 
-app.post('/save-profile', (req, res) => {
-  if (!storedEmail) {
+app.post('/save-profile', async (req, res) => {
+  // Check session first
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail && !storedEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized. Please log in again.' });
   }
 
+  const email = userEmail || storedEmail;
+
   const profileData = {
+    name: req.body.name,
     surname: req.body.surname,
     username: req.body.username,
     lrn: req.body.lrn,
@@ -338,7 +343,7 @@ app.post('/save-profile', (req, res) => {
       }
 
       // Now update the user profile in database
-      db.update({ email: storedEmail }, { $set: profileData }, {}, (err, numReplaced) => {
+      db.update({ email: email }, { $set: profileData }, {}, (err, numReplaced) => {
         if (err) {
           console.error("Error updating profile:", err);
           // If database update fails, revert the LRN status
@@ -351,7 +356,8 @@ app.post('/save-profile', (req, res) => {
           return res.status(404).send({ success: false, message: 'User not found.' });
         }
 
-        console.log("Profile saved successfully for:", storedEmail);
+        console.log("Profile saved successfully for:", email);
+        storedEmail = email; // Update storedEmail for backward compatibility
         res.send({ success: true, message: 'Profile saved successfully!' });
       });
     });
@@ -502,7 +508,19 @@ app.get('/check-session', async (req, res) => {
   const userEmail = await getUserFromSession(req);
   if (userEmail) {
     storedEmail = userEmail; // For backward compatibility
-    res.send({ loggedIn: true, email: userEmail });
+    
+    // Get user profile to check completion status
+    db.findOne({ email: userEmail }, (err, user) => {
+      if (err || !user) {
+        return res.send({ loggedIn: true, email: userEmail, profileComplete: false });
+      }
+      
+      res.send({
+        loggedIn: true,
+        email: userEmail,
+        profileComplete: user.profileComplete || false
+      });
+    });
   } else {
     res.send({ loggedIn: false });
   }

@@ -12,7 +12,8 @@
       <input type="text" id="name" name="name" placeholder="Name (One name, no spaces)" required pattern="[A-Za-z]+" title="Please enter one name without spaces." oninput="capitalizeInput(this)" />
       <input type="text" id="surname" name="surname" placeholder="Surname" required oninput="capitalizeInput(this)" />
       <input type="text" inputmode="numeric" name="lrn" placeholder="LRN (12 digits)" required minlength="12" maxlength="12" pattern="\d{12}" title="Please enter exactly 12 digits for the LRN." />
-      
+      <input type="text" id="username" name="username" placeholder="Username/Codename (3-20 characters)" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" title="Username can only contain letters, numbers, and underscores." />
+
       <select name="grade" required>
         <option value="" disabled selected>Select Your Grade</option>
         <option value="7">7</option>
@@ -45,6 +46,29 @@
   <script>
     const backendURL = window.location.origin;
 
+    // Check if user is authenticated
+    async function checkAuthentication() {
+      try {
+        const response = await fetch(`${backendURL}/check-session`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (!data.loggedIn) {
+          alert('Session expired. Please sign up or log in again.');
+          window.location.href = '/index.html';
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        alert('Unable to verify authentication. Please try again.');
+        window.location.href = '/index.html';
+      }
+    }
+
+    // Check authentication on page load
+    checkAuthentication();
+
     function capitalizeInput(element) {
       let value = element.value;
       if (value.length > 0) {
@@ -69,6 +93,7 @@
         const lrnResponse = await fetch(`${backendURL}/check-lrn`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             lrn: lrn,
             firstName: firstName,
@@ -81,30 +106,23 @@
           throw new Error(errorData.message);
         }
 
-        // Get password from URL parameters (passed from index.html)
-        const urlParams = new URLSearchParams(window.location.search);
-        const password = urlParams.get('password');
-
-        if (!password) {
-          throw new Error('Password not found. Please go back and sign up again.');
-        }
-
         messageEl.innerText = "Saving profile...";
 
-        // Prepare profile data
+        // Prepare profile data (password not needed - user is already authenticated via session)
         const profileData = {
           name: formData.get('name').trim(),
           surname: formData.get('surname'),
+          username: formData.get('username').trim(),
           lrn: formData.get('lrn'),
           grade: formData.get('grade'),
-          section: formData.get('section'),
-          password: password
+          section: formData.get('section')
         };
 
         // Save profile directly
         const saveResponse = await fetch(`${backendURL}/save-profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(profileData)
         });
 
