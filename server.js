@@ -698,7 +698,7 @@ app.post('/find-kastudy', async (req, res) => {
       }
 
       // Create help request notifications for each potential helper
-      const notifications = potentialHelpers.map(helper) => ({
+      const notifications = potentialHelpers.map(helper => ({
         id: Date.now() + Math.random(),
         type: 'help_request',
         fromUser: {
