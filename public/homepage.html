@@ -242,7 +242,9 @@
             menu.style.display = 'none';
         } else {
             try {
-              const response = await fetch(`${backendURL}/get-profile`);
+              const response = await fetch(`${backendURL}/get-profile`, {
+                credentials: 'include'
+              });
               if (!response.ok) {
                 throw new Error('Failed to fetch profile');
               }
@@ -267,7 +269,9 @@
 
     async function fetchTodos() {
       try {
-        const response = await fetch(`${backendURL}/get-todos`);
+        const response = await fetch(`${backendURL}/get-todos`, {
+          credentials: 'include'
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch to-dos.');
         }
@@ -305,6 +309,7 @@
         const response = await fetch(`${backendURL}/add-todo`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ title, items })
         });
 
@@ -327,7 +332,10 @@
       }
   
       try {
-        const response = await fetch(`${backendURL}/delete-todo/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${backendURL}/delete-todo/${id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to delete to-do');
@@ -551,7 +559,9 @@
     // Load notifications
     async function loadNotifications() {
         try {
-            const response = await fetch(`${backendURL}/get-notifications`);
+            const response = await fetch(`${backendURL}/get-notifications`, {
+                credentials: 'include'
+            });
             if (!response.ok) {
                 throw new Error('Failed to fetch notifications');
             }
@@ -696,7 +706,9 @@
     // Fetch user profile and set initials
     async function fetchUserProfile() {
       try {
-        const response = await fetch(`${backendURL}/get-profile`);
+        const response = await fetch(`${backendURL}/get-profile`, {
+        credentials: 'include'
+      });
         if (!response.ok) {
           throw new Error('Failed to fetch profile');
         }
