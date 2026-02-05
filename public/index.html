@@ -125,9 +125,10 @@ async function checkIfLoggedIn() {
         console.log('User is logged in, redirecting...');
         // User is logged in, redirect based on profile completion
         if (data.profileComplete) {
-          window.location.href = '/homepage.html';
+          // Force redirect
+          window.location.replace('/homepage.html');
         } else {
-          window.location.href = '/profile-setup.html';
+          window.location.replace('/profile-setup.html');
         }
         return true; // Indicate redirect is happening
       }
@@ -138,13 +139,22 @@ async function checkIfLoggedIn() {
   return false;
 }
 
-// Run check early and also on DOMContentLoaded
-checkIfLoggedIn();
+// Run check as early as possible
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', checkIfLoggedIn);
+} else {
+  checkIfLoggedIn();
+}
 
 // Also run on DOMContentLoaded to ensure it happens
 document.addEventListener('DOMContentLoaded', function() {
   checkIfLoggedIn();
 });
+
+// Fallback: check again after a short delay in case redirect didn't work
+setTimeout(function() {
+  checkIfLoggedIn();
+}, 1000);
 
 // Toggle between login and register forms
 $('#show-login').click(function(e) {
