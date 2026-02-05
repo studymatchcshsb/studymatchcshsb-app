@@ -109,29 +109,42 @@ const backendURL = window.location.origin;
 // Check if user is already logged in on page load
 async function checkIfLoggedIn() {
   try {
+    console.log('Checking if user is logged in...');
     const response = await fetch(`${backendURL}/check-session`, {
       method: 'GET',
       credentials: 'include'
     });
     
+    console.log('Response status:', response.status);
+    
     if (response.ok) {
       const data = await response.json();
+      console.log('Session check result:', data);
+      
       if (data.loggedIn) {
+        console.log('User is logged in, redirecting...');
         // User is logged in, redirect based on profile completion
         if (data.profileComplete) {
           window.location.href = '/homepage.html';
         } else {
           window.location.href = '/profile-setup.html';
         }
+        return true; // Indicate redirect is happening
       }
     }
   } catch (error) {
-    console.log('Not logged in or session check failed');
+    console.log('Session check failed:', error);
   }
+  return false;
 }
 
-// Check on page load
+// Run check early and also on DOMContentLoaded
 checkIfLoggedIn();
+
+// Also run on DOMContentLoaded to ensure it happens
+document.addEventListener('DOMContentLoaded', function() {
+  checkIfLoggedIn();
+});
 
 // Toggle between login and register forms
 $('#show-login').click(function(e) {
