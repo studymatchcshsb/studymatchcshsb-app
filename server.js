@@ -373,14 +373,15 @@ app.post('/save-profile', async (req, res) => {
   });
 });
 
-app.post('/update-profile', (req, res) => {
+app.post('/update-profile', async (req, res) => {
   const { strengths, weaknesses } = req.body;
+  const userEmail = await getUserFromSession(req);
 
-  if (!storedEmail) {
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized. Please log in again.' });
   }
 
-  db.update({ email: storedEmail }, { $set: { strengths: strengths, weaknesses: weaknesses } }, {}, (err, numReplaced) => {
+  db.update({ email: userEmail }, { $set: { strengths: strengths, weaknesses: weaknesses } }, {}, (err, numReplaced) => {
     if (err) {
       console.error("Error updating profile:", err);
       return res.status(500).send({ success: false, message: 'Server error updating profile.' });
@@ -388,17 +389,18 @@ app.post('/update-profile', (req, res) => {
     if (numReplaced === 0) {
       return res.status(404).send({ success: false, message: 'User not found.' });
     }
-    console.log(`Profile updated for email: ${storedEmail}`);
+    console.log(`Profile updated for email: ${userEmail}`);
     res.send({ success: true, message: 'Profile updated successfully!' });
   });
 });
 
 // To-Do List Endpoints
-app.get('/get-todos', (req, res) => {
-  if (!storedEmail) {
+app.get('/get-todos', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send([]);
   }
-  todosDb.find({ userEmail: storedEmail }, (err, docs) => {
+  todosDb.find({ userEmail: userEmail }, (err, docs) => {
     if (err) {
       return res.status(500).send([]);
     }
@@ -406,15 +408,16 @@ app.get('/get-todos', (req, res) => {
   });
 });
 
-app.post('/add-todo', (req, res) => {
-  if (!storedEmail) {
+app.post('/add-todo', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
   const { title, items } = req.body;
   const newTodo = {
     title,
     items,
-    userEmail: storedEmail,
+    userEmail: userEmail,
     createdAt: new Date()
   };
   todosDb.insert(newTodo, (err, doc) => {
@@ -425,11 +428,12 @@ app.post('/add-todo', (req, res) => {
   });
 });
 
-app.delete('/delete-todo/:id', (req, res) => {
-  if (!storedEmail) {
+app.delete('/delete-todo/:id', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
-  todosDb.remove({ _id: req.params.id, userEmail: storedEmail }, {}, (err, numRemoved) => {
+  todosDb.remove({ _id: req.params.id, userEmail: userEmail }, {}, (err, numRemoved) => {
     if (err || numRemoved === 0) {
       return res.status(500).send({ success: false, message: 'Could not delete item.' });
     }
@@ -437,11 +441,12 @@ app.delete('/delete-todo/:id', (req, res) => {
   });
 });
 
-app.get('/get-profile', (req, res) => {
-  if (!storedEmail) {
+app.get('/get-profile', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
-  db.findOne({ email: storedEmail }, (err, user) => {
+  db.findOne({ email: userEmail }, (err, user) => {
     if (err || !user) {
       return res.status(404).send({ success: false, message: 'User not found' });
     }
@@ -474,14 +479,15 @@ app.post('/send-help-request', (req, res) => {
   });
 });
 
-app.post('/change-password', (req, res) => {
+app.post('/change-password', async (req, res) => {
   const { currentPassword, newPassword } = req.body;
+  const userEmail = await getUserFromSession(req);
 
-  if (!storedEmail) {
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
-  db.findOne({ email: storedEmail }, (err, user) => {
+  db.findOne({ email: userEmail }, (err, user) => {
     if (err || !user) {
       return res.status(401).send({ success: false, message: 'User not found.' });
     }
@@ -492,7 +498,7 @@ app.post('/change-password', (req, res) => {
           if (err) {
             return res.status(500).send({ success: false, message: 'Error changing password.' });
           }
-          db.update({ email: storedEmail }, { $set: { password: hash } }, {}, (err, numReplaced) => {
+          db.update({ email: userEmail }, { $set: { password: hash } }, {}, (err, numReplaced) => {
             if (err || numReplaced === 0) {
               return res.status(500).send({ success: false, message: 'Error changing password.' });
             }
@@ -538,16 +544,17 @@ app.get('/check-session', async (req, res) => {
 
 
 // Get conversations list endpoint with recent messages
-app.get('/get-conversations', (req, res) => {
-  if (!storedEmail) {
+app.get('/get-conversations', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
   // Find distinct emails that the user has messages with
   messagesDb.find({
     $or: [
-      { from: storedEmail },
-      { to: storedEmail }
+      { from: userEmail },
+      { to: userEmail }
     ]
   }, (err, messages) => {
     if (err) {
@@ -557,7 +564,7 @@ app.get('/get-conversations', (req, res) => {
 
     // Get unique conversation partners
     const conversationEmails = [...new Set(
-      messages.flatMap(msg => [msg.from, msg.to]).filter(email => email !== storedEmail)
+      messages.flatMap(msg => [msg.from, msg.to]).filter(email => email !== userEmail)
     )];
 
     if (conversationEmails.length === 0) {
@@ -579,8 +586,8 @@ app.get('/get-conversations', (req, res) => {
         // Find the most recent message between current user and this user
         messagesDb.find({
           $or: [
-            { from: storedEmail, to: user.email },
-            { from: user.email, to: storedEmail }
+            { from: userEmail, to: user.email },
+            { from: user.email, to: userEmail }
           ]
         }).sort({ timestamp: -1 }).limit(1, (err, recentMessages) => {
           if (err) {
@@ -597,7 +604,7 @@ app.get('/get-conversations', (req, res) => {
             recentMessage: recentMessage ? {
               message: recentMessage.message,
               timestamp: recentMessage.timestamp,
-              from: recentMessage.from === storedEmail ? 'You' : user.username
+              from: recentMessage.from === userEmail ? 'You' : user.username
             } : null
           });
 
@@ -612,8 +619,9 @@ app.get('/get-conversations', (req, res) => {
 });
 
 // Get messages between two users
-app.get('/get-messages/:friendEmail', (req, res) => {
-  if (!storedEmail) {
+app.get('/get-messages/:friendEmail', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
@@ -622,8 +630,8 @@ app.get('/get-messages/:friendEmail', (req, res) => {
   // Find messages between current user and friend
   messagesDb.find({
     $or: [
-      { from: storedEmail, to: friendEmail },
-      { from: friendEmail, to: storedEmail }
+      { from: userEmail, to: friendEmail },
+      { from: friendEmail, to: userEmail }
     ]
   }).sort({ timestamp: 1 }, (err, messages) => {
     if (err) {
@@ -636,8 +644,9 @@ app.get('/get-messages/:friendEmail', (req, res) => {
 });
 
 // Send help request endpoint
-app.post('/send-help-request', (req, res) => {
-  if (!storedEmail) {
+app.post('/send-help-request', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
@@ -648,7 +657,7 @@ app.post('/send-help-request', (req, res) => {
   }
 
   // Get current user info
-  db.findOne({ email: storedEmail }, (err, currentUser) => {
+  db.findOne({ email: userEmail }, (err, currentUser) => {
     if (err) {
       console.error("Error finding current user:", err);
       return res.status(500).send({ success: false, message: 'Server error' });
@@ -659,7 +668,7 @@ app.post('/send-help-request', (req, res) => {
     }
 
     // Find all users in grades 7-10 (excluding current user)
-    db.find({ grade: { $in: ['7', '8', '9', '10'] }, email: { $ne: storedEmail } }, (err, potentialHelpers) => {
+    db.find({ grade: { $in: ['7', '8', '9', '10'] }, email: { $ne: userEmail } }, (err, potentialHelpers) => {
       if (err) {
         console.error("Error finding potential helpers:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
@@ -675,7 +684,7 @@ app.post('/send-help-request', (req, res) => {
         type: 'kastudy_request',
         fromUser: {
           username: currentUser.username,
-          email: storedEmail,
+          email: userEmail,
           grade: currentUser.grade
         },
         subject: subject,
@@ -691,7 +700,7 @@ app.post('/send-help-request', (req, res) => {
       potentialHelpers.forEach(helper => {
         db.update(
           { email: helper.email },
-          { $push: { notifications: notifications.find(n => n.fromUser.email === storedEmail) } },
+          { $push: { notifications: notifications.find(n => n.fromUser.email === userEmail) } },
           { upsert: true },
           (err, numReplaced) => {
             if (err) {
@@ -719,12 +728,13 @@ app.post('/send-help-request', (req, res) => {
 });
 
 // Get notifications endpoint
-app.get('/get-notifications', (req, res) => {
-  if (!storedEmail) {
+app.get('/get-notifications', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
-  db.findOne({ email: storedEmail }, (err, user) => {
+  db.findOne({ email: userEmail }, (err, user) => {
     if (err) {
       console.error("Error finding user:", err);
       return res.status(500).send({ success: false, message: 'Server error' });
@@ -739,8 +749,9 @@ app.get('/get-notifications', (req, res) => {
 });
 
 // Handle help request response
-app.post('/respond-help-request', (req, res) => {
-  if (!storedEmail) {
+app.post('/respond-help-request', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
@@ -752,7 +763,7 @@ app.post('/respond-help-request', (req, res) => {
 
   // Remove the notification from current user's notifications
   db.update(
-    { email: storedEmail },
+    { email: userEmail },
     { $pull: { notifications: { id: notificationId } } },
     {},
     (err, numReplaced) => {
@@ -763,7 +774,7 @@ app.post('/respond-help-request', (req, res) => {
 
       if (response === 'accept' && requesterEmail) {
         // Get helper's name for the notification
-        db.findOne({ email: storedEmail }, (err, helper) => {
+        db.findOne({ email: userEmail }, (err, helper) => {
           if (err) {
             console.error("Error finding helper:", err);
             return res.status(500).send({ success: false, message: 'Server error' });
@@ -776,7 +787,7 @@ app.post('/respond-help-request', (req, res) => {
             fromUser: {
               name: helper.name,
               surname: helper.surname,
-              email: storedEmail
+              email: userEmail
             },
             subject: req.body.subject,
             timestamp: new Date(),
@@ -809,8 +820,9 @@ app.post('/respond-help-request', (req, res) => {
 });
 
 // Handle kastudy request response
-app.post('/respond-kastudy-request', (req, res) => {
-  if (!storedEmail) {
+app.post('/respond-kastudy-request', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
@@ -822,7 +834,7 @@ app.post('/respond-kastudy-request', (req, res) => {
 
   // Remove the notification from current user's notifications
   db.update(
-    { email: storedEmail },
+    { email: userEmail },
     { $pull: { notifications: { id: notificationId } } },
     {},
     (err, numReplaced) => {
@@ -833,7 +845,7 @@ app.post('/respond-kastudy-request', (req, res) => {
 
       if (response === 'accept' && requesterEmail) {
         // Get helper's name for the notification
-        db.findOne({ email: storedEmail }, (err, helper) => {
+        db.findOne({ email: userEmail }, (err, helper) => {
           if (err) {
             console.error("Error finding helper:", err);
             return res.status(500).send({ success: false, message: 'Server error' });
@@ -845,7 +857,7 @@ app.post('/respond-kastudy-request', (req, res) => {
             type: 'kastudy_accepted',
             fromUser: {
               username: helper.username,
-              email: storedEmail
+              email: userEmail
             },
             subject: subject,
             timestamp: new Date(),
@@ -879,8 +891,9 @@ app.post('/respond-kastudy-request', (req, res) => {
 
 
 // Quiz endpoints
-app.post('/save-quiz', (req, res) => {
-  if (!storedEmail) {
+app.post('/save-quiz', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
@@ -899,7 +912,7 @@ app.post('/save-quiz', (req, res) => {
 
   // Find user and add quiz to their quizzes array
   db.update(
-    { email: storedEmail },
+    { email: userEmail },
     { $push: { quizzes: quizData } },
     { upsert: true },
     (err, numReplaced) => {
@@ -908,18 +921,19 @@ app.post('/save-quiz', (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error saving quiz' });
       }
 
-      console.log(`Quiz "${quizName}" saved for user ${storedEmail}`);
+      console.log(`Quiz "${quizName}" saved for user ${userEmail}`);
       res.send({ success: true, message: 'Quiz saved successfully' });
     }
   );
 });
 
-app.get('/get-quizzes', (req, res) => {
-  if (!storedEmail) {
+app.get('/get-quizzes', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
-  db.findOne({ email: storedEmail }, (err, user) => {
+  db.findOne({ email: userEmail }, (err, user) => {
     if (err) {
       console.error("Error finding user:", err);
       return res.status(500).send({ success: false, message: 'Server error' });
