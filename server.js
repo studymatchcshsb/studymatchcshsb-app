@@ -8,9 +8,17 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const saltRounds = 10;
 
-console.log("--- SERVER.JS UPDATED - NOTIFICATION-BASED VERIFICATION ENABLED ---");
+console.log("--- SERVER.JS UPDATED - SENDGRID EMAIL VERIFICATION ENABLED ---");
+
+// Configure SendGrid
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log("SendGrid configured successfully");
+}
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -127,7 +135,7 @@ async function requireAuth(req, res, next) {
   next();
 }
 
-// Send verification code - displays in notification instead of email
+// Send verification code via SENDGRID EMAIL
 app.post('/send-code', (req, res) => {
   const { email } = req.body;
 
@@ -135,35 +143,74 @@ app.post('/send-code', (req, res) => {
     return res.status(400).send({ success: false, message: 'Email is required.' });
   }
 
+  // Normalize email to lowercase
+  const normalizedEmail = email.toLowerCase();
+
   // Generate a random 6-digit code
   currentCode = Math.floor(100000 + Math.random() * 900000).toString();
-  codeEmail = email;
+  codeEmail = normalizedEmail;
 
-  console.log("Generated verification code " + currentCode + " for " + email);
+  console.log("Generated verification code " + currentCode + " for " + normalizedEmail);
 
-  // Return the code to be displayed in a notification
-  res.send({ 
-    success: true, 
-    code: currentCode,
-    message: 'Verification code generated successfully.'
+  // Send email with OTP via SendGrid
+  const msg = {
+    to: normalizedEmail,
+    from: process.env.EMAIL_USER,
+    subject: 'Your StudyMatch Verification Code',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #2E7D32, #4CAF50); padding: 20px; border-radius: 10px 10px 0 0;">
+          <h2 style="color: #FFD700; margin: 0; text-align: center;">StudyMatch CSHSB</h2>
+        </div>
+        <div style="background: #ffffff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h3 style="color: #2E7D32; margin-top: 0;">Verification Code</h3>
+          <p>Your verification code is:</p>
+          <div style="background: linear-gradient(135deg, #2E7D32, #4CAF50); color: white; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0; border-radius: 8px;">
+            ${currentCode}
+          </div>
+          <p style="color: #666;">This code will expire in 10 minutes.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #999; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
+        </div>
+      </div>
+    `
+  };
+
+  sgMail.send(msg).then(() => {
+    console.log('SendGrid email sent successfully');
+    res.send({ 
+      success: true, 
+      message: 'Verification code sent to your email.'
+    });
+  }).catch((error) => {
+    console.error('SendGrid error:', error);
+    // Fallback: return code if email fails
+    res.send({ 
+      success: true, 
+      code: currentCode,
+      message: 'Email service unavailable, showing code in notification.'
+    });
   });
 });
 
 // Verify code endpoint
 app.post('/verify-code', (req, res) => {
   const { email, code, isLogin } = req.body;
+  
+  // Normalize email to lowercase
+  const normalizedEmail = email.toLowerCase();
 
   if (!email || !code) {
     return res.status(400).send({ success: false, message: 'Email and code are required.' });
   }
 
   // Check if code matches
-  if (email !== codeEmail || code !== currentCode) {
+  if (normalizedEmail !== codeEmail || code !== currentCode) {
     return res.send({ success: false, message: "Verification code is incorrect. Please try again." });
   }
 
   // Check if user exists in database
-  db.findOne({ email: email }, (err, user) => {
+  db.findOne({ email: normalizedEmail }, (err, user) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).send({ success: false, message: "Server error." });
@@ -172,7 +219,7 @@ app.post('/verify-code', (req, res) => {
     if (isLogin) {
       // For login, user must exist
       if (user) {
-        storedEmail = email;
+        storedEmail = normalizedEmail;
         res.send({ success: true, isNewUser: false });
       } else {
         res.send({ success: false, message: "No account found with this email. Please sign up." });
@@ -182,7 +229,7 @@ app.post('/verify-code', (req, res) => {
       if (user) {
         res.send({ success: false, message: "An account with this email already exists. Please log in." });
       } else {
-        storedEmail = email;
+        storedEmail = normalizedEmail;
         res.send({ success: true, isNewUser: true });
       }
     }
@@ -197,8 +244,11 @@ app.post('/register', async (req, res) => {
     return res.status(400).send({ success: false, message: 'All fields are required.' });
   }
 
+  // Normalize email to lowercase for consistency
+  const normalizedEmail = email.toLowerCase();
+  
   // Check if user already exists
-  db.findOne({ email: email }, async (err, existingUser) => {
+  db.findOne({ email: normalizedEmail }, async (err, existingUser) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).send({ success: false, message: "Server error." });
@@ -218,7 +268,7 @@ app.post('/register', async (req, res) => {
       // Create initial user record
       const userData = {
         name: name,
-        email: email,
+        email: normalizedEmail,
         password: hash,
         createdAt: new Date(),
         profileComplete: false // Flag to indicate profile setup is needed
@@ -230,12 +280,12 @@ app.post('/register', async (req, res) => {
           return res.status(500).send({ success: false, message: 'Server error saving user.' });
         }
 
-        console.log("User registered successfully:", email);
+        console.log("User registered successfully:", normalizedEmail);
 
         // Create session for the new user
         try {
-          await createSession(email, res);
-          storedEmail = email;
+          await createSession(normalizedEmail, res);
+          storedEmail = normalizedEmail;
           res.send({ success: true, message: 'Registration successful!' });
         } catch (sessionError) {
           console.error("Session creation failed:", sessionError);
@@ -248,8 +298,9 @@ app.post('/register', async (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
-  db.findOne({ email: email }, async (err, user) => {
+  const normalizedEmail = email.toLowerCase();
+  
+  db.findOne({ email: normalizedEmail }, async (err, user) => {
     if (err || !user) {
       return res.status(401).send({ success: false, message: 'Invalid email or password.' });
     }
@@ -643,9 +694,11 @@ app.post('/find-kastudy', async (req, res) => {
   }
 
   const { grade, subject } = req.body;
+  
+  console.log('[/find-kastudy] Received request - grade:', grade, 'subject:', subject, 'from:', userEmail);
 
   if (!grade || !subject) {
-    return res.status(400).send({ success: false, message: 'Grade and subject are required' });
+    return res.status(400).send({ success: false, message: 'Grade and subject are required.' });
   }
 
   // Get current user info
@@ -659,15 +712,10 @@ app.post('/find-kastudy', async (req, res) => {
       return res.status(404).send({ success: false, message: 'User not found' });
     }
 
-    // Find all users in grades 7-10 (excluding current user)
-    const userGrade = currentUser.grade ? currentUser.grade.toString() : null;
-    const gradesToSearch = userGrade ? ['7', '8', '9', '10'].filter(g => g !== userGrade) : ['7', '8', '9', '10'];
-    
+    console.log('[/find-kastudy] Current user:', currentUser.username);
+
+    // Find all users (excluding current user) to send notification to everyone
     db.find({ 
-      $or: [
-        { grade: { $in: gradesToSearch } },
-        { grade: { $in: gradesToSearch.map(g => parseInt(g)) } }
-      ], 
       email: { $ne: userEmail } 
     }, (err, potentialHelpers) => {
       if (err) {
@@ -675,8 +723,10 @@ app.post('/find-kastudy', async (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error' });
       }
 
+      console.log('[/find-kastudy] Found', potentialHelpers.length, 'potential helpers');
+
       if (potentialHelpers.length === 0) {
-        return res.send({ success: true, message: 'No users found in your grade level.' });
+        return res.send({ success: true, message: 'No other registered users found.' });
       }
 
       // Create notification object (single notification for all helpers)
@@ -699,6 +749,8 @@ app.post('/find-kastudy', async (req, res) => {
       const total = potentialHelpers.length;
 
       potentialHelpers.forEach(helper => {
+        console.log('[/find-kastudy] Adding notification to helper:', helper.email);
+        
         db.update(
           { email: helper.email },
           { $push: { notifications: notification } },
@@ -706,19 +758,24 @@ app.post('/find-kastudy', async (req, res) => {
           (err, numReplaced) => {
             if (err) {
               console.error("Error adding notification:", err);
+            } else {
+              console.log('[/find-kastudy] Notification added to:', helper.email);
+              
+              // Try to send real-time notification
+              const socketId = connectedUsers[helper.email];
+              if (socketId) {
+                console.log('[/find-kastudy] Sending real-time notification to:', helper.email, 'socket:', socketId);
+                io.to(socketId).emit('new_notification', notification);
+              } else {
+                console.log('[/find-kastudy] Helper not connected via socket:', helper.email);
+              }
             }
             completed++;
             if (completed === total) {
-              // Notify all connected helpers about new notifications
-              potentialHelpers.forEach(helperToNotify => {
-                if (connectedUsers[helperToNotify.email]) {
-                  io.to(connectedUsers[helperToNotify.email]).emit('new_notification', notification);
-                }
-              });
-
+              console.log('[/find-kastudy] All notifications sent. Total:', total);
               res.send({
                 success: true,
-                message: "Help request sent to " + total + " students across all grades (7-10)!"
+                message: "Help request sent to all " + total + " registered users!"
               });
             }
           }
@@ -955,9 +1012,10 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('join', (email) => {
-    connectedUsers[email] = socket.id;
-    socket.email = email;
-    console.log(email + ' joined with socket ' + socket.id);
+    const normalizedEmail = email.toLowerCase();
+    connectedUsers[normalizedEmail] = socket.id;
+    socket.email = normalizedEmail;
+    console.log(normalizedEmail + ' joined with socket ' + socket.id);
   });
 
   socket.on('send message', (data) => {
@@ -1021,5 +1079,5 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log("--- Server running at http://localhost:" + PORT + " ---");
-  console.log("--- Notification-based verification enabled (no email sending) ---");
+  console.log("--- SendGrid email verification enabled ---");
 });

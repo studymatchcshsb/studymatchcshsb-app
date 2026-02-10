@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="tailwind.config.js"></script>
 </head>
-<body>
+<body class="min-h-screen" style="background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 30%, #4CAF50 60%, #FFD700 100%);">
 <div id="loadingOverlay">
 <div class="loader">
     <div class="bar1"></div>
@@ -24,13 +24,13 @@
     <div class="bar12"></div>
 </div>
 </div>
-<section class="bg-gray-50 dark:bg-gray-900">
-  <div class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-      <div class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
+<section class="min-h-screen flex items-center justify-center px-6 py-8">
+  <div class="w-full bg-white/95 backdrop-blur rounded-2xl shadow-2xl md:mt-0 sm:max-w-md xl:p-0 border-2 border-yellow-400">
           <div class="p-6 space-y-4 md:space-y-6 sm:p-8" id="register-section">
-              <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-                  Create an account
+              <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl text-center text-green-800">
+                  <span class="text-yellow-600">✦</span> StudyMatch CSHSB <span class="text-yellow-600">✦</span>
               </h1>
+              <h2 class="text-lg font-semibold text-center text-gray-600 mb-6">Create Your Account</h2>
               <form class="space-y-4 md:space-y-6" method="post" id="reg-form">
                 <div>
                       <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your name</label>
@@ -62,16 +62,17 @@
                         <label for="terms" class="font-light text-gray-500 dark:text-gray-300">I accept the <a class="font-medium text-primary-600 hover:underline dark:text-primary-500" href="#">Terms and Conditions</a></label>
                       </div>
                   </div>
-                  <button type="submit" class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">Create an account</button>
+                  <button type="submit" class="w-full text-white bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center shadow-lg transform transition hover:-translate-y-0.5">Create Account</button>
                   <p class="text-sm font-light text-gray-500 dark:text-gray-400">
                       Already have an account? <a href="#" id="show-login" class="font-medium text-primary-600 hover:underline dark:text-primary-500">Login here</a>
                   </p>
               </form>
           </div>
           <div class="p-6 space-y-4 md:space-y-6 sm:p-8" id="login-section" style="display:none;">
-              <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-                  Sign in to your account
+              <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl text-center text-green-800">
+                  <span class="text-yellow-600">✦</span> StudyMatch CSHSB <span class="text-yellow-600">✦</span>
               </h1>
+              <h2 class="text-lg font-semibold text-center text-gray-600 mb-6">Welcome Back</h2>
               <form class="space-y-4 md:space-y-6" action="" method="post" id="login-form">
                   <div>
                       <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>
@@ -92,7 +93,7 @@
                       </div>
                       <a href="#" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500">Forgot password?</a>
                   </div>
-                  <button type="submit" class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">Sign in</button>
+                  <button type="submit" class="w-full text-white bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center shadow-lg transform transition hover:-translate-y-0.5">Sign In</button>
                   <p class="text-sm font-light text-gray-500 dark:text-gray-400">
                       Don't have an account yet? <a href="#" id="show-register" class="font-medium text-primary-600 hover:underline dark:text-primary-500">Sign up</a>
                   </p>
@@ -105,6 +106,54 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 const backendURL = window.location.origin;
+
+// Email validation function
+function isValidEmail(email) {
+    // Standard email regex pattern
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Check for common made-up patterns
+    const invalidPatterns = [
+        'test@test.com',
+        'example@example.com',
+        'user@user.com',
+        'demo@demo.com',
+        'fake@fake.com',
+        '@gmail.com',
+        '@yahoo.com',
+        '@hotmail.com',
+        '123@',
+        '@123',
+        'email@',
+        '@email',
+        '.com@',
+        '@.com'
+    ];
+    
+    // Check if email matches the basic pattern
+    if (!emailRegex.test(email)) {
+        return { valid: false, message: "Please enter a valid email address format (e.g., user@domain.com)" };
+    }
+    
+    // Check for invalid patterns
+    for (const pattern of invalidPatterns) {
+        if (email.toLowerCase().includes(pattern)) {
+            return { valid: false, message: "Please enter a real email address, not a made-up one." };
+        }
+    }
+    
+    // Check for consecutive dots or special characters
+    if (email.includes('..') || email.includes('@@')) {
+        return { valid: false, message: "Please enter a valid email address." };
+    }
+    
+    // Check for domain without TLD
+    const parts = email.split('@');
+    if (parts.length === 2 && (parts[1].length < 3 || !parts[1].includes('.'))) {
+        return { valid: false, message: "Please enter a complete email address with a valid domain (e.g., user@gmail.com)" };
+    }
+    
+    return { valid: true, message: "Email is valid" };
+}
 
 // Check if user is already logged in on page load
 async function checkIfLoggedIn() {
@@ -169,7 +218,7 @@ $('#show-register').click(function(e) {
   $('#register-section').show();
 });
 
-// Send OTP - Shows notification with code instead of sending email
+// Send OTP - Now sends via email
 $("#sendOtpLink").on("click", function (e) {
     e.preventDefault();
     const email = $("#email").val().trim();
@@ -183,10 +232,21 @@ $("#sendOtpLink").on("click", function (e) {
         return;
     }
     
+    // Validate email format
+    const emailValidation = isValidEmail(email);
+    if (!emailValidation.valid) {
+        Swal.fire({
+            icon: "error",
+            title: "Invalid Email",
+            text: emailValidation.message,
+        });
+        return;
+    }
+    
     // Show loading
     $("#loadingOverlay").show();
     
-    // Request OTP from server
+    // Request OTP from server (sent via email)
     $.ajax({
         type: 'POST',
         url: '/send-code',
@@ -195,11 +255,11 @@ $("#sendOtpLink").on("click", function (e) {
         success: function(response) {
             $("#loadingOverlay").hide();
             if (response.success) {
-                // Show the verification code in a notification
+                // Inform user to check email
                 Swal.fire({
-                    icon: "info",
-                    title: "Verification Code",
-                    html: `<p>Your verification code is:</p><h2 style="font-size: 32px; font-weight: bold; color: #3b82f6; margin: 20px 0;">${response.code}</h2><p style="color: #6b7280;">Enter this code to verify your email.</p>`,
+                    icon: "success",
+                    title: "Code Sent!",
+                    html: `<p>A verification code has been sent to:</p><p style="font-weight: bold; color: #3b82f6; margin: 10px 0;">${email}</p><p style="color: #6b7280;">Please check your email and enter the 6-digit code below.</p>`,
                     confirmButtonText: "Got it!",
                     allowOutsideClick: false
                 });
@@ -214,7 +274,7 @@ $("#sendOtpLink").on("click", function (e) {
                 Swal.fire({
                     icon: "error",
                     title: "Error",
-                    text: response.message || "Failed to generate verification code.",
+                    text: response.message || "Failed to send verification code.",
                 });
             }
         },
@@ -303,6 +363,17 @@ $("#reg-form").submit(function (e) {
         return;
     }
     
+    // Validate email format
+    const emailValidation = isValidEmail(email);
+    if (!emailValidation.valid) {
+        Swal.fire({
+            icon: "error",
+            title: "Invalid Email",
+            text: emailValidation.message,
+        });
+        return;
+    }
+    
     // Show loading
     $("#loadingOverlay").show();
     
@@ -356,6 +427,17 @@ $("#login-form").submit(function (e) {
             icon: "error",
             title: "Missing Information",
             text: "Please fill in all fields.",
+        });
+        return;
+    }
+    
+    // Validate email format
+    const emailValidation = isValidEmail(email);
+    if (!emailValidation.valid) {
+        Swal.fire({
+            icon: "error",
+            title: "Invalid Email",
+            text: emailValidation.message,
         });
         return;
     }
