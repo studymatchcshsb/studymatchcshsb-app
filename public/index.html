@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Study Match CSHSB Sign Up</title>
-  <link rel="stylesheet" href="/studymatch/public/css/style.css">
+  <title>StudyMatch CSHS Login</title>
+  <link relB -="stylesheet" href="/studymatch/public/css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="tailwind.config.js"></script>
 </head>
@@ -24,6 +24,7 @@
     <div class="bar12"></div>
 </div>
 </div>
+
 <section class="min-h-screen flex items-center justify-center px-6 py-8">
   <div class="w-full bg-white/95 backdrop-blur rounded-2xl shadow-2xl md:mt-0 sm:max-w-md xl:p-0 border-2 border-yellow-400">
           <div class="p-6 space-y-4 md:space-y-6 sm:p-8" id="register-section">
@@ -31,471 +32,345 @@
                   <span class="text-yellow-600">✦</span> StudyMatch CSHSB <span class="text-yellow-600">✦</span>
               </h1>
               <h2 class="text-lg font-semibold text-center text-gray-600 mb-6">Create Your Account</h2>
-              <form class="space-y-4 md:space-y-6" method="post" id="reg-form">
-                <div>
-                      <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your name</label>
-                      <input type="name" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Azim Krishna" required="" autocomplete="off">
+              
+              <!-- Step 1: Email -->
+              <div id="step-email">
+                  <label for="email" class="block mb-2 text-sm font-medium text-gray-900">Your email</label>
+                  <div class="relative">
+                      <input type="email" id="email" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" placeholder="your.email@cshsb.edu.ph" required autocomplete="off">
                   </div>
-                  <div>
-                      <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>
-                      <div class="relative">
-                          <input type="email" name="email" id="email" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="name@company.com" required="" autocomplete="off">
-                          <a href="#" id="sendOtpLink" class="absolute top-1/4 right-6 text-sm text-blue-500">Send OTP</a>
-                      </div>
-                  </div>
-                  <div id="otp-div" class="hidden" >
-                      <label for="otp" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Verify OTP</label>
-                      <div class="relative">
-                          <input type="tel" name="otp" id="otp" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="XXXXXX" required="" autocomplete="off" minlength="6" maxlength="6" pattern="\d{6}" disabled>
-                          <a href="#" id="verifyOtp" class="absolute top-1/4 right-6 text-sm text-blue-500">Verify</a>
-                      </div>
-                  </div>
-                  <div>
-                      <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                      <input type="password" name="password" id="password" placeholder="••••••••" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required="" autocomplete="off" disabled>
-                  </div>
-                  <div class="flex items-start">
-                      <div class="flex items-center h-5">
-                        <input id="terms" aria-describedby="terms" type="checkbox" class="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800" required="">
-                      </div>
-                      <div class="ml-3 text-sm">
-                        <label for="terms" class="font-light text-gray-500 dark:text-gray-300">I accept the <a class="font-medium text-primary-600 hover:underline dark:text-primary-500" href="#">Terms and Conditions</a></label>
-                      </div>
-                  </div>
-                  <button type="submit" class="w-full text-white bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center shadow-lg transform transition hover:-translate-y-0.5">Create Account</button>
-                  <p class="text-sm font-light text-gray-500 dark:text-gray-400">
-                      Already have an account? <a href="#" id="show-login" class="font-medium text-primary-600 hover:underline dark:text-primary-500">Login here</a>
+                  <button type="button" id="sendOtpBtn" class="w-full mt-4 text-white bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center shadow-lg transform transition hover:-translate-y-0.5">Send OTP to Email</button>
+                  <p class="text-sm text-center mt-4 text-gray-600">
+                      Already have an account? <a href="#" id="show-login" class="font-medium text-green-600 hover:underline">Login here</a>
                   </p>
-              </form>
+              </div>
+              
+              <!-- Step 2: OTP Verification -->
+              <div id="step-otp" class="hidden">
+                  <div class="text-center mb-4">
+                      <p class="text-sm text-gray-600">We've sent a verification code to:</p>
+                      <p id="email-display" class="font-semibold text-green-700"></p>
+                  </div>
+                  <label for="otp" class="block mb-2 text-sm font-medium text-gray-900">Enter OTP Code</label>
+                  <input type="text" id="otp" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 text-center text-xl tracking-widest" placeholder="000000" maxlength="6" autocomplete="off">
+                  <button type="button" id="verifyOtpBtn" class="w-full mt-4 text-white bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center shadow-lg transform transition hover:-translate-y-0.5">Verify OTP</button>
+                  <p class="text-center mt-3">
+                      <a href="#" id="resendOtp" class="text-sm text-green-600 hover:underline">Resend OTP</a>
+                  </p>
+              </div>
+              
+              <!-- Step 3: Password -->
+              <div id="step-password" class="hidden">
+                  <div class="text-center mb-4">
+                      <p class="text-sm text-gray-600">Email verified!</p>
+                      <p class="text-xs text-gray-500">Now set your password</p>
+                  </div>
+                  <label for="password" class="block mb-2 text-sm font-medium text-gray-900">Password</label>
+                  <input type="password" id="password" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" placeholder="••••••••" required autocomplete="new-password">
+                  <label for="confirm-password" class="block mb-2 mt-3 text-sm font-medium text-gray-900">Confirm Password</label>
+                  <input type="password" id="confirm-password" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" placeholder="••••••••" required autocomplete="new-password">
+                  <button type="button" id="registerBtn" class="w-full mt-4 text-white bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center shadow-lg transform transition hover:-translate-y-0.5">Create Account</button>
+              </div>
           </div>
+
+          <!-- Login Section -->
           <div class="p-6 space-y-4 md:space-y-6 sm:p-8" id="login-section" style="display:none;">
               <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl text-center text-green-800">
                   <span class="text-yellow-600">✦</span> StudyMatch CSHSB <span class="text-yellow-600">✦</span>
               </h1>
               <h2 class="text-lg font-semibold text-center text-gray-600 mb-6">Welcome Back</h2>
-              <form class="space-y-4 md:space-y-6" action="" method="post" id="login-form">
-                  <div>
-                      <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>
-                      <input type="email" name="email" id="login-email" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="name@company.com" required="">
-                  </div>
-                  <div>
-                      <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                      <input type="password" name="password" id="login-password" placeholder="••••••••" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required="" >
-                  </div>
-                  <div class="flex items-center justify-between">
-                      <div class="flex items-start">
-                          <div class="flex items-center h-5">
-                            <input id="remember" aria-describedby="remember" type="checkbox" class="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800" required="">
-                          </div>
-                          <div class="ml-3 text-sm">
-                            <label for="remember" class="text-gray-500 dark:text-gray-300">Remember me</label>
-                          </div>
+              
+              <div>
+                  <label for="login-email" class="block mb-2 text-sm font-medium text-gray-900">Your email</label>
+                  <input type="email" id="login-email" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" placeholder="your.email@cshsb.edu.ph" required autocomplete="off">
+              </div>
+              <div>
+                  <label for="login-password" class="block mb-2 text-sm font-medium text-gray-900">Password</label>
+                  <input type="password" id="login-password" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" placeholder="••••••••" required autocomplete="current-password">
+              </div>
+              <div class="flex items-center justify-between">
+                  <div class="flex items-start">
+                      <div class="flex items-center h-5">
+                          <input id="remember" type="checkbox" class="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-green-300">
                       </div>
-                      <a href="#" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500">Forgot password?</a>
+                      <div class="ml-3 text-sm">
+                          <label for="remember" class="text-gray-500">Remember me</label>
+                      </div>
                   </div>
-                  <button type="submit" class="w-full text-white bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center shadow-lg transform transition hover:-translate-y-0.5">Sign In</button>
-                  <p class="text-sm font-light text-gray-500 dark:text-gray-400">
-                      Don't have an account yet? <a href="#" id="show-register" class="font-medium text-primary-600 hover:underline dark:text-primary-500">Sign up</a>
-                  </p>
-              </form>
+              </div>
+              <button type="submit" id="loginBtn" class="w-full text-white bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center shadow-lg transform transition hover:-translate-y-0.5">Sign In</button>
+              <p class="text-sm font-light text-center text-gray-500 dark:text-gray-400">
+                  Don't have an account yet? <a href="#" id="show-register" class="font-medium text-green-600 hover:underline">Sign up</a>
+              </p>
           </div>
       </div>
   </div>
 </section>
+
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 const backendURL = window.location.origin;
+let currentEmail = '';
 
 // Email validation function
 function isValidEmail(email) {
-    // Standard email regex pattern
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // Check for common made-up patterns
-    const invalidPatterns = [
-        'test@test.com',
-        'example@example.com',
-        'user@user.com',
-        'demo@demo.com',
-        'fake@fake.com',
-        '@gmail.com',
-        '@yahoo.com',
-        '@hotmail.com',
-        '123@',
-        '@123',
-        'email@',
-        '@email',
-        '.com@',
-        '@.com'
-    ];
+    const invalidPatterns = ['test@test.com', 'example@example.com', '@gmail.com', '@yahoo.com', '@hotmail.com'];
     
-    // Check if email matches the basic pattern
     if (!emailRegex.test(email)) {
-        return { valid: false, message: "Please enter a valid email address format (e.g., user@domain.com)" };
-    }
-    
-    // Check for invalid patterns
-    for (const pattern of invalidPatterns) {
-        if (email.toLowerCase().includes(pattern)) {
-            return { valid: false, message: "Please enter a real email address, not a made-up one." };
-        }
-    }
-    
-    // Check for consecutive dots or special characters
-    if (email.includes('..') || email.includes('@@')) {
         return { valid: false, message: "Please enter a valid email address." };
     }
     
-    // Check for domain without TLD
-    const parts = email.split('@');
-    if (parts.length === 2 && (parts[1].length < 3 || !parts[1].includes('.'))) {
-        return { valid: false, message: "Please enter a complete email address with a valid domain (e.g., user@gmail.com)" };
-    }
-    
-    return { valid: true, message: "Email is valid" };
-}
-
-// Check if user is already logged in on page load
-async function checkIfLoggedIn() {
-  try {
-    console.log('Checking if user is logged in...');
-    const response = await fetch(`${backendURL}/check-session`, {
-      method: 'GET',
-      credentials: 'include'
-    });
-    
-    console.log('Response status:', response.status);
-    
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Session check result:', data);
-      
-      if (data.loggedIn) {
-        console.log('User is logged in, redirecting...');
-        // User is logged in, redirect based on profile completion
-        if (data.profileComplete) {
-          // Force redirect
-          window.location.replace('/homepage.html');
-        } else {
-          window.location.replace('/profile-setup.html');
+    for (const pattern of invalidPatterns) {
+        if (email.toLowerCase().includes(pattern)) {
+            return { valid: false, message: "Please use your school email." };
         }
-        return true; // Indicate redirect is happening
-      }
     }
-  } catch (error) {
-    console.log('Session check failed:', error);
-  }
-  return false;
+    
+    return { valid: true };
 }
 
-// Run check as early as possible
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', checkIfLoggedIn);
-} else {
-  checkIfLoggedIn();
+// Auto-login from saved credentials
+function autoLogin() {
+    const savedEmail = localStorage.getItem('studymatch_email');
+    const savedPassword = localStorage.getItem('studymatch_password');
+    
+    if (savedEmail && savedPassword) {
+        $('#login-email').val(savedEmail);
+        $('#login-password').val(savedPassword);
+        $('#remember').prop('checked', true);
+        doLogin(savedEmail, savedPassword);
+    }
 }
 
-// Also run on DOMContentLoaded to ensure it happens
+// Check if already logged in
+async function checkIfLoggedIn() {
+    try {
+        const response = await fetch(`${backendURL}/check-session`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.loggedIn) {
+                window.location.replace(data.profileComplete ? '/homepage.html' : '/profile-setup.html');
+                return true;
+            }
+        }
+    } catch (error) {
+        console.log('Session check failed:', error);
+    }
+    return false;
+}
+
+// Run on page load
 document.addEventListener('DOMContentLoaded', function() {
-  checkIfLoggedIn();
+    checkIfLoggedIn();
+    setTimeout(autoLogin, 500);
 });
 
-// Fallback: check again after a short delay in case redirect didn't work
-setTimeout(function() {
-  checkIfLoggedIn();
-}, 1000);
-
-// Toggle between login and register forms
+// Toggle between login and register
 $('#show-login').click(function(e) {
-  e.preventDefault();
-  $('#register-section').hide();
-  $('#login-section').show();
+    e.preventDefault();
+    $('#register-section').hide();
+    $('#login-section').show();
 });
 
 $('#show-register').click(function(e) {
-  e.preventDefault();
-  $('#login-section').hide();
-  $('#register-section').show();
+    e.preventDefault();
+    $('#login-section').hide();
+    $('#register-section').show();
 });
 
-// Send OTP - Now sends via email
-$("#sendOtpLink").on("click", function (e) {
-    e.preventDefault();
-    const email = $("#email").val().trim();
+// Step 1: Send OTP
+$('#sendOtpBtn').on('click', function() {
+    const email = $('#email').val().trim();
     
     if (!email) {
-        Swal.fire({
-            icon: "error",
-            title: "Email Required",
-            text: "Please enter your email address first.",
-        });
+        Swal.fire({ icon: 'error', title: 'Email Required', text: 'Please enter your email.' });
         return;
     }
     
-    // Validate email format
-    const emailValidation = isValidEmail(email);
-    if (!emailValidation.valid) {
-        Swal.fire({
-            icon: "error",
-            title: "Invalid Email",
-            text: emailValidation.message,
-        });
+    const validation = isValidEmail(email);
+    if (!validation.valid) {
+        Swal.fire({ icon: 'error', title: 'Invalid Email', text: validation.message });
         return;
     }
     
-    // Show loading
-    $("#loadingOverlay").show();
+    $('#loadingOverlay').show();
+    currentEmail = email.toLowerCase();
     
-    // Request OTP from server (sent via email)
     $.ajax({
         type: 'POST',
         url: '/send-code',
         contentType: 'application/json',
-        data: JSON.stringify({ email }),
+        data: JSON.stringify({ email: currentEmail }),
         success: function(response) {
-            $("#loadingOverlay").hide();
+            $('#loadingOverlay').hide();
             if (response.success) {
-                // Inform user to check email
-                Swal.fire({
-                    icon: "success",
-                    title: "Code Sent!",
-                    html: `<p>A verification code has been sent to:</p><p style="font-weight: bold; color: #3b82f6; margin: 10px 0;">${email}</p><p style="color: #6b7280;">Please check your email and enter the 6-digit code below.</p>`,
-                    confirmButtonText: "Got it!",
-                    allowOutsideClick: false
-                });
-                
-                // Enable OTP input
-                $("#otp-div").removeClass("hidden");
-                $("#otp").prop("disabled", false);
-                $("#sendOtpLink").html("Sent!").addClass("text-green-500");
-                $("#email").prop("disabled", true);
-                $("#sendOtpLink").css("pointer-events", "none");
+                $('#step-email').addClass('hidden');
+                $('#step-otp').removeClass('hidden');
+                $('#email-display').text(currentEmail);
+                Swal.fire({ icon: 'success', title: 'OTP Sent!', text: 'Check your email for the verification code.' });
             } else {
-                Swal.fire({
-                    icon: "error",
-                    title: "Error",
-                    text: response.message || "Failed to send verification code.",
-                });
+                Swal.fire({ icon: 'error', title: 'Error', text: response.message || 'Failed to send OTP.' });
             }
         },
-        error: function(jqXHR) {
-            $("#loadingOverlay").hide();
-            const response = jqXHR.responseJSON || {};
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: response.message || "An error occurred. Please try again.",
-            });
+        error: function() {
+            $('#loadingOverlay').hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred. Please try again.' });
         }
     });
 });
 
-// Verify OTP
-$("#verifyOtp").on("click", function (e) {
+// Resend OTP
+$('#resendOtp').on('click', function(e) {
     e.preventDefault();
-    const email = $("#email").val().trim();
-    const code = $("#otp").val().trim();
+    $('#sendOtpBtn').click();
+});
+
+// Step 2: Verify OTP
+$('#verifyOtpBtn').on('click', function() {
+    const code = $('#otp').val().trim();
     
     if (!code || code.length !== 6) {
-        Swal.fire({
-            icon: "error",
-            title: "Invalid Code",
-            text: "Please enter the 6-digit verification code.",
-        });
+        Swal.fire({ icon: 'error', title: 'Invalid OTP', text: 'Please enter the 6-digit code.' });
         return;
     }
     
-    // Show loading
-    $("#loadingOverlay").show();
+    $('#loadingOverlay').show();
     
-    // Verify OTP with server
     $.ajax({
         type: 'POST',
         url: '/verify-code',
         contentType: 'application/json',
-        data: JSON.stringify({ email, code, isLogin: false }),
+        data: JSON.stringify({ email: currentEmail, code: code, isLogin: false }),
         success: function(response) {
-            $("#loadingOverlay").hide();
+            $('#loadingOverlay').hide();
             if (response.success) {
-                $("#verifyOtp").html("Verified!").addClass("text-green-500");
-                $("#verifyOtp").off("click");
-                $("#otp").prop("disabled", true);
-                $("#password").prop("disabled", false);
-                Swal.fire({
-                    icon: "success",
-                    title: "Email Verified!",
-                    text: "You can now set your password.",
-                });
+                $('#step-otp').addClass('hidden');
+                $('#step-password').removeClass('hidden');
             } else {
-                Swal.fire({
-                    icon: "error",
-                    title: "Verification Failed",
-                    text: response.message || "Invalid verification code.",
-                });
+                Swal.fire({ icon: 'error', title: 'Verification Failed', text: response.message || 'Invalid code.' });
             }
         },
-        error: function(jqXHR) {
-            $("#loadingOverlay").hide();
-            const response = jqXHR.responseJSON || {};
-            Swal.fire({
-                icon: "error",
-                title: "Verification Failed",
-                text: response.message || "An error occurred. Please try again.",
-            });
+        error: function() {
+            $('#loadingOverlay').hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred. Please try again.' });
         }
     });
 });
 
-// Registration form submission
-$("#reg-form").submit(function (e) {
-    e.preventDefault();
+// Step 3: Register with password
+$('#registerBtn').on('click', function() {
+    const password = $('#password').val();
+    const confirmPassword = $('#confirm-password').val();
     
-    const name = $("#name").val().trim();
-    const email = $("#email").val().trim();
-    const password = $("#password").val();
-    
-    if (!name || !email || !password) {
-        Swal.fire({
-            icon: "error",
-            title: "Missing Information",
-            text: "Please fill in all fields.",
-        });
+    if (!password || !confirmPassword) {
+        Swal.fire({ icon: 'error', title: 'Password Required', text: 'Please enter and confirm your password.' });
         return;
     }
     
-    // Validate email format
-    const emailValidation = isValidEmail(email);
-    if (!emailValidation.valid) {
-        Swal.fire({
-            icon: "error",
-            title: "Invalid Email",
-            text: emailValidation.message,
-        });
+    if (password.length < 6) {
+        Swal.fire({ icon: 'error', title: 'Password Too Short', text: 'Password must be at least 6 characters.' });
         return;
     }
     
-    // Show loading
-    $("#loadingOverlay").show();
+    if (password !== confirmPassword) {
+        Swal.fire({ icon: 'error', title: 'Passwords Don\'t Match', text: 'Please make sure both passwords are the same.' });
+        return;
+    }
     
-    // Send registration request to server
+    $('#loadingOverlay').show();
+    
+    // Generate a name from email for registration
+    const name = currentEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    
     $.ajax({
         type: 'POST',
         url: '/register',
         contentType: 'application/json',
-        data: JSON.stringify({ name, email, password }),
+        data: JSON.stringify({ name: name, email: currentEmail, password: password }),
         success: function(response) {
-            $("#loadingOverlay").hide();
+            $('#loadingOverlay').hide();
             if (response.success) {
-                Swal.fire({
-                    icon: "success",
-                    title: "Registration Successful!",
-                    text: "Please complete your profile setup.",
-                    showConfirmButton: false,
-                    timer: 1500,
-                }).then(function () {
-                    window.location.href = "profile-setup.html";
+                // Save credentials if remember me is checked (for registration, always save)
+                localStorage.setItem('studymatch_email', currentEmail);
+                localStorage.setItem('studymatch_password', password);
+                
+                Swal.fire({ icon: 'success', title: 'Account Created!', text: 'Redirecting to profile setup...', timer: 1500, showConfirmButton: false })
+                .then(() => {
+                    window.location.href = '/profile-setup.html';
                 });
             } else {
-                Swal.fire({
-                    icon: "error",
-                    title: "Registration Failed",
-                    text: response.message || "An error occurred during registration.",
-                });
+                Swal.fire({ icon: 'error', title: 'Registration Failed', text: response.message });
             }
         },
-        error: function(jqXHR) {
-            $("#loadingOverlay").hide();
-            const response = jqXHR.responseJSON || {};
-            Swal.fire({
-                icon: "error",
-                title: "Registration Failed",
-                text: response.message || "An error occurred. Please try again.",
-            });
+        error: function() {
+            $('#loadingOverlay').hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred. Please try again.' });
         }
     });
 });
 
-// Login form submission
-$("#login-form").submit(function (e) {
-    e.preventDefault();
+// Login function
+function doLogin(email, password) {
+    $('#loadingOverlay').show();
     
-    const email = $("#login-email").val().trim();
-    const password = $("#login-password").val();
-    
-    if (!email || !password) {
-        Swal.fire({
-            icon: "error",
-            title: "Missing Information",
-            text: "Please fill in all fields.",
-        });
-        return;
-    }
-    
-    // Validate email format
-    const emailValidation = isValidEmail(email);
-    if (!emailValidation.valid) {
-        Swal.fire({
-            icon: "error",
-            title: "Invalid Email",
-            text: emailValidation.message,
-        });
-        return;
-    }
-    
-    // Show loading
-    $("#loadingOverlay").show();
-    
-    // Send login request to server
     $.ajax({
         type: 'POST',
         url: '/login',
         contentType: 'application/json',
-        data: JSON.stringify({ email, password }),
+        data: JSON.stringify({ email: email, password: password }),
         success: function(response) {
-            $("#loadingOverlay").hide();
+            $('#loadingOverlay').hide();
             if (response.success) {
-                Swal.fire({
-                    icon: "success",
-                    title: "Login Successful!",
-                    text: "Redirecting to homepage...",
-                    showConfirmButton: false,
-                    timer: 1500,
-                }).then(function () {
-                    window.location.href = 'homepage.html';
-                });
+                // Save credentials if remember me is checked
+                if ($('#remember').is(':checked')) {
+                    localStorage.setItem('studymatch_email', email);
+                    localStorage.setItem('studymatch_password', password);
+                } else {
+                    localStorage.removeItem('studymatch_email');
+                    localStorage.removeItem('studymatch_password');
+                }
+                
+                window.location.href = '/homepage.html';
             } else {
-                Swal.fire({
-                    icon: "error",
-                    title: "Login Failed",
-                    text: response.message || "Invalid email or password.",
-                });
+                Swal.fire({ icon: 'error', title: 'Login Failed', text: response.message });
             }
         },
-        error: function(jqXHR) {
-            $("#loadingOverlay").hide();
-            const response = jqXHR.responseJSON || {};
-            Swal.fire({
-                icon: "error",
-                title: "Login Failed",
-                text: response.message || "An error occurred. Please try again.",
-            });
+        error: function() {
+            $('#loadingOverlay').hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred. Please try again.' });
         }
     });
+}
+
+// Login button click
+$('#loginBtn').on('click', function() {
+    const email = $('#login-email').val().trim();
+    const password = $('#login-password').val();
+    
+    if (!email || !password) {
+        Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please enter email and password.' });
+        return;
+    }
+    
+    doLogin(email, password);
 });
 
-// Logout functionality
-$('#logout').click(function(e) {
-    e.preventDefault();
-    $.ajax({
-        type: 'POST',
-        url: '/logout',
-        success: function(response) {
-            window.location.href = 'index.html';
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-            console.error('AJAX Error:', textStatus, errorThrown);
-        }
-    });
+// Allow Enter key for login
+$('#login-password').on('keypress', function(e) {
+    if (e.which === 13) {
+        $('#loginBtn').click();
+    }
+});
+
+// OTP input auto-format
+$('#otp').on('input', function() {
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
 });
 </script>
 </body>
