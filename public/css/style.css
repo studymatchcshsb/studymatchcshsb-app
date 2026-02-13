@@ -135,13 +135,13 @@ button:hover {
 
 .sidebar {
   width: 80px;
-  background-color: #ffffff;
+  background: linear-gradient(180deg, #2E7D32 0%, #4CAF50 100%);
   padding: 20px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 30px;
-  border-right: 1px solid #e0e0e0;
+  border-right: none;
 }
 
 .sidebar .icon {
@@ -169,8 +169,8 @@ button:hover {
   justify-content: space-between;
   align-items: center;
   padding: 15px 30px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+  border-bottom: none;
   position: relative;
 }
 
@@ -269,13 +269,15 @@ button:hover {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background-color: #3498db;
-  color: white;
+  background-color: #FFD700;
+  color: #2E7D32;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: bold;
   font-size: 20px;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 .profile-pic-container .profile-icon {
   width: 45px;

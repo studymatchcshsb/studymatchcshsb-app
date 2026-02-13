@@ -5,7 +5,42 @@
   <title>Study Dashboard</title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    /* Notification red dot styles */
+    /* CSHSB Green Theme */
+    .sidebar {
+      background: linear-gradient(180deg, #2E7D32 0%, #1B5E20 100%);
+    }
+    
+    .sidebar .icon {
+      color: #FFD700;
+    }
+    
+    .sidebar .icon:hover {
+      color: #FFF;
+    }
+    
+    .dashboard-header {
+      background: linear-gradient(90deg, #2E7D32 0%, #4CAF50 100%);
+    }
+    
+    .header-icons .icon {
+      color: #FFD700;
+    }
+    
+    .header-icons .icon:hover {
+      color: #FFF;
+    }
+    
+    .profile-initials {
+      background: #FFD700 !important;
+      color: #1B5E20 !important;
+    }
+    
+    .header-username {
+      color: #FFD700;
+      font-weight: 600;
+    }
+    
+    /* Notification styles */
     .notification-bell-container {
       position: relative;
       display: inline-block;
@@ -19,7 +54,7 @@
       height: 12px;
       background-color: #e74c3c;
       border-radius: 50%;
-      border: 2px solid white;
+      border: 2px solid #FFD700;
       display: none;
       z-index: 10;
       animation: pulse 2s infinite;
@@ -30,18 +65,9 @@
     }
     
     @keyframes pulse {
-      0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
-      }
-      70% {
-        transform: scale(1.1);
-        box-shadow: 0 0 0 6px rgba(231, 76, 60, 0);
-      }
-      100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
-      }
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(231, 76, 60, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
     }
     
     .notification-item {
@@ -49,38 +75,19 @@
       border-radius: 8px;
       padding: 15px;
       margin-bottom: 10px;
-      border-left: 4px solid #3498db;
+      border-left: 4px solid #2E7D32;
     }
     
     .notification-item.kastudy_accepted {
-      border-left-color: #27ae60;
-    }
-    
-    .notification-content {
-      margin-bottom: 10px;
-    }
-    
-    .notification-actions {
-      display: flex;
-      gap: 10px;
-    }
-    
-    .help-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
+      border-left-color: #FFD700;
     }
     
     .help-btn.yes-btn {
-      background-color: #27ae60;
-      color: white;
+      background: linear-gradient(45deg, #2E7D32, #4CAF50);
     }
     
     .help-btn.no-btn {
-      background-color: #e74c3c;
-      color: white;
+      background: #c0392b;
     }
   </style>
 </head>
@@ -130,7 +137,7 @@
         </div>
 
 
-        <a href="/edit-profile.html" class="header-profile">
+        <a href="/profile.html" class="header-profile">
           <div class="profile-initials" id="profile-initials"></div>
           <span id="user-name" class="header-username"></span>
         </a>
@@ -166,78 +173,34 @@
         </div>
       </main>
 
-      <!-- Find a KaStudy - Lower Right Corner -->
+      <!-- Find a KaStudy - Simplified -->
       <section class="find-kastudy-corner">
         <div class="find-content">
           <div class="speech-bubble">Find a KaStudy!</div>
-          <button class="find-btn" onclick="openGradeModal()">Find!</button>
+          <div class="find-form">
+            <select id="quick-grade" onchange="updateQuickSubject()">
+              <option value="">Select Grade</option>
+              <option value="7">Grade 7</option>
+              <option value="8">Grade 8</option>
+              <option value="9">Grade 9</option>
+              <option value="10">Grade 10</option>
+            </select>
+            <select id="quick-subject">
+              <option value="">Select Subject</option>
+              <option value="ENGLISH">ENGLISH</option>
+              <option value="FILIPINO">FILIPINO</option>
+              <option value="SCIENCE">SCIENCE</option>
+              <option value="MATH">MATH</option>
+              <option value="ESP">ESP</option>
+              <option value="AP">AP</option>
+              <option value="ICT">ICT</option>
+              <option value="MAPEH">MAPEH</option>
+            </select>
+            <button class="find-btn" onclick="quickFindKaStudy()">Find!</button>
+          </div>
+          <p id="quick-result" style="text-align: center; margin-top: 10px; font-size: 12px;"></p>
         </div>
       </section>
-    </div>
-  </div>
-
-  <!-- Help Modal -->
-  <div id="help-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeHelpModal()">&times;</span>
-      <h3><b>How to use StudyMatch?</b></h3>
-      <ol>
-        <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur ullamcorper felis in est sodales, nec congue elit ultrices.</li>
-        <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur ullamcorper felis in est sodales, nec congue elit ultrices.</li>
-        <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur ullamcorper felis in est sodales, nec congue elit ultrices.</li>
-        <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur ullamcorper felis in est sodales, nec congue elit ultrices.</li>
-        <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur ullamcorper felis in est sodales, nec congue elit ultrices.</li>
-      </ol>
-      <hr>
-      <h4>What do you need help with?</h4>
-      <textarea id="help-request" placeholder="Write your suggestions, queries, etc. here..."></textarea>
-      <button onclick="submitHelpRequest()">Submit</button>
-      <p id="help-message" style="color: green; margin-top: 10px;"></p>
-    </div>
-  </div>
-
-  <!-- Grade Selection Modal -->
-  <div id="grade-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeGradeModal()">&times;</span>
-      <h3>Select Grade Level</h3>
-      <div class="selection-grid">
-        <button class="selection-btn" onclick="selectGrade(7)">7</button>
-        <button class="selection-btn" onclick="selectGrade(8)">8</button>
-        <button class="selection-btn" onclick="selectGrade(9)">9</button>
-        <button class="selection-btn" onclick="selectGrade(10)">10</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Subject Selection Modal -->
-  <div id="subject-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeSubjectModal()">&times;</span>
-      <h3>Select Subject</h3>
-      <div class="selection-grid">
-        <button class="selection-btn" onclick="selectSubject('ENGLISH')">ENGLISH</button>
-        <button class="selection-btn" onclick="selectSubject('FILIPINO')">FILIPINO</button>
-        <button class="selection-btn" onclick="selectSubject('SCIENCE')">SCIENCE</button>
-        <button class="selection-btn" onclick="selectSubject('ESP')">ESP</button>
-        <button class="selection-btn" onclick="selectSubject('AP')">AP</button>
-        <button class="selection-btn" onclick="selectSubject('ICT')">ICT</button>
-        <button class="selection-btn" onclick="selectSubject('MAPEH')">MAPEH</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Confirmation Modal -->
-  <div id="confirmation-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeConfirmationModal()">&times;</span>
-      <h3>Find KaStudy?</h3>
-      <div class="confirmation-buttons">
-        <button class="confirmation-btn yes-btn" onclick="confirmFind(true)">Yes</button>
-        <button class="confirmation-btn no-btn" onclick="confirmFind(false)">No</button>
-      </div>
-    </div>
-  </div>
 
 
   <!-- Notifications Modal -->
@@ -541,7 +504,59 @@
         }
     }
 
-    // Find Study Buddy Modals
+    // Simplified Find KaStudy function
+    async function quickFindKaStudy() {
+        const grade = document.getElementById('quick-grade').value;
+        const subject = document.getElementById('quick-subject').value;
+        const resultEl = document.getElementById('quick-result');
+        
+        console.log('quickFindKaStudy called - grade:', grade, 'subject:', subject);
+        
+        if (!grade) {
+            resultEl.innerText = 'Please select a grade level.';
+            resultEl.style.color = 'red';
+            return;
+        }
+        
+        if (!subject) {
+            resultEl.innerText = 'Please select a subject.';
+            resultEl.style.color = 'red';
+            return;
+        }
+        
+        resultEl.innerText = 'Sending...';
+        resultEl.style.color = 'blue';
+        
+        try {
+            const response = await fetch(`${backendURL}/find-kastudy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    grade: parseInt(grade),
+                    subject: subject
+                }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                resultEl.innerText = data.message;
+                resultEl.style.color = 'green';
+                alert(data.message);
+            } else {
+                resultEl.innerText = 'Error: ' + data.message;
+                resultEl.style.color = 'red';
+                alert('Error: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            resultEl.innerText = 'Network error: ' + error.message;
+            resultEl.style.color = 'red';
+        }
+    }
+
+    // Old modal-based functions (kept for reference but not used)
     let selectedGrade = null;
     let selectedSubject = null;
 
@@ -555,6 +570,8 @@
 
     function selectGrade(grade) {
         selectedGrade = grade;
+        document.getElementById('selected-grade').value = grade;
+        document.getElementById('grade-display').innerText = 'Selected: Grade ' + grade;
         closeGradeModal();
         openSubjectModal();
     }
@@ -565,17 +582,21 @@
 
     function closeSubjectModal() {
         document.getElementById('subject-modal').style.display = 'none';
-        selectedGrade = null;
     }
 
     function selectSubject(subject) {
         selectedSubject = subject;
+        document.getElementById('selected-subject').value = subject;
+        document.getElementById('subject-display').innerText = 'Selected Subject: ' + subject;
         closeSubjectModal();
         openConfirmationModal();
     }
 
     function openConfirmationModal() {
         document.getElementById('confirmation-modal').style.display = 'block';
+        const grade = document.getElementById('selected-grade').value;
+        const subject = document.getElementById('selected-subject').value;
+        document.getElementById('confirmation-display').innerText = 'Grade ' + grade + ' - ' + subject;
     }
 
     function closeConfirmationModal() {
@@ -583,16 +604,24 @@
     }
 
     async function confirmFind(yes) {
-        closeConfirmationModal();
         if (yes) {
-            // Send help request to all users in the same grade
+            const grade = document.getElementById('selected-grade').value;
+            const subject = document.getElementById('selected-subject').value;
+            
+            if (!grade || !subject) {
+                alert('Please select both grade level and subject.');
+                return;
+            }
+            
+            closeConfirmationModal();
+            
             try {
                 const response = await fetch(`${backendURL}/find-kastudy`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        grade: selectedGrade,
-                        subject: selectedSubject
+                        grade: parseInt(grade),
+                        subject: subject
                     }),
                     credentials: 'include'
                 });
@@ -604,24 +633,16 @@
 
                 const data = await response.json();
                 alert(data.message || 'Help request sent successfully!');
-
-                // Close all modals
-                closeGradeModal();
-                closeSubjectModal();
-
-                // Reset selections
                 selectedGrade = null;
                 selectedSubject = null;
-
             } catch (error) {
-                console.error("Error sending help request:", error);
+                console.error('Error sending help request:', error);
                 alert('Error sending help request. Please try again. Error: ' + error.message);
             }
         } else {
-            // Go back to homepage - close all modals
+            closeConfirmationModal();
             closeGradeModal();
             closeSubjectModal();
-            // Reset selections
             selectedGrade = null;
             selectedSubject = null;
         }
@@ -858,6 +879,8 @@
         console.log('Auth check passed, fetching todos and profile');
         fetchTodos();
         fetchUserProfile();
+        // Start polling for notifications as backup
+        startNotificationPolling();
       } catch (error) {
         console.error('Error in DOMContentLoaded:', error);
       }
@@ -871,19 +894,73 @@
       unreadCount++;
       updateNotificationDot(unreadCount);
       
-      // Show a browser notification if permitted
-      if (Notification.permission === 'granted') {
-        new Notification('StudyMatch CSHSB', {
-          body: `${notification.fromUser.username || 'Someone'} needs help with ${notification.subject}`,
-          icon: '/favicon.ico'
-        });
-      }
+      // Show a prominent toast notification
+      showNotificationToast(notification);
       
       // Reload notifications if modal is open
       if (document.getElementById('notifications-modal').style.display === 'block') {
         loadNotifications();
       }
     });
+
+    // Show toast notification
+    function showNotificationToast(notification) {
+      // Create toast element
+      const toast = document.createElement('div');
+      toast.className = 'notification-toast';
+      toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="background: #3498db; color: white; padding: 10px; border-radius: 50%;">📢</div>
+          <div>
+            <strong>New Help Request!</strong><br>
+            <small>${notification.fromUser.username} needs help with ${notification.subject}</small>
+          </div>
+        </div>
+      `;
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        border-left: 4px solid #3498db;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        max-width: 300px;
+        animation: slideIn 0.3s ease-out;
+        cursor: pointer;
+      `;
+      
+      toast.onclick = function() {
+        openNotificationsModal();
+        document.body.removeChild(toast);
+      };
+      
+      document.body.appendChild(toast);
+      
+      // Auto-remove after 8 seconds
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.style.animation = 'slideOut 0.3s ease-out';
+          setTimeout(() => toast.remove(), 300);
+        }
+      }, 8000);
+    }
+
+    // Add animation styles for toast
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
 
     socket.on('help_request_accepted', (data) => {
       console.log('Help request accepted:', data);
@@ -894,6 +971,12 @@
       }, 2000);
     });
 
+    // Poll for notifications every 5 seconds as backup for socket.io
+    function startNotificationPolling() {
+      setInterval(() => {
+        loadNotifications();
+      }, 5000);
+    }
 
     // Join socket room when user profile is loaded
     function joinSocketRoom(email) {

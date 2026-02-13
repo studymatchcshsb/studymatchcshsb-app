@@ -2,29 +2,163 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Edit Profile</title>
+  <title>Customize Profile</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .customize-container {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    
+    .customize-box {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 2px solid #FFD700;
+    }
+    
+    .customize-header {
+      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      padding: 25px;
+      text-align: center;
+    }
+    
+    .customize-header h2 {
+      margin: 0;
+      color: white;
+    }
+    
+    .customize-content {
+      padding: 30px;
+    }
+    
+    .subject-group {
+      margin-bottom: 25px;
+    }
+    
+    .subject-group h3 {
+      color: #2E7D32;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+    
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      padding: 12px 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+    
+    .checkbox-label:hover {
+      background: #e8f5e9;
+    }
+    
+    .checkbox-label input[type="checkbox"] {
+      margin-right: 10px;
+      accent-color: #2E7D32;
+    }
+    
+    .checkbox-label input[type="checkbox"]:checked + span {
+      color: #2E7D32;
+      font-weight: 600;
+    }
+    
+    .checkbox-label:has(input:checked) {
+      background: #e8f5e9;
+      border-color: #2E7D32;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    
+    .btn-save {
+      flex: 1;
+      background: linear-gradient(135deg, #2E7D32, #4CAF50) !important;
+      color: white !important;
+      padding: 14px 30px !important;
+      border-radius: 25px !important;
+      font-weight: 600 !important;
+      font-size: 16px !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    .btn-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4) !important;
+    }
+    
+    .btn-cancel {
+      flex: 1;
+      background: linear-gradient(135deg, #7f8c8d, #95a5a6) !important;
+      color: white !important;
+      padding: 14px 30px !important;
+      border-radius: 25px !important;
+      font-weight: 600 !important;
+      font-size: 16px !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    .btn-cancel:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(127, 140, 141, 0.4) !important;
+    }
+    
+    #form-message {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+    
+    @media (max-width: 500px) {
+      .checkbox-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Customize Profile</h2>
-    <form id="edit-profile-form">
-      <fieldset>
-        <legend>Strengths</legend>
-        <div class="checkbox-group" id="strengths-group">
+  <div class="customize-container">
+    <div class="customize-box">
+      <div class="customize-header">
+        <h2>Customize Profile</h2>
+      </div>
+      <div class="customize-content">
+        <form id="edit-profile-form">
+          <div class="subject-group">
+            <h3>Select Your Strengths (Subjects you're good at)</h3>
+            <div class="checkbox-grid" id="strengths-group">
+            </div>
+          </div>
           
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend>Weaknesses</legend>
-        <div class="checkbox-group" id="weaknesses-group">
-        </div>
-      </fieldset>
-      
-      <button type="submit">Save Changes</button>
-      <a href="/profile.html" class="button-link" style="background: #7f8c8d; margin-top: 10px;">Cancel</a>
-    </form>
-    <p id="form-message"></p>
+          <div class="subject-group">
+            <h3>Select Your Weaknesses (Subjects you need help with)</h3>
+            <div class="checkbox-grid" id="weaknesses-group">
+            </div>
+          </div>
+          
+          <div class="button-group">
+            <button type="submit" class="btn-save">Save Changes</button>
+            <a href="/profile.html" class="btn-cancel">Cancel</a>
+          </div>
+          <p id="form-message"></p>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -35,20 +169,21 @@
       const container = document.getElementById(containerId);
       subjects.forEach(subject => {
         const label = document.createElement('label');
+        label.className = 'checkbox-label';
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.name = groupName;
         checkbox.value = subject;
+        const span = document.createElement('span');
+        span.textContent = subject;
         label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(subject));
+        label.appendChild(span);
         container.appendChild(label);
       });
     }
 
     createCheckboxes('strengths-group', 'strengths');
     createCheckboxes('weaknesses-group', 'weaknesses');
-
-    // Checkbox selection limit removed.
 
     document.getElementById('edit-profile-form').addEventListener('submit', async function(event) {
       event.preventDefault();
@@ -57,10 +192,8 @@
       const strengths = Array.from(document.querySelectorAll('input[name="strengths"]:checked')).map(el => el.value);
       const weaknesses = Array.from(document.querySelectorAll('input[name="weaknesses"]:checked')).map(el => el.value);
 
-      // In a real app, get user ID from session. We'll simulate with LRN.
-      // The backend now uses the session email, so LRN is not needed here.
-
       messageEl.innerText = "Saving changes...";
+      messageEl.style.color = "#2E7D32";
 
       try {
         const response = await fetch(`${backendURL}/update-profile`, {

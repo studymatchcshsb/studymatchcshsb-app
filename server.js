@@ -762,7 +762,7 @@ app.post('/find-kastudy', async (req, res) => {
               console.log('[/find-kastudy] Notification added to:', helper.email);
               
               // Try to send real-time notification
-              const socketId = connectedUsers[helper.email];
+              const socketId = connectedUsers[helper.email.toLowerCase()];
               if (socketId) {
                 console.log('[/find-kastudy] Sending real-time notification to:', helper.email, 'socket:', socketId);
                 io.to(socketId).emit('new_notification', notification);
@@ -862,8 +862,9 @@ app.post('/respond-help-request', async (req, res) => {
               }
 
               // Notify the requester in real-time
-              if (connectedUsers[requesterEmail]) {
-                io.to(connectedUsers[requesterEmail]).emit('new_notification', successNotification);
+              const requesterSocket1 = connectedUsers[requesterEmail.toLowerCase()];
+              if (requesterSocket1) {
+                io.to(requesterSocket1).emit('new_notification', successNotification);
               }
 
               res.send({ success: true, message: 'Help request accepted! Starting chat...' });
@@ -932,8 +933,9 @@ app.post('/respond-kastudy-request', async (req, res) => {
               }
 
               // Notify the requester in real-time
-              if (connectedUsers[requesterEmail]) {
-                io.to(connectedUsers[requesterEmail]).emit('new_notification', successNotification);
+              const requesterSocket2 = connectedUsers[requesterEmail.toLowerCase()];
+              if (requesterSocket2) {
+                io.to(requesterSocket2).emit('new_notification', successNotification);
               }
 
               res.send({ success: true, message: 'Help request accepted! Starting chat...' });
@@ -1048,7 +1050,7 @@ io.on('connection', (socket) => {
         const senderUsername = sender ? sender.username : from;
 
         // Emit to recipient if online
-        const recipientSocket = connectedUsers[to];
+        const recipientSocket = connectedUsers[to.toLowerCase()];
         if (recipientSocket) {
           io.to(recipientSocket).emit('receive message', {
             from: senderUsername,
