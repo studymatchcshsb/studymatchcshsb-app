@@ -910,37 +910,60 @@ app.post('/respond-kastudy-request', async (req, res) => {
             return res.status(500).send({ success: false, message: 'Server error' });
           }
 
-          // Send notification to requester
-          const successNotification = {
-            id: Date.now() + Math.random(),
-            type: 'kastudy_accepted',
-            fromUser: {
-              username: helper.username,
-              email: userEmail
-            },
+          // Create a chat session
+          const chatSession = {
+            user1: requesterEmail,
+            user2: userEmail,
+            requester: requesterEmail,
+            helper: userEmail,
             subject: subject,
-            timestamp: new Date(),
-            message: "Hello, " + requesterName + "! We bring good news! " + helper.username + " wants to help you!"
+            active: true,
+            createdAt: new Date()
           };
 
-          db.update(
-            { email: requesterEmail },
-            { $push: { notifications: successNotification } },
-            { upsert: true },
-            (err, numReplaced) => {
-              if (err) {
-                console.error("Error sending success notification:", err);
-              }
-
-              // Notify the requester in real-time
-              const requesterSocket2 = connectedUsers[requesterEmail.toLowerCase()];
-              if (requesterSocket2) {
-                io.to(requesterSocket2).emit('new_notification', successNotification);
-              }
-
-              res.send({ success: true, message: 'Help request accepted! Starting chat...' });
+          chatSessionsDb.insert(chatSession, (err, newSession) => {
+            if (err) {
+              console.error("Error creating chat session:", err);
+              return res.status(500).send({ success: false, message: 'Server error' });
             }
-          );
+
+            // Send notification to requester with redirect to chat
+            const successNotification = {
+              id: Date.now() + Math.random(),
+              type: 'kastudy_accepted',
+              fromUser: {
+                username: helper.username,
+                email: userEmail
+              },
+              subject: subject,
+              timestamp: new Date(),
+              message: "Hello, " + requesterName + "! We bring good news! " + helper.username + " wants to help you!",
+              redirectUrl: '/chats.html?chat=' + userEmail
+            };
+
+            db.update(
+              { email: requesterEmail },
+              { $push: { notifications: successNotification } },
+              { upsert: true },
+              (err, numReplaced) => {
+                if (err) {
+                  console.error("Error sending success notification:", err);
+                }
+
+                // Notify the requester in real-time
+                const requesterSocket2 = connectedUsers[requesterEmail.toLowerCase()];
+                if (requesterSocket2) {
+                  io.to(requesterSocket2).emit('new_notification', successNotification);
+                }
+
+                res.send({ 
+                  success: true, 
+                  message: 'Help request accepted! Starting chat...',
+                  redirectUrl: '/chats.html?chat=' + requesterEmail
+                });
+              }
+            );
+          });
         });
       } else {
         res.send({ success: true, message: 'Help request declined.' });
@@ -1004,6 +1027,271 @@ app.get('/get-quizzes', async (req, res) => {
     }
 
     res.send({ quizzes: user.quizzes });
+  });
+});
+
+// New Chat System Endpoints
+
+// Create a new database for chat sessions
+const chatSessionsDb = new Datastore({ filename: 'chat-sessions.db', autoload: true });
+
+// Get active chat sessions for a user
+app.get('/get-active-chats', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  chatSessionsDb.find({
+    $or: [
+      { user1: userEmail },
+      { user2: userEmail }
+    ],
+    active: true
+  }, (err, sessions) => {
+    if (err) {
+      console.error("Error finding chat sessions:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (sessions.length === 0) {
+      return res.send({ chats: [] });
+    }
+
+    // Get partner details for each session
+    const partnerEmails = sessions.map(s => s.user1 === userEmail ? s.user2 : s.user1);
+    
+    db.find({ email: { $in: partnerEmails } }, (err, users) => {
+      if (err) {
+        console.error("Error finding users:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const chats = sessions.map(session => {
+        const partnerEmail = session.user1 === userEmail ? session.user2 : session.user1;
+        const partner = users.find(u => u.email === partnerEmail);
+        
+        return {
+          sessionId: session._id,
+          partnerEmail: partnerEmail,
+          partnerUsername: partner ? partner.username : partnerEmail,
+          subject: session.subject,
+          createdAt: session.createdAt
+        };
+      });
+
+      res.send({ chats });
+    });
+  });
+});
+
+// Get helped lists
+app.get('/get-helped-lists', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Find closed chat sessions where user was involved
+  chatSessionsDb.find({
+    $or: [
+      { user1: userEmail },
+      { user2: userEmail }
+    ],
+    active: false
+  }, (err, sessions) => {
+    if (err) {
+      console.error("Error finding closed sessions:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (sessions.length === 0) {
+      return res.send({ helpedByMe: [], helpedMe: [] });
+    }
+
+    // Separate into helped by me and helped me
+    const helpedByMeEmails = sessions.filter(s => s.helper === userEmail).map(s => s.requester);
+    const helpedMeEmails = sessions.filter(s => s.requester === userEmail).map(s => s.helper);
+
+    const allEmails = [...new Set([...helpedByMeEmails, ...helpedMeEmails])];
+
+    if (allEmails.length === 0) {
+      return res.send({ helpedByMe: [], helpedMe: [] });
+    }
+
+    db.find({ email: { $in: allEmails } }, (err, users) => {
+      if (err) {
+        console.error("Error finding users:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const helpedByMe = helpedByMeEmails.map(email => {
+        const user = users.find(u => u.email === email);
+        return user ? { username: user.username, email: user.email } : null;
+      }).filter(u => u !== null);
+
+      const helpedMe = helpedMeEmails.map(email => {
+        const user = users.find(u => u.email === email);
+        return user ? { username: user.username, email: user.email } : null;
+      }).filter(u => u !== null);
+
+      res.send({ helpedByMe, helpedMe });
+    });
+  });
+});
+
+// Close a chat session
+app.post('/close-chat', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { partnerEmail } = req.body;
+
+  if (!partnerEmail) {
+    return res.status(400).send({ success: false, message: 'Partner email is required' });
+  }
+
+  // Find and close the chat session
+  chatSessionsDb.findOne({
+    $or: [
+      { user1: userEmail, user2: partnerEmail },
+      { user1: partnerEmail, user2: userEmail }
+    ],
+    active: true
+  }, (err, session) => {
+    if (err) {
+      console.error("Error finding session:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (!session) {
+      return res.status(404).send({ success: false, message: 'Chat session not found' });
+    }
+
+    // Mark session as closed
+    chatSessionsDb.update(
+      { _id: session._id },
+      { $set: { active: false, closedAt: new Date(), closedBy: userEmail } },
+      {},
+      (err, numReplaced) => {
+        if (err) {
+          console.error("Error closing session:", err);
+          return res.status(500).send({ success: false, message: 'Server error' });
+        }
+
+        // Notify the other user via socket
+        const partnerSocket = connectedUsers[partnerEmail.toLowerCase()];
+        if (partnerSocket) {
+          io.to(partnerSocket).emit('chat_closed', { partnerEmail: userEmail });
+        }
+
+        res.send({ success: true, message: 'Chat closed successfully' });
+      }
+    );
+  });
+});
+
+// File upload endpoint
+const multer = require('multer');
+const path = require('path');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'public/uploads/chat-files';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+app.post('/upload-chat-file', upload.single('file'), async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  if (!req.file) {
+    return res.status(400).send({ success: false, message: 'No file uploaded' });
+  }
+
+  const { to } = req.body;
+  if (!to) {
+    return res.status(400).send({ success: false, message: 'Recipient email is required' });
+  }
+
+  const fileUrl = '/uploads/chat-files/' + req.file.filename;
+  const timestamp = new Date();
+
+  // Store message with file in database
+  const messageData = {
+    from: userEmail,
+    to: to,
+    message: '',
+    fileUrl: fileUrl,
+    fileName: req.file.originalname,
+    fileType: req.file.mimetype,
+    timestamp: timestamp,
+    conversationId: [userEmail, to].sort().join('_')
+  };
+
+  messagesDb.insert(messageData, (err, newDoc) => {
+    if (err) {
+      console.error("Error saving message:", err);
+      return res.status(500).send({ success: false, message: 'Error saving message' });
+    }
+
+    // Get sender's username
+    db.findOne({ email: userEmail }, (err, sender) => {
+      if (err) {
+        console.error("Error finding sender:", err);
+        return res.send({ success: true, fileUrl });
+      }
+
+      const senderUsername = sender ? sender.username : userEmail;
+
+      // Emit to recipient if online
+      const recipientSocket = connectedUsers[to.toLowerCase()];
+      if (recipientSocket) {
+        io.to(recipientSocket).emit('receive message', {
+          from: senderUsername,
+          fromEmail: userEmail,
+          message: '',
+          fileUrl: fileUrl,
+          fileName: req.file.originalname,
+          fileType: req.file.mimetype,
+          timestamp: timestamp
+        });
+      }
+
+      // Emit to sender
+      const senderSocket = connectedUsers[userEmail.toLowerCase()];
+      if (senderSocket) {
+        io.to(senderSocket).emit('receive message', {
+          from: senderUsername,
+          fromEmail: userEmail,
+          message: '',
+          fileUrl: fileUrl,
+          fileName: req.file.originalname,
+          fileType: req.file.mimetype,
+          timestamp: timestamp
+        });
+      }
+
+      res.send({ success: true, fileUrl });
+    });
   });
 });
 
