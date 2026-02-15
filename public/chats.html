@@ -94,8 +94,8 @@
     }
 
     .back-button {
-      margin: 20px;
-      padding: 12px;
+      margin: 20px auto;
+      padding: 8px 16px;
       background: #2E7D32;
       color: #FFD700;
       border: none;
@@ -103,11 +103,20 @@
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
+      font-size: 12px;
+      display: block;
+      text-align: center;
+      width: calc(100% - 40px);
     }
 
     .back-button:hover {
       background: #1B5E20;
       transform: translateY(-2px);
+    }
+    
+    .back-button-container {
+      margin-top: auto;
+      padding: 20px;
     }
 
     /* Middle Section - Active Chats */
@@ -529,9 +538,11 @@
         </div>
       </div>
 
-      <button class="back-button" onclick="window.location.href='/homepage.html'">
-        ← Back to Dashboard
-      </button>
+      <div class="back-button-container">
+        <button class="back-button" onclick="window.location.href='/homepage.html'">
+          ← Back
+        </button>
+      </div>
     </div>
 
     <!-- Middle: Active Chats List -->

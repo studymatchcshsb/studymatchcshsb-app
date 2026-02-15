@@ -4,47 +4,71 @@
   <meta charset="UTF-8" />
   <title>Finish Setting Up Profile</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .readonly-field {
+      background-color: #f0f0f0;
+      cursor: not-allowed;
+    }
+    
+    .username-status {
+      font-size: 12px;
+      margin-top: 5px;
+      font-weight: 600;
+    }
+    
+    .username-status.available {
+      color: green;
+    }
+    
+    .username-status.taken {
+      color: red;
+    }
+    
+    .username-status.checking {
+      color: #666;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h2>Finish Setting Up Profile</h2>
     <form id="profile-form" onsubmit="prepareAndSubmit(event)">
-      <input type="text" id="name" name="name" placeholder="Name (One name, no spaces)" required pattern="[A-Za-z]+" title="Please enter one name without spaces." oninput="capitalizeInput(this)" />
-      <input type="text" id="surname" name="surname" placeholder="Surname" required oninput="capitalizeInput(this)" />
-      <input type="text" inputmode="numeric" name="lrn" placeholder="LRN (12 digits)" required minlength="12" maxlength="12" pattern="\d{12}" title="Please enter exactly 12 digits for the LRN." />
-      <input type="text" id="username" name="username" placeholder="Username/Codename (3-20 characters)" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" title="Username can only contain letters, numbers, and underscores." />
+      <!-- Step 1: Enter LRN to lookup student info -->
+      <div id="lrn-lookup-step">
+        <input type="text" id="lrn-input" inputmode="numeric" placeholder="Enter your LRN (12 digits)" required minlength="12" maxlength="12" pattern="\d{12}" title="Please enter exactly 12 digits for the LRN." />
+        <button type="button" onclick="lookupLRN()">Verify LRN</button>
+        <p id="lrn-message" style="color: red;"></p>
+      </div>
 
-      <select name="grade" required>
-        <option value="" disabled selected>Select Your Grade</option>
-        <option value="7">7</option>
-        <option value="8">8</option>
-        <option value="9">9</option>
-        <option value="10">10</option>
-      </select>
-      
-      <select name="section" required>
-        <option value="" disabled selected>Select Your Section</option>
-        <option value="Android">Android</option>
-        <option value="Oracle">Oracle</option>
-        <option value="Symbian">Symbian</option>
-        <option value="Macintosh">Macintosh</option>
-        <option value="Redhat">Redhat</option>
-        <option value="Unix">Unix</option>
-        <option value="Fedora">Fedora</option>
-        <option value="Minix">Minix</option>
-        <option value="Solaris">Solaris</option>
-        <option value="Chimera">Chimera</option>
-        <option value="Linux">Linux</option>
-        <option value="Xenix">Xenix</option>
-      </select>
-      
-      <button type="submit">Next</button>
+      <!-- Step 2: Auto-filled fields and username selection -->
+      <div id="profile-fields-step" style="display: none;">
+        <input type="text" id="name" name="name" placeholder="Name" readonly class="readonly-field" required />
+        <input type="text" id="surname" name="surname" placeholder="Surname" readonly class="readonly-field" required />
+        <input type="text" id="lrn" name="lrn" placeholder="LRN" readonly class="readonly-field" required />
+        <input type="text" id="grade" name="grade" placeholder="Grade" readonly class="readonly-field" required />
+        <input type="text" id="section" name="section" placeholder="Section" readonly class="readonly-field" required />
+        
+        <input type="text" id="username" name="username" placeholder="Choose your Username/Codename (3-20 characters)" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" title="Username can only contain letters, numbers, and underscores." oninput="checkUsername()" />
+        <div id="username-status" class="username-status"></div>
+        
+        <button type="submit" id="submit-btn" disabled>Complete Profile</button>
+      </div>
     </form>
     <p id="form-message" style="color: red;"></p>
   </div>
 
   <script>
     const backendURL = window.location.origin;
+    let usernameCheckTimeout;
+    let isUsernameValid = false;
+
+    // Profanity filter - add more words as needed
+    const profanityList = [
+      'fuck', 'shit', 'damn', 'bitch', 'ass', 'asshole', 'bastard', 'crap', 
+      'dick', 'pussy', 'cock', 'slut', 'whore', 'fag', 'nigger', 'nigga',
+      'puta', 'putang', 'gago', 'tanga', 'bobo', 'tarantado', 'ulol',
+      'tangina', 'punyeta', 'leche', 'yawa', 'piste'
+    ];
 
     // Check if user is authenticated
     async function checkAuthentication() {
@@ -69,56 +93,151 @@
     // Check authentication on page load
     checkAuthentication();
 
-    function capitalizeInput(element) {
-      let value = element.value;
-      if (value.length > 0) {
-        // Capitalize first letter, lowercase the rest
-        element.value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+    async function lookupLRN() {
+      const lrnInput = document.getElementById('lrn-input');
+      const lrn = lrnInput.value.trim();
+      const messageEl = document.getElementById('lrn-message');
+
+      if (lrn.length !== 12) {
+        messageEl.innerText = "Please enter a valid 12-digit LRN.";
+        messageEl.style.color = 'red';
+        return;
       }
+
+      messageEl.innerText = "Verifying LRN...";
+      messageEl.style.color = '#666';
+
+      try {
+        const response = await fetch(`${backendURL}/lookup-lrn`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ lrn: lrn })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message);
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+          // Fill in the form fields
+          document.getElementById('name').value = data.student.firstName;
+          document.getElementById('surname').value = data.student.surname;
+          document.getElementById('lrn').value = data.student.lrn;
+          document.getElementById('grade').value = data.student.grade;
+          document.getElementById('section').value = data.student.section;
+
+          // Hide LRN lookup step and show profile fields
+          document.getElementById('lrn-lookup-step').style.display = 'none';
+          document.getElementById('profile-fields-step').style.display = 'block';
+          
+          messageEl.innerText = "";
+        }
+      } catch (error) {
+        messageEl.innerText = error.message;
+        messageEl.style.color = 'red';
+      }
+    }
+
+    function containsProfanity(text) {
+      const lowerText = text.toLowerCase();
+      return profanityList.some(word => lowerText.includes(word));
+    }
+
+    async function checkUsername() {
+      const usernameInput = document.getElementById('username');
+      const username = usernameInput.value.trim();
+      const statusEl = document.getElementById('username-status');
+      const submitBtn = document.getElementById('submit-btn');
+
+      // Clear previous timeout
+      clearTimeout(usernameCheckTimeout);
+
+      if (username.length < 3) {
+        statusEl.innerText = '';
+        statusEl.className = 'username-status';
+        isUsernameValid = false;
+        submitBtn.disabled = true;
+        return;
+      }
+
+      // Check for profanity
+      if (containsProfanity(username)) {
+        statusEl.innerText = '❌ Username contains inappropriate language';
+        statusEl.className = 'username-status taken';
+        isUsernameValid = false;
+        submitBtn.disabled = true;
+        return;
+      }
+
+      statusEl.innerText = '⏳ Checking availability...';
+      statusEl.className = 'username-status checking';
+      isUsernameValid = false;
+      submitBtn.disabled = true;
+
+      // Debounce the API call
+      usernameCheckTimeout = setTimeout(async () => {
+        try {
+          const response = await fetch(`${backendURL}/check-username`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ username: username })
+          });
+
+          const data = await response.json();
+
+          if (data.available) {
+            statusEl.innerText = '✓ Username is available!';
+            statusEl.className = 'username-status available';
+            isUsernameValid = true;
+            submitBtn.disabled = false;
+          } else {
+            statusEl.innerText = '❌ Username is already taken';
+            statusEl.className = 'username-status taken';
+            isUsernameValid = false;
+            submitBtn.disabled = true;
+          }
+        } catch (error) {
+          console.error('Error checking username:', error);
+          statusEl.innerText = '⚠ Error checking username';
+          statusEl.className = 'username-status taken';
+          isUsernameValid = false;
+          submitBtn.disabled = true;
+        }
+      }, 500); // Wait 500ms after user stops typing
     }
 
     async function prepareAndSubmit(event) {
       event.preventDefault();
+      
+      if (!isUsernameValid) {
+        alert('Please choose a valid and available username.');
+        return;
+      }
+
       const form = event.target;
       const formData = new FormData(form);
-      const lrn = formData.get('lrn');
-      const firstName = formData.get('name');
-      const surname = formData.get('surname');
       const messageEl = document.getElementById('form-message');
 
-      messageEl.innerText = "Validating LRN and name...";
+      messageEl.innerText = "Saving profile...";
+      messageEl.style.color = '#666';
 
       try {
-        // First, validate LRN
-        const lrnResponse = await fetch(`${backendURL}/check-lrn`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            lrn: lrn,
-            firstName: firstName,
-            surname: surname
-          })
-        });
-
-        if (!lrnResponse.ok) {
-          const errorData = await lrnResponse.json();
-          throw new Error(errorData.message);
-        }
-
-        messageEl.innerText = "Saving profile...";
-
-        // Prepare profile data (password not needed - user is already authenticated via session)
+        // Prepare profile data
         const profileData = {
           name: formData.get('name').trim(),
-          surname: formData.get('surname'),
+          surname: formData.get('surname').trim(),
           username: formData.get('username').trim(),
           lrn: formData.get('lrn'),
           grade: formData.get('grade'),
           section: formData.get('section')
         };
 
-        // Save profile directly
+        // Save profile
         const saveResponse = await fetch(`${backendURL}/save-profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -38,6 +38,7 @@ const messagesDb = new Datastore({ filename: 'messages.db', autoload: true });
 
 // Store connected users (declared early for use in endpoints)
 const connectedUsers = {};
+const activeUserSessions = {}; // Track active user sessions with their details
 
 let storedEmail = "";
 let currentCode = "";
@@ -319,6 +320,68 @@ app.post('/login', async (req, res) => {
         res.status(401).send({ success: false, message: 'Invalid email or password.' });
       }
     });
+  });
+});
+
+// New endpoint: Lookup LRN and return student info
+app.post('/lookup-lrn', (req, res) => {
+  const { lrn } = req.body;
+
+  if (!lrn) {
+    return res.status(400).send({ success: false, message: 'LRN is required.' });
+  }
+
+  fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
+    if (err) {
+      console.error("Error reading LRN file:", err);
+      return res.status(500).send({ success: false, message: 'Server error checking LRN.' });
+    }
+
+    const lrnData = JSON.parse(data);
+    const student = lrnData.students.find(s => s.lrn === lrn);
+
+    if (!student) {
+      return res.status(403).send({ success: false, message: 'This LRN is not found in our records. Please contact your administrator.' });
+    }
+
+    // Check if LRN is already used
+    if (student.used) {
+      return res.status(403).send({ success: false, message: 'This LRN has already been registered. Each LRN can only be used once.' });
+    }
+
+    res.send({ 
+      success: true, 
+      student: {
+        firstName: student.firstName,
+        surname: student.surname,
+        lrn: student.lrn,
+        grade: student.grade,
+        section: student.section
+      }
+    });
+  });
+});
+
+// New endpoint: Check username availability
+app.post('/check-username', async (req, res) => {
+  const { username } = req.body;
+
+  if (!username) {
+    return res.status(400).send({ available: false, message: 'Username is required.' });
+  }
+
+  // Check if username already exists in database
+  db.findOne({ username: username.toLowerCase() }, (err, user) => {
+    if (err) {
+      console.error("Error checking username:", err);
+      return res.status(500).send({ available: false, message: 'Server error checking username.' });
+    }
+
+    if (user) {
+      return res.send({ available: false, message: 'Username is already taken.' });
+    }
+
+    res.send({ available: true, message: 'Username is available.' });
   });
 });
 
@@ -1295,6 +1358,42 @@ app.post('/upload-chat-file', upload.single('file'), async (req, res) => {
   });
 });
 
+// Get active users endpoint
+app.get('/get-active-users', async (req, res) => {
+  try {
+    // Get all active user emails
+    const activeEmails = Object.keys(activeUserSessions);
+    
+    if (activeEmails.length === 0) {
+      return res.send({ success: true, activeUsers: [], totalActive: 0 });
+    }
+
+    // Get user details from database
+    db.find({ email: { $in: activeEmails } }, (err, users) => {
+      if (err) {
+        console.error("Error finding active users:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const activeUsers = users.map(user => ({
+        username: user.username,
+        email: user.email,
+        grade: user.grade,
+        section: user.section
+      }));
+
+      res.send({ 
+        success: true, 
+        activeUsers: activeUsers,
+        totalActive: activeUsers.length
+      });
+    });
+  } catch (error) {
+    console.error("Error in get-active-users:", error);
+    res.status(500).send({ success: false, message: 'Server error' });
+  }
+});
+
 const server = http.createServer(app);
 const io = socketIo(server);
 
@@ -1305,6 +1404,22 @@ io.on('connection', (socket) => {
     const normalizedEmail = email.toLowerCase();
     connectedUsers[normalizedEmail] = socket.id;
     socket.email = normalizedEmail;
+    
+    // Add to active user sessions
+    db.findOne({ email: normalizedEmail }, (err, user) => {
+      if (!err && user) {
+        activeUserSessions[normalizedEmail] = {
+          username: user.username,
+          grade: user.grade,
+          section: user.section,
+          connectedAt: new Date()
+        };
+        
+        // Broadcast to all clients that a user connected
+        io.emit('user_connected', { email: normalizedEmail });
+      }
+    });
+    
     console.log(normalizedEmail + ' joined with socket ' + socket.id);
   });
 
@@ -1362,6 +1477,11 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if (socket.email) {
       delete connectedUsers[socket.email];
+      delete activeUserSessions[socket.email];
+      
+      // Broadcast to all clients that a user disconnected
+      io.emit('user_disconnected', { email: socket.email });
+      
       console.log(socket.email + ' disconnected');
     }
   });

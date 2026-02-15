@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Active Users - StudyMatch</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .active-users-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #FFD700, #FFC107);
+      padding: 30px;
+      text-align: center;
+      border-bottom: 4px solid #2E7D32;
+    }
+
+    .header h1 {
+      margin: 0;
+      color: #1B5E20;
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .header p {
+      margin: 10px 0 0 0;
+      color: #2E7D32;
+      font-size: 16px;
+    }
+
+    .back-button {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      background: #2E7D32;
+      color: #FFD700;
+      padding: 10px 20px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      border: 2px solid #FFD700;
+    }
+
+    .back-button:hover {
+      background: #1B5E20;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .grade-section {
+      margin-bottom: 40px;
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 25px;
+      border: 3px solid #2E7D32;
+    }
+
+    .grade-title {
+      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      color: #FFD700;
+      padding: 15px 25px;
+      border-radius: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      display: inline-block;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .sections-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .section-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      border: 3px solid #FFD700;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      border-color: #2E7D32;
+    }
+
+    .section-name {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2E7D32;
+      margin-bottom: 10px;
+    }
+
+    .section-count {
+      font-size: 36px;
+      font-weight: bold;
+      color: #FFD700;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .section-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .no-users {
+      text-align: center;
+      color: #999;
+      padding: 40px;
+      font-size: 18px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      font-size: 20px;
+      color: #2E7D32;
+    }
+
+    .total-active {
+      background: linear-gradient(135deg, #FFD700, #FFC107);
+      color: #1B5E20;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .total-active span {
+      font-size: 36px;
+      color: #2E7D32;
+    }
+  </style>
+</head>
+<body>
+  <a href="/homepage.html" class="back-button">← Back to Dashboard</a>
+  
+  <div class="active-users-container">
+    <div class="header">
+      <h1>🟢 Active Users</h1>
+      <p>See who's online and ready to study!</p>
+    </div>
+
+    <div class="content">
+      <div class="total-active" id="total-active">
+        Loading...
+      </div>
+
+      <div id="active-users-list">
+        <div class="loading">Loading active users...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const backendURL = window.location.origin;
+    const socket = io();
+    let currentUserEmail = '';
+
+    // Track active users via socket
+    const activeUsers = new Set();
+
+    window.onload = async function() {
+      await fetchUserProfile();
+      await loadActiveUsers();
+      
+      // Listen for user connection/disconnection events
+      socket.on('user_connected', (data) => {
+        activeUsers.add(data.email);
+        updateActiveUsersList();
+      });
+
+      socket.on('user_disconnected', (data) => {
+        activeUsers.delete(data.email);
+        updateActiveUsersList();
+      });
+    };
+
+    async function fetchUserProfile() {
+      try {
+        const response = await fetch(`${backendURL}/get-profile`);
+        if (!response.ok) throw new Error('Failed to fetch profile');
+        
+        const data = await response.json();
+        if (data.success) {
+          currentUserEmail = data.user.email;
+          socket.emit('join', currentUserEmail);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    }
+
+    async function loadActiveUsers() {
+      try {
+        const response = await fetch(`${backendURL}/get-active-users`);
+        if (!response.ok) throw new Error('Failed to fetch active users');
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayActiveUsers(data.activeUsers, data.totalActive);
+        }
+      } catch (error) {
+        console.error("Error loading active users:", error);
+        document.getElementById('active-users-list').innerHTML = 
+          '<div class="no-users">Failed to load active users. Please refresh the page.</div>';
+      }
+    }
+
+    function displayActiveUsers(users, totalActive) {
+      const totalEl = document.getElementById('total-active');
+      const listEl = document.getElementById('active-users-list');
+
+      totalEl.innerHTML = `Total Active Users: <span>${totalActive}</span>`;
+
+      if (totalActive === 0) {
+        listEl.innerHTML = '<div class="no-users">No users are currently active. Be the first!</div>';
+        return;
+      }
+
+      // Group users by grade and section
+      const grouped = {};
+      
+      users.forEach(user => {
+        const grade = user.grade || 'Unknown';
+        const section = user.section || 'Unknown';
+        
+        if (!grouped[grade]) {
+          grouped[grade] = {};
+        }
+        
+        if (!grouped[grade][section]) {
+          grouped[grade][section] = 0;
+        }
+        
+        grouped[grade][section]++;
+      });
+
+      // Sort grades
+      const sortedGrades = Object.keys(grouped).sort((a, b) => {
+        if (a === 'Unknown') return 1;
+        if (b === 'Unknown') return -1;
+        return parseInt(a) - parseInt(b);
+      });
+
+      // Build HTML
+      let html = '';
+      
+      sortedGrades.forEach(grade => {
+        html += `
+          <div class="grade-section">
+            <div class="grade-title">Grade ${grade}</div>
+            <div class="sections-grid">
+        `;
+        
+        // Sort sections alphabetically
+        const sections = Object.keys(grouped[grade]).sort();
+        
+        sections.forEach(section => {
+          const count = grouped[grade][section];
+          html += `
+            <div class="section-card">
+              <div class="section-name">${section}</div>
+              <div class="section-count">${count}</div>
+              <div class="section-label">${count === 1 ? 'user' : 'users'} active</div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      listEl.innerHTML = html;
+    }
+
+    function updateActiveUsersList() {
+      // Reload the active users list
+      loadActiveUsers();
+    }
+  </script>
+</body>
+</html>
