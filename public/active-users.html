@@ -12,7 +12,7 @@
     }
 
     .active-users-container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       background: white;
       border-radius: 20px;
@@ -58,6 +58,39 @@
       background: #1B5E20;
       transform: translateY(-2px);
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .admin-controls {
+      padding: 20px 40px;
+      background: #f8f9fa;
+      border-bottom: 2px solid #ddd;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .admin-button {
+      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      border: 3px solid transparent;
+    }
+
+    .admin-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.4);
+    }
+
+    .admin-button.active {
+      background: #FFD700;
+      color: #1B5E20;
+      border-color: #2E7D32;
     }
 
     .content {
@@ -156,6 +189,53 @@
       font-size: 36px;
       color: #2E7D32;
     }
+
+    /* Table styles for admin view */
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .users-table th {
+      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      color: #FFD700;
+      padding: 15px;
+      text-align: left;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .users-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+      color: #333;
+    }
+
+    .users-table tr:hover {
+      background: #f5f5f5;
+    }
+
+    .users-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .section-table-container {
+      margin-bottom: 30px;
+    }
+
+    .section-table-title {
+      background: #FFD700;
+      color: #1B5E20;
+      padding: 12px 20px;
+      font-weight: bold;
+      font-size: 18px;
+      border-radius: 10px 10px 0 0;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -167,13 +247,49 @@
       <p>See who's online and ready to study!</p>
     </div>
 
+    <!-- Admin Controls (only visible for admins) -->
+    <div id="admin-controls" class="admin-controls" style="display: none;">
+      <button class="admin-button active" id="btn-count-view" onclick="showCountView()">
+        📊 Count View
+      </button>
+      <button class="admin-button" id="btn-active-detailed" onclick="showActiveDetailed()">
+        👥 Active Comsayanos
+      </button>
+      <button class="admin-button" id="btn-all-users" onclick="showAllUsers()">
+        📋 Comsayanos in StudyMatch
+      </button>
+    </div>
+
     <div class="content">
-      <div class="total-active" id="total-active">
-        Loading...
+      <!-- Count View (default for all users) -->
+      <div id="count-view">
+        <div class="total-active" id="total-active">
+          Loading...
+        </div>
+
+        <div id="active-users-list">
+          <div class="loading">Loading active users...</div>
+        </div>
       </div>
 
-      <div id="active-users-list">
-        <div class="loading">Loading active users...</div>
+      <!-- Active Users Detailed View (admin only) -->
+      <div id="active-detailed-view" style="display: none;">
+        <div class="total-active" id="total-active-detailed">
+          Loading...
+        </div>
+        <div id="active-users-detailed-list">
+          <div class="loading">Loading active users...</div>
+        </div>
+      </div>
+
+      <!-- All Users View (admin only) -->
+      <div id="all-users-view" style="display: none;">
+        <div class="total-active" id="total-all-users">
+          Loading...
+        </div>
+        <div id="all-users-list">
+          <div class="loading">Loading all users...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -183,6 +299,8 @@
     const backendURL = window.location.origin;
     const socket = io();
     let currentUserEmail = '';
+    let isAdmin = false;
+    let currentView = 'count';
 
     // Track active users via socket
     const activeUsers = new Set();
@@ -194,12 +312,20 @@
       // Listen for user connection/disconnection events
       socket.on('user_connected', (data) => {
         activeUsers.add(data.email);
-        updateActiveUsersList();
+        if (currentView === 'count') {
+          updateActiveUsersList();
+        } else if (currentView === 'active-detailed') {
+          loadActiveUsersDetailed();
+        }
       });
 
       socket.on('user_disconnected', (data) => {
         activeUsers.delete(data.email);
-        updateActiveUsersList();
+        if (currentView === 'count') {
+          updateActiveUsersList();
+        } else if (currentView === 'active-detailed') {
+          loadActiveUsersDetailed();
+        }
       });
     };
 
@@ -211,6 +337,13 @@
         const data = await response.json();
         if (data.success) {
           currentUserEmail = data.user.email;
+          isAdmin = data.user.isAdmin || false;
+          
+          // Show admin controls if user is admin
+          if (isAdmin) {
+            document.getElementById('admin-controls').style.display = 'flex';
+          }
+          
           socket.emit('join', currentUserEmail);
         }
       } catch (error) {
@@ -307,6 +440,171 @@
     function updateActiveUsersList() {
       // Reload the active users list
       loadActiveUsers();
+    }
+
+    // Admin functions
+    function showCountView() {
+      currentView = 'count';
+      document.getElementById('count-view').style.display = 'block';
+      document.getElementById('active-detailed-view').style.display = 'none';
+      document.getElementById('all-users-view').style.display = 'none';
+      
+      document.getElementById('btn-count-view').classList.add('active');
+      document.getElementById('btn-active-detailed').classList.remove('active');
+      document.getElementById('btn-all-users').classList.remove('active');
+      
+      loadActiveUsers();
+    }
+
+    async function showActiveDetailed() {
+      if (!isAdmin) return;
+      
+      currentView = 'active-detailed';
+      document.getElementById('count-view').style.display = 'none';
+      document.getElementById('active-detailed-view').style.display = 'block';
+      document.getElementById('all-users-view').style.display = 'none';
+      
+      document.getElementById('btn-count-view').classList.remove('active');
+      document.getElementById('btn-active-detailed').classList.add('active');
+      document.getElementById('btn-all-users').classList.remove('active');
+      
+      await loadActiveUsersDetailed();
+    }
+
+    async function showAllUsers() {
+      if (!isAdmin) return;
+      
+      currentView = 'all-users';
+      document.getElementById('count-view').style.display = 'none';
+      document.getElementById('active-detailed-view').style.display = 'none';
+      document.getElementById('all-users-view').style.display = 'block';
+      
+      document.getElementById('btn-count-view').classList.remove('active');
+      document.getElementById('btn-active-detailed').classList.remove('active');
+      document.getElementById('btn-all-users').classList.add('active');
+      
+      await loadAllUsers();
+    }
+
+    async function loadActiveUsersDetailed() {
+      try {
+        const response = await fetch(`${backendURL}/admin/get-active-users-detailed`);
+        if (!response.ok) throw new Error('Failed to fetch active users');
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayUsersTable(data.users, 'active-users-detailed-list', 'total-active-detailed', 'Active');
+        }
+      } catch (error) {
+        console.error("Error loading active users:", error);
+        document.getElementById('active-users-detailed-list').innerHTML = 
+          '<div class="no-users">Failed to load active users.</div>';
+      }
+    }
+
+    async function loadAllUsers() {
+      try {
+        const response = await fetch(`${backendURL}/admin/get-all-users`);
+        if (!response.ok) throw new Error('Failed to fetch all users');
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayUsersTable(data.users, 'all-users-list', 'total-all-users', 'Total Registered');
+        }
+      } catch (error) {
+        console.error("Error loading all users:", error);
+        document.getElementById('all-users-list').innerHTML = 
+          '<div class="no-users">Failed to load users.</div>';
+      }
+    }
+
+    function displayUsersTable(users, containerId, totalId, label) {
+      const totalEl = document.getElementById(totalId);
+      const listEl = document.getElementById(containerId);
+
+      totalEl.innerHTML = `${label} Users: <span>${users.length}</span>`;
+
+      if (users.length === 0) {
+        listEl.innerHTML = '<div class="no-users">No users found.</div>';
+        return;
+      }
+
+      // Group users by grade and section
+      const grouped = {};
+      
+      users.forEach(user => {
+        const grade = user.grade || 'Unknown';
+        const section = user.section || 'Unknown';
+        
+        if (!grouped[grade]) {
+          grouped[grade] = {};
+        }
+        
+        if (!grouped[grade][section]) {
+          grouped[grade][section] = [];
+        }
+        
+        grouped[grade][section].push(user);
+      });
+
+      // Sort grades
+      const sortedGrades = Object.keys(grouped).sort((a, b) => {
+        if (a === 'Unknown') return 1;
+        if (b === 'Unknown') return -1;
+        return parseInt(a) - parseInt(b);
+      });
+
+      // Build HTML with tables
+      let html = '';
+      
+      sortedGrades.forEach(grade => {
+        html += `<div class="grade-section"><div class="grade-title">Grade ${grade}</div>`;
+        
+        // Sort sections alphabetically
+        const sections = Object.keys(grouped[grade]).sort();
+        
+        sections.forEach(section => {
+          const sectionUsers = grouped[grade][section];
+          
+          html += `
+            <div class="section-table-container">
+              <div class="section-table-title">${section} (${sectionUsers.length} ${sectionUsers.length === 1 ? 'user' : 'users'})</div>
+              <table class="users-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Surname</th>
+                    <th>LRN</th>
+                  </tr>
+                </thead>
+                <tbody>
+          `;
+          
+          sectionUsers.forEach(user => {
+            html += `
+              <tr>
+                <td><strong>${user.username}</strong></td>
+                <td>${user.name}</td>
+                <td>${user.surname}</td>
+                <td>${user.lrn}</td>
+              </tr>
+            `;
+          });
+          
+          html += `
+                </tbody>
+              </table>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+      });
+
+      listEl.innerHTML = html;
     }
   </script>
 </body>

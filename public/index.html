@@ -167,6 +167,17 @@ async function checkIfLoggedIn() {
 
 // Run on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if coming from role selection
+    const signupRole = sessionStorage.getItem('signupRole');
+    if (!signupRole && !window.location.search.includes('login')) {
+        // No role selected and not explicitly logging in, redirect to role selection
+        const isShowingLogin = $('#login-section').is(':visible');
+        if (!isShowingLogin) {
+            window.location.href = '/role-selection.html';
+            return;
+        }
+    }
+    
     checkIfLoggedIn();
     setTimeout(autoLogin, 500);
 });
@@ -288,17 +299,28 @@ $('#registerBtn').on('click', function() {
     // Generate a name from email for registration
     const name = currentEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     
+    // Get the signup role from sessionStorage
+    const signupRole = sessionStorage.getItem('signupRole') || 'student';
+    
     $.ajax({
         type: 'POST',
         url: '/register',
         contentType: 'application/json',
-        data: JSON.stringify({ name: name, email: currentEmail, password: password }),
+        data: JSON.stringify({ 
+            name: name, 
+            email: currentEmail, 
+            password: password,
+            isAdmin: signupRole === 'admin'
+        }),
         success: function(response) {
             $('#loadingOverlay').hide();
             if (response.success) {
                 // Save credentials if remember me is checked (for registration, always save)
                 localStorage.setItem('studymatch_email', currentEmail);
                 localStorage.setItem('studymatch_password', password);
+                
+                // Clear the role from sessionStorage
+                sessionStorage.removeItem('signupRole');
                 
                 Swal.fire({ icon: 'success', title: 'Account Created!', text: 'Redirecting to profile setup...', timer: 1500, showConfirmButton: false })
                 .then(() => {

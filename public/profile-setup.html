@@ -127,8 +127,21 @@
           document.getElementById('name').value = data.student.firstName;
           document.getElementById('surname').value = data.student.surname;
           document.getElementById('lrn').value = data.student.lrn;
-          document.getElementById('grade').value = data.student.grade;
-          document.getElementById('section').value = data.student.section;
+          document.getElementById('grade').value = data.student.grade || '';
+          document.getElementById('section').value = data.student.section || '';
+
+          // Check if this is an admin
+          if (data.student.isAdmin) {
+            // For admin, auto-generate username and make it readonly
+            const username = data.student.firstName + data.student.surname;
+            document.getElementById('username').value = username;
+            document.getElementById('username').readOnly = true;
+            document.getElementById('username').classList.add('readonly-field');
+            document.getElementById('username-status').innerText = '✓ Admin username (auto-generated)';
+            document.getElementById('username-status').className = 'username-status available';
+            isUsernameValid = true;
+            document.getElementById('submit-btn').disabled = false;
+          }
 
           // Hide LRN lookup step and show profile fields
           document.getElementById('lrn-lookup-step').style.display = 'none';

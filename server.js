@@ -239,7 +239,7 @@ app.post('/verify-code', (req, res) => {
 
 // Registration endpoint - saves user directly to database
 app.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, isAdmin } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).send({ success: false, message: 'All fields are required.' });
@@ -272,7 +272,8 @@ app.post('/register', async (req, res) => {
         email: normalizedEmail,
         password: hash,
         createdAt: new Date(),
-        profileComplete: false // Flag to indicate profile setup is needed
+        profileComplete: false, // Flag to indicate profile setup is needed
+        isAdmin: isAdmin || false // Store admin flag
       };
 
       db.insert(userData, async (err, newDoc) => {
@@ -281,7 +282,7 @@ app.post('/register', async (req, res) => {
           return res.status(500).send({ success: false, message: 'Server error saving user.' });
         }
 
-        console.log("User registered successfully:", normalizedEmail);
+        console.log("User registered successfully:", normalizedEmail, "isAdmin:", isAdmin);
 
         // Create session for the new user
         try {
@@ -356,7 +357,8 @@ app.post('/lookup-lrn', (req, res) => {
         surname: student.surname,
         lrn: student.lrn,
         grade: student.grade,
-        section: student.section
+        section: student.section,
+        isAdmin: student.isAdmin || false
       }
     });
   });
@@ -434,57 +436,67 @@ app.post('/save-profile', async (req, res) => {
 
   const email = userEmail || storedEmail;
 
-  const profileData = {
-    name: req.body.name,
-    surname: req.body.surname,
-    username: req.body.username,
-    lrn: req.body.lrn,
-    grade: req.body.grade,
-    section: req.body.section,
-    profileComplete: true
-  };
-
-  // First, mark the LRN as used
-  fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
+  // Check if user is admin
+  db.findOne({ email: email }, (err, user) => {
     if (err) {
-      console.error("Error reading LRN file:", err);
-      return res.status(500).send({ success: false, message: 'Server error saving profile.' });
+      console.error("Error finding user:", err);
+      return res.status(500).send({ success: false, message: 'Server error.' });
     }
 
-    const lrnData = JSON.parse(data);
-    const studentIndex = lrnData.students.findIndex(s => s.lrn === req.body.lrn);
+    const isAdmin = user && user.isAdmin;
 
-    if (studentIndex === -1) {
-      return res.status(400).send({ success: false, message: 'Invalid LRN.' });
-    }
+    const profileData = {
+      name: req.body.name,
+      surname: req.body.surname,
+      username: req.body.username,
+      lrn: req.body.lrn,
+      grade: isAdmin ? null : req.body.grade,
+      section: isAdmin ? null : req.body.section,
+      profileComplete: true
+    };
 
-    // Mark LRN as used
-    lrnData.students[studentIndex].used = true;
-
-    // Write back to file
-    fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
+    // First, mark the LRN as used
+    fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
       if (err) {
-        console.error("Error updating LRN file:", err);
+        console.error("Error reading LRN file:", err);
         return res.status(500).send({ success: false, message: 'Server error saving profile.' });
       }
 
-      // Now update the user profile in database
-      db.update({ email: email }, { $set: profileData }, {}, (err, numReplaced) => {
+      const lrnData = JSON.parse(data);
+      const studentIndex = lrnData.students.findIndex(s => s.lrn === req.body.lrn);
+
+      if (studentIndex === -1) {
+        return res.status(400).send({ success: false, message: 'Invalid LRN.' });
+      }
+
+      // Mark LRN as used
+      lrnData.students[studentIndex].used = true;
+
+      // Write back to file
+      fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
         if (err) {
-          console.error("Error updating profile:", err);
-          // If database update fails, revert the LRN status
-          lrnData.students[studentIndex].used = false;
-          fs.writeFileSync('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8');
+          console.error("Error updating LRN file:", err);
           return res.status(500).send({ success: false, message: 'Server error saving profile.' });
         }
 
-        if (numReplaced === 0) {
-          return res.status(404).send({ success: false, message: 'User not found.' });
-        }
+        // Now update the user profile in database
+        db.update({ email: email }, { $set: profileData }, {}, (err, numReplaced) => {
+          if (err) {
+            console.error("Error updating profile:", err);
+            // If database update fails, revert the LRN status
+            lrnData.students[studentIndex].used = false;
+            fs.writeFileSync('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8');
+            return res.status(500).send({ success: false, message: 'Server error saving profile.' });
+          }
 
-        console.log("Profile saved successfully for:", email);
-        storedEmail = email; // Update storedEmail for backward compatibility
-        res.send({ success: true, message: 'Profile saved successfully!' });
+          if (numReplaced === 0) {
+            return res.status(404).send({ success: false, message: 'User not found.' });
+          }
+
+          console.log("Profile saved successfully for:", email);
+          storedEmail = email; // Update storedEmail for backward compatibility
+          res.send({ success: true, message: 'Profile saved successfully!' });
+        });
       });
     });
   });
@@ -1392,6 +1404,82 @@ app.get('/get-active-users', async (req, res) => {
     console.error("Error in get-active-users:", error);
     res.status(500).send({ success: false, message: 'Server error' });
   }
+});
+
+// Admin endpoints
+app.get('/admin/get-all-users', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, user) => {
+    if (err || !user || !user.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Get all users except admins
+    db.find({ isAdmin: { $ne: true } }, (err, users) => {
+      if (err) {
+        console.error("Error finding users:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const userList = users.map(u => ({
+        username: u.username,
+        name: u.name,
+        surname: u.surname,
+        lrn: u.lrn,
+        grade: u.grade,
+        section: u.section,
+        email: u.email
+      }));
+
+      res.send({ success: true, users: userList });
+    });
+  });
+});
+
+app.get('/admin/get-active-users-detailed', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, user) => {
+    if (err || !user || !user.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Get all active user emails
+    const activeEmails = Object.keys(activeUserSessions);
+    
+    if (activeEmails.length === 0) {
+      return res.send({ success: true, users: [] });
+    }
+
+    // Get user details from database
+    db.find({ email: { $in: activeEmails }, isAdmin: { $ne: true } }, (err, users) => {
+      if (err) {
+        console.error("Error finding active users:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const userList = users.map(u => ({
+        username: u.username,
+        name: u.name,
+        surname: u.surname,
+        lrn: u.lrn,
+        grade: u.grade,
+        section: u.section,
+        email: u.email
+      }));
+
+      res.send({ success: true, users: userList });
+    });
+  });
 });
 
 const server = http.createServer(app);

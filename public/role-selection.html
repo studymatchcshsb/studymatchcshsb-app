@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Select Your Role - StudyMatch</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .role-container {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .role-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .role-header h1 {
+      color: #FFD700;
+      font-size: 42px;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .role-header p {
+      color: white;
+      font-size: 18px;
+    }
+
+    .role-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
+    }
+
+    .role-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 4px solid transparent;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .role-card:hover {
+      transform: translateY(-10px);
+      border-color: #FFD700;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    }
+
+    .role-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+
+    .role-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #2E7D32;
+      margin-bottom: 15px;
+    }
+
+    .role-description {
+      color: #666;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .role-card.student {
+      background: linear-gradient(135deg, #fff, #e8f5e9);
+    }
+
+    .role-card.admin {
+      background: linear-gradient(135deg, #fff, #fff9c4);
+    }
+
+    @media (max-width: 768px) {
+      .role-options {
+        grid-template-columns: 1fr;
+      }
+
+      .role-header h1 {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="role-container">
+    <div class="role-header">
+      <h1>Welcome to StudyMatch!</h1>
+      <p>Please select your role to continue</p>
+    </div>
+
+    <div class="role-options">
+      <div class="role-card student" onclick="selectRole('student')">
+        <div class="role-icon">🎓</div>
+        <div class="role-title">Sign Up as Student</div>
+        <div class="role-description">
+          Join as a student to find study buddies, get help with subjects, and collaborate with classmates.
+        </div>
+      </div>
+
+      <div class="role-card admin" onclick="selectRole('admin')">
+        <div class="role-icon">👨‍💼</div>
+        <div class="role-title">Sign Up as Admin</div>
+        <div class="role-description">
+          Join as an administrator to manage users, monitor activity, and oversee the StudyMatch platform.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function selectRole(role) {
+      // Store the selected role in sessionStorage
+      sessionStorage.setItem('signupRole', role);
+      
+      // Redirect to the main index page
+      window.location.href = '/index.html';
+    }
+  </script>
+</body>
+</html>

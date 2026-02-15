@@ -1,6 +1,15 @@
 {
   "students": [
     {
+      "lrn": "010101010101",
+      "firstName": "Study",
+      "surname": "CSHSB",
+      "grade": null,
+      "section": null,
+      "isAdmin": true,
+      "used": false
+    },
+    {
       "lrn": "000000000000",
       "firstName": "Studymatch",
       "surname": "Cshsb",
