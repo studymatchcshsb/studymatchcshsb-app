@@ -781,7 +781,7 @@
                 // Redirect to chats page with the requester's email
                 window.location.href = data.redirectUrl || '/chats.html?chat=' + encodeURIComponent(requesterEmail);
             } else {
-                // Reload notifications
+                // Immediately remove the notification from the UI and reload
                 loadNotifications();
             }
         } catch (error) {
@@ -817,7 +817,7 @@
                 // Redirect to chats page with the requester's email
                 window.location.href = data.redirectUrl || '/chats.html?chat=' + encodeURIComponent(requesterEmail);
             } else {
-                // Reload notifications
+                // Immediately remove the notification from the UI and reload
                 loadNotifications();
             }
         } catch (error) {
