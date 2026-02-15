@@ -137,10 +137,13 @@ function autoLogin() {
     const savedPassword = localStorage.getItem('studymatch_password');
     
     if (savedEmail && savedPassword) {
-        $('#login-email').val(savedEmail);
-        $('#login-password').val(savedPassword);
-        $('#remember').prop('checked', true);
-        doLogin(savedEmail, savedPassword);
+        // Only auto-login if login section is visible
+        if ($('#login-section').is(':visible')) {
+            $('#login-email').val(savedEmail);
+            $('#login-password').val(savedPassword);
+            $('#remember').prop('checked', true);
+            doLogin(savedEmail, savedPassword);
+        }
     }
 }
 
@@ -166,20 +169,27 @@ async function checkIfLoggedIn() {
 }
 
 // Run on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if coming from role selection
-    const signupRole = sessionStorage.getItem('signupRole');
-    if (!signupRole && !window.location.search.includes('login')) {
-        // No role selected and not explicitly logging in, redirect to role selection
-        const isShowingLogin = $('#login-section').is(':visible');
-        if (!isShowingLogin) {
-            window.location.href = '/role-selection.html';
-            return;
-        }
+document.addEventListener('DOMContentLoaded', async function() {
+    // Check if already logged in first
+    const isLoggedIn = await checkIfLoggedIn();
+    if (isLoggedIn) {
+        return; // Already redirected
     }
     
-    checkIfLoggedIn();
-    setTimeout(autoLogin, 500);
+    // Check if coming from role selection
+    const signupRole = sessionStorage.getItem('signupRole');
+    const isShowingLogin = $('#login-section').is(':visible');
+    
+    if (!signupRole && !isShowingLogin) {
+        // No role selected and showing signup form, redirect to role selection
+        window.location.href = '/role-selection.html';
+        return;
+    }
+    
+    // Only try auto-login if showing login section
+    if (isShowingLogin) {
+        setTimeout(autoLogin, 500);
+    }
 });
 
 // Toggle between login and register
