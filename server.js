@@ -913,38 +913,61 @@ app.post('/respond-help-request', async (req, res) => {
             return res.status(500).send({ success: false, message: 'Server error' });
           }
 
-          // Send notification to requester
-          const successNotification = {
-            id: Date.now() + Math.random(),
-            type: 'kastudy_accepted',
-            fromUser: {
-              name: helper.name,
-              surname: helper.surname,
-              email: userEmail
-            },
+          // Create a chat session
+          const chatSession = {
+            user1: requesterEmail,
+            user2: userEmail,
+            requester: requesterEmail,
+            helper: userEmail,
             subject: req.body.subject,
-            timestamp: new Date(),
-            message: helper.username + " accepted your help request for " + req.body.subject + "! Start chatting now!"
+            active: true,
+            createdAt: new Date()
           };
 
-          db.update(
-            { email: requesterEmail },
-            { $push: { notifications: successNotification } },
-            { upsert: true },
-            (err, numReplaced) => {
-              if (err) {
-                console.error("Error sending success notification:", err);
-              }
-
-              // Notify the requester in real-time
-              const requesterSocket1 = connectedUsers[requesterEmail.toLowerCase()];
-              if (requesterSocket1) {
-                io.to(requesterSocket1).emit('new_notification', successNotification);
-              }
-
-              res.send({ success: true, message: 'Help request accepted! Starting chat...' });
+          chatSessionsDb.insert(chatSession, (err, newSession) => {
+            if (err) {
+              console.error("Error creating chat session:", err);
             }
-          );
+
+            // Send notification to requester
+            const successNotification = {
+              id: Date.now() + Math.random(),
+              type: 'kastudy_accepted',
+              fromUser: {
+                name: helper.name,
+                surname: helper.surname,
+                username: helper.username,
+                email: userEmail
+              },
+              subject: req.body.subject,
+              timestamp: new Date(),
+              message: helper.username + " accepted your help request for " + req.body.subject + "! Start chatting now!",
+              redirectUrl: '/chats.html?chat=' + userEmail
+            };
+
+            db.update(
+              { email: requesterEmail },
+              { $push: { notifications: successNotification } },
+              { upsert: true },
+              (err, numReplaced) => {
+                if (err) {
+                  console.error("Error sending success notification:", err);
+                }
+
+                // Notify the requester in real-time
+                const requesterSocket1 = connectedUsers[requesterEmail.toLowerCase()];
+                if (requesterSocket1) {
+                  io.to(requesterSocket1).emit('new_notification', successNotification);
+                }
+
+                res.send({ 
+                  success: true, 
+                  message: 'Help request accepted! Starting chat...',
+                  redirectUrl: '/chats.html?chat=' + requesterEmail
+                });
+              }
+            );
+          });
         });
       } else {
         res.send({ success: true, message: 'Help request declined.' });

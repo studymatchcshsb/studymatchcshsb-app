@@ -740,13 +740,14 @@
             } else if (notification.type === 'kastudy_accepted') {
                 const notificationDiv = document.createElement('div');
                 notificationDiv.className = 'notification-item kastudy_accepted';
+                const chatUrl = notification.redirectUrl || '/chats.html?chat=' + encodeURIComponent(notification.fromUser.email);
                 notificationDiv.innerHTML = `
                     <div class="notification-content">
                         <strong>STUDYMATCH CSHSB</strong><br>
                         ${notification.message}
                     </div>
                     <div class="notification-actions">
-                        <button class="help-btn yes-btn" onclick="window.location.href='/chats.html'" style="width: 100%; background: #3498db; color: white;">Start Chatting</button>
+                        <button class="help-btn yes-btn" onclick="window.location.href='${chatUrl}'" style="width: 100%; background: #3498db; color: white;">Start Chatting</button>
                     </div>
                 `;
                 container.appendChild(notificationDiv);
@@ -777,8 +778,8 @@
 
             if (response === 'accept') {
                 alert(data.message);
-                // Redirect to chats page
-                window.location.href = '/chats.html';
+                // Redirect to chats page with the requester's email
+                window.location.href = data.redirectUrl || '/chats.html?chat=' + encodeURIComponent(requesterEmail);
             } else {
                 // Reload notifications
                 loadNotifications();
@@ -813,8 +814,8 @@
 
             if (response === 'accept') {
                 alert(data.message);
-                // Redirect to chats page
-                window.location.href = '/chats.html';
+                // Redirect to chats page with the requester's email
+                window.location.href = data.redirectUrl || '/chats.html?chat=' + encodeURIComponent(requesterEmail);
             } else {
                 // Reload notifications
                 loadNotifications();
