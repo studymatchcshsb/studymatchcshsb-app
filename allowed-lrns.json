@@ -4,24 +4,24 @@
       "lrn": "000000000000",
       "firstName": "Studymatch",
       "surname": "Cshsb",
-      "grade": "7",
-      "section": "Android",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     },
     {
       "lrn": "111111111111",
       "firstName": "Study",
       "surname": "Match",
-      "grade": "8",
-      "section": "Macintosh",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     },
     {
       "lrn": "112938150044",
       "firstName": "Reann",
       "surname": "Iya",
-      "grade": "9",
-      "section": "Fedora",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     },
     {
@@ -29,31 +29,31 @@
       "firstName": "Kathleen",
       "surname": "Largo",
       "grade": "10",
-      "section": "Linux",
+      "section": "Chimera",
       "used": false
     },
     {
       "lrn": "403729150395",
       "firstName": "Gaea",
       "surname": "Ojeda",
-      "grade": "7",
-      "section": "Oracle",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     },
     {
       "lrn": "403729150053",
       "firstName": "Keisha",
       "surname": "Bañadera",
-      "grade": "8",
-      "section": "Redhat",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     },
     {
       "lrn": "112932150367",
       "firstName": "Rich",
       "surname": "Guevara",
-      "grade": "9",
-      "section": "Minix",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     },
     {
@@ -68,24 +68,24 @@
       "lrn": "112938150013",
       "firstName": "Juan",
       "surname": "Serrano",
-      "grade": "7",
-      "section": "Symbian",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     },
     {
       "lrn": "112935150047",
       "firstName": "Antonio",
       "surname": "Flores",
-      "grade": "8",
-      "section": "Unix",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     },
     {
       "lrn": "433568150051",
       "firstName": "Leanne",
       "surname": "Lomaad",
-      "grade": "9",
-      "section": "Solaris",
+      "grade": "10",
+      "section": "Chimera",
       "used": false
     }
   ]
