@@ -1,7 +1,7 @@
 /* --- Global Styles --- */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 50%, #FFD700 100%);
+  background: linear-gradient(135deg, #A9DFBF 0%, #82E0AA 50%, #F9E79F 100%);
   background-attachment: fixed;
   margin: 0;
   color: #333;
@@ -17,7 +17,7 @@ body {
   text-align: center;
   width: 380px;
   margin: 10vh auto;
-  border: 2px solid rgba(255, 215, 0, 0.5);
+  border: 2px solid rgba(249, 231, 159, 0.5);
 }
 
 h2 {
@@ -110,7 +110,7 @@ input:focus, select:focus {
 button {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(45deg, #2E7D32, #4CAF50);
+  background: linear-gradient(45deg, #ABEBC6, #82E0AA);
   color: white;
   border: none;
   border-radius: 8px;
@@ -124,7 +124,7 @@ button {
 button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
-  background: linear-gradient(45deg, #4CAF50, #2E7D32);
+  background: linear-gradient(45deg, #82E0AA, #ABEBC6);
 }
 
 /* --- Homepage Dashboard Layout --- */
@@ -135,7 +135,7 @@ button:hover {
 
 .sidebar {
   width: 80px;
-  background: linear-gradient(180deg, #2E7D32 0%, #4CAF50 100%);
+  background: linear-gradient(180deg, #ABEBC6 0%, #82E0AA 100%);
   padding: 20px 0;
   display: flex;
   flex-direction: column;
@@ -169,7 +169,7 @@ button:hover {
   justify-content: space-between;
   align-items: center;
   padding: 15px 30px;
-  background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+  background: linear-gradient(135deg, #ABEBC6 0%, #82E0AA 100%);
   border-bottom: none;
   position: relative;
 }
@@ -269,7 +269,7 @@ button:hover {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background-color: #FFD700;
+  background-color: #F9E79F;
   color: #2E7D32;
   display: flex;
   justify-content: center;
@@ -304,7 +304,7 @@ button:hover {
   padding: 25px;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  border-left: 5px solid #f1c40f; /* Yellow accent */
+  border-left: 5px solid #F7DC6F; /* Yellow accent */
 }
 
 .list-box h3 {
@@ -889,8 +889,8 @@ button:hover {
 }
 
 .reminder-content {
-  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-  border: 2px solid #f1c40f;
+  background: linear-gradient(135deg, #fff8dc, #FAE5D3);
+  border: 2px solid #F7DC6F;
   border-radius: 12px;
   padding: 20px;
   display: flex;

@@ -35,6 +35,7 @@ const db = new Datastore({ filename: 'users.db', autoload: true });
 const todosDb = new Datastore({ filename: 'todos.db', autoload: true });
 const sessionsDb = new Datastore({ filename: 'sessions.db', autoload: true });
 const messagesDb = new Datastore({ filename: 'messages.db', autoload: true });
+const activityDb = new Datastore({ filename: 'activity.db', autoload: true });
 
 // Store connected users (declared early for use in endpoints)
 const connectedUsers = {};
@@ -819,6 +820,22 @@ app.post('/find-kastudy', async (req, res) => {
         message: currentUser.username + " needs help in " + subject + ". Would you like to help them?"
       };
 
+      // Log the activity
+      const activityLog = {
+        type: 'help_request',
+        userEmail: userEmail,
+        username: currentUser.username,
+        name: currentUser.name,
+        surname: currentUser.surname,
+        subject: subject,
+        timestamp: new Date(),
+        description: currentUser.name + " " + currentUser.surname + " needs help in " + subject + "."
+      };
+      
+      activityDb.insert(activityLog, (err) => {
+        if (err) console.error("Error logging activity:", err);
+      });
+
       // Add notification to each helper's profile
       let completed = 0;
       const total = potentialHelpers.length;
@@ -912,6 +929,31 @@ app.post('/respond-help-request', async (req, res) => {
             console.error("Error finding helper:", err);
             return res.status(500).send({ success: false, message: 'Server error' });
           }
+
+          // Get requester's info
+          db.findOne({ email: requesterEmail }, (err, requester) => {
+            if (!err && requester) {
+              // Log the activity - helper wants to help requester
+              const activityLog = {
+                type: 'helper_volunteers',
+                helperEmail: userEmail,
+                helperUsername: helper.username,
+                helperName: helper.name,
+                helperSurname: helper.surname,
+                requesterEmail: requesterEmail,
+                requesterUsername: requester.username,
+                requesterName: requester.name,
+                requesterSurname: requester.surname,
+                subject: req.body.subject,
+                timestamp: new Date(),
+                description: helper.name + " " + helper.surname + " wants to help " + requester.name + " " + requester.surname + " in " + req.body.subject + "."
+              };
+              
+              activityDb.insert(activityLog, (err) => {
+                if (err) console.error("Error logging activity:", err);
+              });
+            }
+          });
 
           // Create a chat session
           const chatSession = {
@@ -1007,6 +1049,31 @@ app.post('/respond-kastudy-request', async (req, res) => {
             console.error("Error finding helper:", err);
             return res.status(500).send({ success: false, message: 'Server error' });
           }
+
+          // Get requester's info
+          db.findOne({ email: requesterEmail }, (err, requester) => {
+            if (!err && requester) {
+              // Log the activity - helper accepts to help requester
+              const activityLog = {
+                type: 'help_accepted',
+                helperEmail: userEmail,
+                helperUsername: helper.username,
+                helperName: helper.name,
+                helperSurname: helper.surname,
+                requesterEmail: requesterEmail,
+                requesterUsername: requester.username,
+                requesterName: requester.name,
+                requesterSurname: requester.surname,
+                subject: subject,
+                timestamp: new Date(),
+                description: requester.name + " " + requester.surname + " accepted " + helper.name + " " + helper.surname + "'s help in " + subject + "."
+              };
+              
+              activityDb.insert(activityLog, (err) => {
+                if (err) console.error("Error logging activity:", err);
+              });
+            }
+          });
 
           // Create a chat session
           const chatSession = {
@@ -1501,6 +1568,194 @@ app.get('/admin/get-active-users-detailed', async (req, res) => {
       }));
 
       res.send({ success: true, users: userList });
+    });
+  });
+});
+
+// Admin: Get activity logs
+app.get('/admin/get-activity-logs', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, user) => {
+    if (err || !user || !user.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Get all activity logs, sorted by newest first
+    activityDb.find({}).sort({ timestamp: -1 }).limit(100, (err, logs) => {
+      if (err) {
+        console.error("Error finding activity logs:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      res.send({ success: true, logs: logs });
+    });
+  });
+});
+
+// Admin: Get helping rankings
+app.get('/admin/get-helping-rankings', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, user) => {
+    if (err || !user || !user.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Get all closed chat sessions where someone was helped
+    chatSessionsDb.find({ active: false }, (err, sessions) => {
+      if (err) {
+        console.error("Error finding sessions:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      // Count how many times each user helped others
+      const helperCounts = {};
+      sessions.forEach(session => {
+        if (session.helper) {
+          if (!helperCounts[session.helper]) {
+            helperCounts[session.helper] = 0;
+          }
+          helperCounts[session.helper]++;
+        }
+      });
+
+      // Convert to array and sort
+      const rankings = Object.entries(helperCounts)
+        .map(([email, count]) => ({ email, count }))
+        .sort((a, b) => b.count - a.count);
+
+      // Get user details for each helper
+      const helperEmails = rankings.map(r => r.email);
+      
+      if (helperEmails.length === 0) {
+        return res.send({ success: true, rankings: [] });
+      }
+
+      db.find({ email: { $in: helperEmails } }, (err, users) => {
+        if (err) {
+          console.error("Error finding users:", err);
+          return res.status(500).send({ success: false, message: 'Server error' });
+        }
+
+        const rankingsWithDetails = rankings.map(r => {
+          const u = users.find(user => user.email === r.email);
+          return {
+            rank: rankings.indexOf(r) + 1,
+            email: r.email,
+            username: u ? u.username : r.email,
+            name: u ? u.name : '',
+            surname: u ? u.surname : '',
+            count: r.count
+          };
+        });
+
+        res.send({ success: true, rankings: rankingsWithDetails });
+      });
+    });
+  });
+});
+
+// Get weekly study partner recommendations
+app.get('/get-weekly-recommendations', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Get current user's profile
+  db.findOne({ email: userEmail }, (err, currentUser) => {
+    if (err || !currentUser) {
+      return res.status(404).send({ success: false, message: 'User not found' });
+    }
+
+    // Get user's signup week
+    const signupDate = new Date(currentUser.createdAt);
+    const now = new Date();
+    const weeksSinceSignup = Math.floor((now - signupDate) / (7 * 24 * 60 * 60 * 1000));
+    
+    // Check if it's been at least a week since signup
+    if (weeksSinceSignup < 1) {
+      return res.send({ 
+        success: true, 
+        recommendations: [],
+        message: 'Check back next week for your study partner recommendations!',
+        weeksActive: weeksSinceSignup
+      });
+    }
+
+    // Get user's strengths and weaknesses
+    const userStrengths = currentUser.strengths || [];
+    const userWeaknesses = currentUser.weaknesses || [];
+    const userGrade = currentUser.grade;
+    const userSection = currentUser.section;
+
+    // Find users where:
+    // 1. They have strengths that match current user's weaknesses (can help you)
+    // 2. Current user's strengths match their weaknesses (you can help them)
+    // 3. Same grade and section preferred
+    db.find({ 
+      email: { $ne: userEmail },
+      grade: userGrade,
+      section: userSection,
+      profileComplete: true
+    }, (err, potentialPartners) => {
+      if (err) {
+        console.error("Error finding potential partners:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      // Score each potential partner
+      const scoredPartners = potentialPartners.map(partner => {
+        const partnerStrengths = partner.strengths || [];
+        const partnerWeaknesses = partner.weaknesses || [];
+
+        // Calculate how well they can help you (they have strengths in your weaknesses)
+        const canHelpYou = userWeaknesses.filter(w => partnerStrengths.includes(w)).length;
+        
+        // Calculate how well you can help them
+        const youCanHelp = partnerWeaknesses.filter(w => userStrengths.includes(w)).length;
+        
+        // Total compatibility score
+        const score = canHelpYou + youCanHelp;
+
+        return {
+          email: partner.email,
+          username: partner.username,
+          name: partner.name,
+          surname: partner.surname,
+          grade: partner.grade,
+          section: partner.section,
+          strengths: partnerStrengths,
+          weaknesses: partnerWeaknesses,
+          canHelpYou: canHelpYou,
+          youCanHelp: youCanHelp,
+          score: score
+        };
+      });
+
+      // Sort by score and take top recommendations
+      const recommendations = scoredPartners
+        .filter(p => p.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      res.send({ 
+        success: true, 
+        recommendations: recommendations,
+        weeksActive: weeksSinceSignup,
+        message: recommendations.length > 0 
+          ? `Found ${recommendations.length} recommended study partners for you!`
+          : 'No compatible study partners found yet. Try updating your subjects!'
+      });
     });
   });
 });

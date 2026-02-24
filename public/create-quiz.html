@@ -118,8 +118,7 @@
       <h2>Review Your Quiz</h2>
 
       <div class="review-options">
-        <button class="review-option-btn" onclick="startIdentificationReview()">Identification</button>
-        <button class="review-option-btn" onclick="startMultipleChoiceReview()">Multiple Choice</button>
+        <button class="review-option-btn" onclick="startIdentificationReview()">Start Review</button>
       </div>
     </div>
   </div>
@@ -143,12 +142,6 @@
         <button onclick="submitIdentificationAnswer()">Submit Answer</button>
       </div>
 
-      <!-- Multiple Choice Mode -->
-      <div id="multiple-choice-mode" class="answer-mode" style="display:none;">
-        <div id="choices-container" class="choices-container">
-          <!-- Choices will be generated here -->
-        </div>
-      </div>
     </div>
 
     <div class="review-results" id="review-results" style="display:none;">
@@ -174,7 +167,6 @@
     let userQuizzes = [];
     let flashcards = [];
     let currentReviewIndex = 0;
-    let reviewMode = '';
     let correctAnswers = 0;
     let currentQuizData = null;
 
@@ -511,10 +503,6 @@
       startQuizReview();
     }
 
-    function startMultipleChoiceReview() {
-      reviewMode = 'multiple-choice';
-      startQuizReview();
-    }
 
     function startQuizReview() {
       closeReviewModal();
@@ -538,63 +526,11 @@
       document.getElementById('current-question').textContent = currentReviewIndex + 1;
       document.getElementById('question-text').textContent = card.question;
 
-      if (reviewMode === 'identification') {
-        document.getElementById('identification-mode').style.display = 'block';
-        document.getElementById('multiple-choice-mode').style.display = 'none';
-        document.getElementById('identification-answer').value = '';
-        document.getElementById('identification-answer').focus();
-      } else if (reviewMode === 'multiple-choice') {
-        document.getElementById('identification-mode').style.display = 'none';
-        document.getElementById('multiple-choice-mode').style.display = 'block';
-        generateMultipleChoice(card);
-      }
+      document.getElementById('identification-mode').style.display = 'block';
+      document.getElementById('identification-answer').value = '';
+      document.getElementById('identification-answer').focus();
     }
 
-    function generateMultipleChoice(card) {
-      console.log('Generating multiple choice for:', card);
-      const choices = [card.answer];
-      const allAnswers = flashcards.map(c => c.answer).filter(a => a !== card.answer);
-
-      // Add 3 random wrong answers
-      while (choices.length < 4 && allAnswers.length > 0) {
-        const randomIndex = Math.floor(Math.random() * allAnswers.length);
-        const wrongAnswer = allAnswers.splice(randomIndex, 1)[0];
-        if (!choices.includes(wrongAnswer)) {
-          choices.push(wrongAnswer);
-        }
-      }
-
-      // If we don't have enough wrong answers, add generic ones
-      while (choices.length < 4) {
-        choices.push(`Wrong answer ${choices.length}`);
-      }
-
-      // Shuffle choices
-      for (let i = choices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [choices[i], choices[j]] = [choices[j], choices[i]];
-      }
-
-      console.log('Generated choices:', choices);
-
-      const container = document.getElementById('choices-container');
-      if (!container) {
-        console.error('choices-container not found!');
-        return;
-      }
-
-      container.innerHTML = '';
-
-      choices.forEach((choice, index) => {
-        const button = document.createElement('button');
-        button.className = 'choice-btn';
-        button.textContent = choice;
-        button.onclick = () => submitMultipleChoiceAnswer(choice, card.answer);
-        container.appendChild(button);
-      });
-
-      console.log('Multiple choice options created');
-    }
 
     function checkEnter(event) {
       if (event.key === 'Enter') {
@@ -609,9 +545,6 @@
       checkAnswer(userAnswer, correctAnswer);
     }
 
-    function submitMultipleChoiceAnswer(selectedAnswer, correctAnswer) {
-      checkAnswer(selectedAnswer, correctAnswer);
-    }
 
     function checkAnswer(userAnswer, correctAnswer) {
       const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
@@ -645,7 +578,7 @@
         questionDisplay.innerHTML = `
           <div class="feedback incorrect">
             <h3>❌ Incorrect</h3>
-            <p>Your answer: <strong>${document.getElementById('identification-answer')?.value || 'Selected option'}</strong></p>
+            <p>Your answer: <strong>${document.getElementById('identification-answer').value}</strong></p>
             <p>Correct answer: <strong>${correctAnswer}</strong></p>
           </div>
         `;

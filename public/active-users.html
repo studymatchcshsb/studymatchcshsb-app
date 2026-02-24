@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <style>
     body {
-      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      background: linear-gradient(135deg, #82E0AA, #ABEBC6);
       min-height: 100vh;
       padding: 20px;
     }
@@ -21,10 +21,10 @@
     }
 
     .header {
-      background: linear-gradient(135deg, #FFD700, #FFC107);
+      background: linear-gradient(135deg, #F9E79F, #F7DC6F);
       padding: 30px;
       text-align: center;
-      border-bottom: 4px solid #2E7D32;
+      border-bottom: 4px solid #82E0AA;
     }
 
     .header h1 {
@@ -51,7 +51,7 @@
       text-decoration: none;
       font-weight: bold;
       transition: all 0.3s ease;
-      border: 2px solid #FFD700;
+      border: 2px solid #F9E79F;
     }
 
     .back-button:hover {
@@ -70,8 +70,8 @@
     }
 
     .admin-button {
-      background: linear-gradient(135deg, #2E7D32, #4CAF50);
-      color: white;
+      background: linear-gradient(135deg, #82E0AA, #ABEBC6);
+      color: #1B5E20;
       border: none;
       padding: 12px 30px;
       border-radius: 25px;
@@ -88,9 +88,9 @@
     }
 
     .admin-button.active {
-      background: #FFD700;
+      background: #F9E79F;
       color: #1B5E20;
-      border-color: #2E7D32;
+      border-color: #82E0AA;
     }
 
     .content {
@@ -102,12 +102,12 @@
       background: #f8f9fa;
       border-radius: 15px;
       padding: 25px;
-      border: 3px solid #2E7D32;
+      border: 3px solid #82E0AA;
     }
 
     .grade-title {
-      background: linear-gradient(135deg, #2E7D32, #4CAF50);
-      color: #FFD700;
+      background: linear-gradient(135deg, #82E0AA, #ABEBC6);
+      color: #1B5E20;
       padding: 15px 25px;
       border-radius: 10px;
       font-size: 24px;
@@ -170,11 +170,11 @@
       text-align: center;
       padding: 60px;
       font-size: 20px;
-      color: #2E7D32;
+      color: #1B5E20;
     }
 
     .total-active {
-      background: linear-gradient(135deg, #FFD700, #FFC107);
+      background: linear-gradient(135deg, #F9E79F, #F7DC6F);
       color: #1B5E20;
       padding: 20px;
       border-radius: 15px;
@@ -236,6 +236,102 @@
       border-radius: 10px 10px 0 0;
       margin-top: 20px;
     }
+
+    /* Activity Log styles */
+    .activity-log-item {
+      background: white;
+      border-radius: 10px;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      border-left: 4px solid #82E0AA;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .activity-log-item.help_request {
+      border-left-color: #F9E79F;
+    }
+
+    .activity-log-item.helper_volunteers {
+      border-left-color: #82E0AA;
+    }
+
+    .activity-log-item.help_accepted {
+      border-left-color: #4CAF50;
+    }
+
+    .activity-log-time {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 5px;
+    }
+
+    .activity-log-description {
+      font-size: 15px;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    /* Ranking styles */
+    .ranking-item {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .ranking-item.first-place {
+      background: linear-gradient(135deg, #F9E79F, #F7DC6F);
+      border: 3px solid #FFD700;
+    }
+
+    .ranking-item.second-place {
+      background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+      border: 3px solid #c0c0c0;
+    }
+
+    .ranking-item.third-place {
+      background: linear-gradient(135deg, #fff8e1, #ffecb3);
+      border: 3px solid #cd7f32;
+    }
+
+    .ranking-position {
+      font-size: 28px;
+      font-weight: bold;
+      color: #1B5E20;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .ranking-item.first-place .ranking-position {
+      font-size: 36px;
+      color: #b8860b;
+    }
+
+    .ranking-info {
+      flex: 1;
+    }
+
+    .ranking-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #1B5E20;
+    }
+
+    .ranking-count {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2E7D32;
+      min-width: 120px;
+      text-align: right;
+    }
+
+    .ranking-item.first-place .ranking-count {
+      font-size: 28px;
+    }
   </style>
 </head>
 <body>
@@ -257,6 +353,12 @@
       </button>
       <button class="admin-button" id="btn-all-users" onclick="showAllUsers()">
         📋 Comsayanos in StudyMatch
+      </button>
+      <button class="admin-button" id="btn-activity-logs" onclick="showActivityLogs()">
+        📜 Activity Logs
+      </button>
+      <button class="admin-button" id="btn-helping-rankings" onclick="showHelpingRankings()">
+        🏆 Helping Rankings
       </button>
     </div>
 
@@ -289,6 +391,26 @@
         </div>
         <div id="all-users-list">
           <div class="loading">Loading all users...</div>
+        </div>
+      </div>
+
+      <!-- Activity Logs View (admin only) -->
+      <div id="activity-logs-view" style="display: none;">
+        <div class="total-active" id="total-activity-logs">
+          Loading...
+        </div>
+        <div id="activity-logs-list">
+          <div class="loading">Loading activity logs...</div>
+        </div>
+      </div>
+
+      <!-- Helping Rankings View (admin only) -->
+      <div id="helping-rankings-view" style="display: none;">
+        <div class="total-active" id="total-helping-rankings">
+          Loading...
+        </div>
+        <div id="helping-rankings-list">
+          <div class="loading">Loading rankings...</div>
         </div>
       </div>
     </div>
@@ -478,12 +600,159 @@
       document.getElementById('count-view').style.display = 'none';
       document.getElementById('active-detailed-view').style.display = 'none';
       document.getElementById('all-users-view').style.display = 'block';
+      document.getElementById('activity-logs-view').style.display = 'none';
+      document.getElementById('helping-rankings-view').style.display = 'none';
       
       document.getElementById('btn-count-view').classList.remove('active');
       document.getElementById('btn-active-detailed').classList.remove('active');
       document.getElementById('btn-all-users').classList.add('active');
+      document.getElementById('btn-activity-logs').classList.remove('active');
+      document.getElementById('btn-helping-rankings').classList.remove('active');
       
       await loadAllUsers();
+    }
+
+    async function showActivityLogs() {
+      if (!isAdmin) return;
+      
+      currentView = 'activity-logs';
+      document.getElementById('count-view').style.display = 'none';
+      document.getElementById('active-detailed-view').style.display = 'none';
+      document.getElementById('all-users-view').style.display = 'none';
+      document.getElementById('activity-logs-view').style.display = 'block';
+      document.getElementById('helping-rankings-view').style.display = 'none';
+      
+      document.getElementById('btn-count-view').classList.remove('active');
+      document.getElementById('btn-active-detailed').classList.remove('active');
+      document.getElementById('btn-all-users').classList.remove('active');
+      document.getElementById('btn-activity-logs').classList.add('active');
+      document.getElementById('btn-helping-rankings').classList.remove('active');
+      
+      await loadActivityLogs();
+    }
+
+    async function showHelpingRankings() {
+      if (!isAdmin) return;
+      
+      currentView = 'helping-rankings';
+      document.getElementById('count-view').style.display = 'none';
+      document.getElementById('active-detailed-view').style.display = 'none';
+      document.getElementById('all-users-view').style.display = 'none';
+      document.getElementById('activity-logs-view').style.display = 'none';
+      document.getElementById('helping-rankings-view').style.display = 'block';
+      
+      document.getElementById('btn-count-view').classList.remove('active');
+      document.getElementById('btn-active-detailed').classList.remove('active');
+      document.getElementById('btn-all-users').classList.remove('active');
+      document.getElementById('btn-activity-logs').classList.remove('active');
+      document.getElementById('btn-helping-rankings').classList.add('active');
+      
+      await loadHelpingRankings();
+    }
+
+    async function loadActivityLogs() {
+      try {
+        const response = await fetch(`${backendURL}/admin/get-activity-logs`);
+        if (!response.ok) throw new Error('Failed to fetch activity logs');
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayActivityLogs(data.logs);
+        }
+      } catch (error) {
+        console.error("Error loading activity logs:", error);
+        document.getElementById('activity-logs-list').innerHTML = 
+          '<div class="no-users">Failed to load activity logs.</div>';
+      }
+    }
+
+    function displayActivityLogs(logs) {
+      const totalEl = document.getElementById('total-activity-logs');
+      const listEl = document.getElementById('activity-logs-list');
+
+      totalEl.innerHTML = `Activity Logs: <span>${logs.length}</span>`;
+
+      if (logs.length === 0) {
+        listEl.innerHTML = '<div class="no-users">No activity logs yet.</div>';
+        return;
+      }
+
+      let html = '';
+      
+      logs.forEach(log => {
+        const date = new Date(log.timestamp);
+        const formattedDate = date.toLocaleString();
+        
+        html += `
+          <div class="activity-log-item ${log.type}">
+            <div class="activity-log-time">${formattedDate}</div>
+            <div class="activity-log-description">${log.description}</div>
+          </div>
+        `;
+      });
+
+      listEl.innerHTML = html;
+    }
+
+    async function loadHelpingRankings() {
+      try {
+        const response = await fetch(`${backendURL}/admin/get-helping-rankings`);
+        if (!response.ok) throw new Error('Failed to fetch rankings');
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayHelpingRankings(data.rankings);
+        }
+      } catch (error) {
+        console.error("Error loading rankings:", error);
+        document.getElementById('helping-rankings-list').innerHTML = 
+          '<div class="no-users">Failed to load rankings.</div>';
+      }
+    }
+
+    function displayHelpingRankings(rankings) {
+      const totalEl = document.getElementById('total-helping-rankings');
+      const listEl = document.getElementById('helping-rankings-list');
+
+      totalEl.innerHTML = `Top Helpers: <span>${rankings.length}</span>`;
+
+      if (rankings.length === 0) {
+        listEl.innerHTML = '<div class="no-users">No rankings data yet. Start helping your classmates!</div>';
+        return;
+      }
+
+      let html = '';
+      
+      rankings.forEach((ranking, index) => {
+        let positionClass = '';
+        let positionPrefix = (index + 1) + 'th';
+        
+        if (index === 0) {
+          positionClass = 'first-place';
+          positionPrefix = '1st';
+        } else if (index === 1) {
+          positionClass = 'second-place';
+          positionPrefix = '2nd';
+        } else if (index === 2) {
+          positionClass = 'third-place';
+          positionPrefix = '3rd';
+        }
+        
+        html += `
+          <div class="ranking-item ${positionClass}">
+            <div class="ranking-position">${positionPrefix}</div>
+            <div class="ranking-info">
+              <div class="ranking-name">${ranking.name} ${ranking.surname}</div>
+              <div class="ranking-name">@${ranking.username}</div>
+            </div>
+            <div class="ranking-count">${ranking.count} ${ranking.count === 1 ? 'Comsayano' : 'Comsayanos'}</div>
+          </div>
+        `;
+      });
+
+      listEl.innerHTML = html;
     }
 
     async function loadActiveUsersDetailed() {
