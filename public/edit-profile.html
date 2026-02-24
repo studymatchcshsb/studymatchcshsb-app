@@ -20,7 +20,7 @@
     }
     
     .customize-header {
-      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      background: linear-gradient(135deg, #347433, #4a8c4a);
       padding: 25px;
       text-align: center;
     }
@@ -39,7 +39,7 @@
     }
     
     .subject-group h3 {
-      color: #2E7D32;
+      color: #347433;
       margin-bottom: 15px;
       font-size: 18px;
     }
@@ -67,17 +67,17 @@
     
     .checkbox-label input[type="checkbox"] {
       margin-right: 10px;
-      accent-color: #2E7D32;
+      accent-color: #347433;
     }
     
     .checkbox-label input[type="checkbox"]:checked + span {
-      color: #2E7D32;
+      color: #347433;
       font-weight: 600;
     }
     
     .checkbox-label:has(input:checked) {
       background: #e8f5e9;
-      border-color: #2E7D32;
+      border-color: #347433;
     }
     
     .button-group {
@@ -88,7 +88,7 @@
     
     .btn-save {
       flex: 1;
-      background: linear-gradient(135deg, #2E7D32, #4CAF50) !important;
+      background: linear-gradient(135deg, #347433, #4a8c4a) !important;
       color: white !important;
       padding: 14px 30px !important;
       border-radius: 25px !important;
@@ -198,7 +198,7 @@
       const weaknesses = Array.from(document.querySelectorAll('input[name="weaknesses"]:checked')).map(el => el.value);
 
       messageEl.innerText = "Saving changes...";
-      messageEl.style.color = "#2E7D32";
+      messageEl.style.color = "#347433";
 
       try {
         const response = await fetch(`${backendURL}/update-profile`, {

@@ -1,7 +1,40 @@
 /* --- Global Styles --- */
+/* Override Tailwind green colors with new palette */
+.text-green-800 { color: #347433 !important; }
+.text-green-700 { color: #347433 !important; }
+.text-green-600 { color: #347433 !important; }
+.text-green-500 { color: #347433 !important; }
+.text-green-400 { color: #4a8c4a !important; }
+
+.bg-green-800 { background-color: #347433 !important; }
+.bg-green-700 { background-color: #347433 !important; }
+.bg-green-600 { background-color: #347433 !important; }
+.bg-green-500 { background-color: #347433 !important; }
+.bg-green-400 { background-color: #4a8c4a !important; }
+
+.from-green-700 { --tw-gradient-from: #347433 !important; }
+.to-green-500 { --tw-gradient-to: #347433 !important; }
+.hover\:from-green-600:hover { --tw-gradient-from: #347433 !important; }
+.hover\:to-green-400:hover { --tw-gradient-to: #4a8c4a !important; }
+.focus\:ring-green-300 { --tw-ring-color: rgba(52, 116, 51, 0.3) !important; }
+.focus\:ring-green-500 { --tw-ring-color: #347433 !important; }
+
+/* Override Tailwind yellow/gold colors with new palette */
+.text-yellow-600 { color: #FFCF50 !important; }
+.text-yellow-500 { color: #FFCF50 !important; }
+.text-yellow-400 { color: #FFCF50 !important; }
+
+.bg-yellow-500 { background-color: #FFCF50 !important; }
+.bg-yellow-400 { background-color: #FFCF50 !important; }
+
+/* Button gradient overrides */
+.bg-gradient-to-r.from-green-700.to-green-500 {
+  background: linear-gradient(to right, #347433, #347433) !important;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #A9DFBF 0%, #82E0AA 50%, #F9E79F 100%);
+  background: linear-gradient(135deg, #d4e8d1 0%, #c1dcba 50%, #FFCF50 100%);
   background-attachment: fixed;
   margin: 0;
   color: #333;
@@ -17,11 +50,11 @@ body {
   text-align: center;
   width: 380px;
   margin: 10vh auto;
-  border: 2px solid rgba(249, 231, 159, 0.5);
+  border: 2px solid rgba(255, 207, 80, 0.5);
 }
 
 h2 {
-  color: #2E7D32;
+  color: #347433;
   margin-bottom: 25px;
   font-weight: 700;
 }
@@ -110,7 +143,7 @@ input:focus, select:focus {
 button {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(45deg, #ABEBC6, #82E0AA);
+  background: linear-gradient(45deg, #d4e8d1, #c1dcba);
   color: white;
   border: none;
   border-radius: 8px;
@@ -123,8 +156,8 @@ button {
 
 button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
-  background: linear-gradient(45deg, #82E0AA, #ABEBC6);
+  box-shadow: 0 6px 20px rgba(52, 116, 51, 0.4);
+  background: linear-gradient(45deg, #c1dcba, #d4e8d1);
 }
 
 /* --- Homepage Dashboard Layout --- */
@@ -135,7 +168,7 @@ button:hover {
 
 .sidebar {
   width: 80px;
-  background: linear-gradient(180deg, #ABEBC6 0%, #82E0AA 100%);
+  background: linear-gradient(180deg, #d4e8d1 0%, #c1dcba 100%);
   padding: 20px 0;
   display: flex;
   flex-direction: column;
@@ -169,7 +202,7 @@ button:hover {
   justify-content: space-between;
   align-items: center;
   padding: 15px 30px;
-  background: linear-gradient(135deg, #ABEBC6 0%, #82E0AA 100%);
+  background: linear-gradient(135deg, #d4e8d1 0%, #c1dcba 100%);
   border-bottom: none;
   position: relative;
 }
@@ -269,8 +302,8 @@ button:hover {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background-color: #F9E79F;
-  color: #2E7D32;
+  background-color: #FFCF50;
+  color: #347433;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -304,7 +337,7 @@ button:hover {
   padding: 25px;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  border-left: 5px solid #F7DC6F; /* Yellow accent */
+  border-left: 5px solid #FFCF50; /* Yellow accent */
 }
 
 .list-box h3 {
@@ -375,12 +408,12 @@ button:hover {
   width: auto;
   padding: 15px 40px;
   font-size: 1.2em;
-  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  background: linear-gradient(45deg, #347433, #2e6b2e);
 }
 
 .find-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4);
+  box-shadow: 0 4px 10px rgba(52, 116, 51, 0.4);
 }
 
 /* Find Users Section Styles */
@@ -474,7 +507,7 @@ button:hover {
 
 .add-friend-btn {
   padding: 8px 15px;
-  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  background: linear-gradient(45deg, #347433, #2e6b2e);
   color: white;
   border: none;
   border-radius: 5px;
@@ -485,7 +518,7 @@ button:hover {
 
 .add-friend-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(46, 204, 113, 0.4);
+  box-shadow: 0 2px 5px rgba(52, 116, 51, 0.4);
 }
 
 .add-friend-btn.pending {
@@ -534,7 +567,7 @@ button:hover {
 }
 
 .help-btn.yes-btn {
-  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  background: linear-gradient(45deg, #347433, #2e6b2e);
   color: white;
 }
 
@@ -790,13 +823,13 @@ button:hover {
 }
 
 .yes-btn {
-  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  background: linear-gradient(45deg, #347433, #2e6b2e);
   color: white;
 }
 
 .yes-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4);
+  box-shadow: 0 4px 10px rgba(52, 116, 51, 0.4);
 }
 
 .no-btn {
@@ -890,7 +923,7 @@ button:hover {
 
 .reminder-content {
   background: linear-gradient(135deg, #fff8dc, #FAE5D3);
-  border: 2px solid #F7DC6F;
+  border: 2px solid #FFCF50;
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -970,13 +1003,13 @@ button:hover {
   width: auto;
   padding: 12px 30px;
   font-size: 1em;
-  background: linear-gradient(45deg, #2ecc71, #27ae60);
-  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+  background: linear-gradient(45deg, #347433, #2e6b2e);
+  box-shadow: 0 4px 15px rgba(52, 116, 51, 0.3);
 }
 
 .find-kastudy-corner .find-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+  box-shadow: 0 6px 20px rgba(52, 116, 51, 0.4);
 }
 
 /* Simplified Find Form Styles */
@@ -1155,7 +1188,7 @@ button:hover {
 }
 
 .card-answer {
-  color: #28a745;
+  color: #347433;
   font-style: italic;
 }
 
@@ -1946,7 +1979,7 @@ button:hover {
   }
 }
 
-/* Loading Overlay Styles */
+/* --- Loading Overlay Styles */
 #loadingOverlay {
     position: fixed;
     top: 0;
