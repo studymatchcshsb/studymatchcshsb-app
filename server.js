@@ -14,6 +14,46 @@ const saltRounds = 10;
 
 console.log("--- SERVER.JS UPDATED - SENDGRID EMAIL VERIFICATION ENABLED ---");
 
+// Profanity filter - list of inappropriate words to censor
+const inappropriateWords = [
+  'fuck', 'fuk', 'fck', 'fucku', 'fcku', 'fuk u', 'fuck you', 'fuckyou',
+  'shit', 'shyt', 'sh1t', 'shitty',
+  'ass', 'azz', 'as5', 'a55', 'butt', 
+  'bitch', 'b1tch', 'bich', 'bitxh', 'btch',
+  'bastard', 'bastrd', 'baster',
+  'damn', 'damnit', 'dammit',
+  'hell', 'hellno', 'hell no',
+  'crap', 'crappy',
+  'dick', 'd1ck', 'dik',
+  'piss', 'p1ss',
+  'cock', 'c0ck', 'cok',
+  'cunt', 'c0nt',
+  'whore', 'whor3',
+  'slut', 'sl1ut', '5lut',
+  'gay', 'g4y', 'faggot', 'fagg0t', 'fagot',
+  'retard', 'ret1rd', 'retarded',
+  'idiot', '1d1ot',
+  'stupid', 'st00pid',
+  'ugly', 'ug1y',
+  'hate', 'hat3',
+  'loser', 'l0ser',
+  'dumb', 'dumbass',
+  'porn', 'p0rn', 'pr0n', 'xxx',
+  'sex', 's3x',
+  'nude', 'n00d',
+  'nipple', 'nipples',
+  'vagina', 'vajina', 'pussy', 'pusssy',
+  'penis', 'p3nis',
+  'boob', 'boobs', 'tits', 'tit'
+];
+
+// Function to check if text contains inappropriate words
+function containsInappropriateWords(text) {
+  if (!text) return false;
+  const lowerText = text.toLowerCase();
+  return inappropriateWords.some(word => lowerText.includes(word));
+}
+
 // Configure SendGrid
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -373,6 +413,11 @@ app.post('/check-username', async (req, res) => {
     return res.status(400).send({ available: false, message: 'Username is required.' });
   }
 
+  // Check for inappropriate words in username
+  if (containsInappropriateWords(username)) {
+    return res.status(400).send({ available: false, message: 'Username contains inappropriate words. Please choose a different username.' });
+  }
+
   // Check if username already exists in database
   db.findOne({ username: username.toLowerCase() }, (err, user) => {
     if (err) {
@@ -445,6 +490,16 @@ app.post('/save-profile', async (req, res) => {
     }
 
     const isAdmin = user && user.isAdmin;
+
+    // Check for inappropriate words in name and surname
+    if (containsInappropriateWords(req.body.name) || containsInappropriateWords(req.body.surname)) {
+      return res.status(400).send({ success: false, message: 'Name or surname contains inappropriate words. Please use appropriate language.' });
+    }
+
+    // Check for inappropriate words in username
+    if (containsInappropriateWords(req.body.username)) {
+      return res.status(400).send({ success: false, message: 'Username contains inappropriate words. Please choose a different username.' });
+    }
 
     const profileData = {
       name: req.body.name,
@@ -770,6 +825,11 @@ app.post('/find-kastudy', async (req, res) => {
   }
 
   const { grade, subject } = req.body;
+  
+  // Check for inappropriate words in subject
+  if (containsInappropriateWords(subject)) {
+    return res.status(400).send({ success: false, message: 'Subject contains inappropriate words. Please use appropriate language.' });
+  }
   
   console.log('[/find-kastudy] Received request - grade:', grade, 'subject:', subject, 'from:', userEmail);
 
@@ -1799,6 +1859,13 @@ io.on('connection', (socket) => {
 
   socket.on('send message', (data) => {
     const { to, message } = data;
+    
+    // Check for inappropriate words in message
+    if (containsInappropriateWords(message)) {
+      socket.emit('message_rejected', { message: 'Your message contains inappropriate words and cannot be sent.' });
+      return;
+    }
+    
     const from = socket.email;
     const timestamp = new Date();
 

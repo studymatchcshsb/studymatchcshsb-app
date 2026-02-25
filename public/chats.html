@@ -919,9 +919,23 @@
       }
     }
 
+    const inappropriateWords = ['fuck', 'fuk', 'fck', 'fucku', 'fcku', 'fuk u', 'fuck you', 'fuckyou', 'shit', 'shyt', 'sh1t', 'shitty', 'ass', 'azz', 'as5', 'a55', 'butt', 'bitch', 'b1tch', 'bich', 'bitxh', 'btch', 'bastard', 'bastrd', 'baster', 'damn', 'damnit', 'dammit', 'hell', 'hellno', 'hell no', 'crap', 'crappy', 'dick', 'd1ck', 'dik', 'piss', 'p1ss', 'cock', 'c0ck', 'cok', 'cunt', 'c0nt', 'whore', 'whor3', 'slut', 'sl1ut', '5lut', 'gay', 'g4y', 'faggot', 'fagg0t', 'fagot', 'retard', 'ret1rd', 'retarded', 'idiot', '1d1ot', 'stupid', 'st00pid', 'ugly', 'ug1y', 'hate', 'hat3', 'loser', 'l0ser', 'dumb', 'dumbass', 'porn', 'p0rn', 'pr0n', 'xxx', 'sex', 's3x', 'nude', 'n00d', 'nipple', 'nipples', 'vagina', 'vajina', 'pussy', 'pusssy', 'penis', 'p3nis', 'boob', 'boobs', 'tits', 'tit'];
+    
+    function containsInappropriateWords(text) {
+      if (!text) return false;
+      const lowerText = text.toLowerCase();
+      return inappropriateWords.some(word => lowerText.includes(word));
+    }
+
     async function sendMessage() {
       const input = document.getElementById('message-input');
       const message = input.value.trim();
+      
+      // Client-side check for inappropriate words
+      if (message && containsInappropriateWords(message)) {
+        alert('Your message contains inappropriate words. Please rephrase your message.');
+        return;
+      }
       
       if (!message && selectedFiles.length === 0) return;
       if (!selectedRecipient) {
@@ -1040,6 +1054,11 @@
       }
       loadActiveChatSessions();
       loadHelpedLists();
+    });
+
+    // Handle message rejection due to inappropriate content
+    socket.on('message_rejected', (data) => {
+      alert(data.message);
     });
   </script>
 </body>
