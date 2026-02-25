@@ -1828,6 +1828,107 @@ app.get('/get-weekly-recommendations', async (req, res) => {
   });
 });
 
+// Admin: Get all students for grade promotion (only for LRN 010101010101)
+app.get('/admin/get-all-students-for-promotion', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Check if user is admin AND has the special LRN
+  db.findOne({ email: userEmail }, (err, user) => {
+    if (err || !user || !user.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Check for special admin LRN
+    if (user.lrn !== '010101010101') {
+      return res.status(403).send({ success: false, message: 'Special admin LRN required for grade promotion' });
+    }
+
+    // Get all non-admin users with their profile info
+    db.find({ isAdmin: { $ne: true }, profileComplete: true }, (err, users) => {
+      if (err) {
+        console.error("Error finding students:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const students = users.map(u => ({
+        name: u.name,
+        surname: u.surname,
+        username: u.username,
+        lrn: u.lrn,
+        grade: u.grade || '',
+        section: u.section || '',
+        email: u.email
+      }));
+
+      res.send({ success: true, students: students });
+    });
+  });
+});
+
+// Admin: Update student grade and section (only for LRN 010101010101)
+app.post('/admin/update-student-grade', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { email, newGrade, newSection } = req.body;
+
+  if (!email || !newGrade) {
+    return res.status(400).send({ success: false, message: 'Email and new grade are required' });
+  }
+
+  // Check if user is admin AND has the special LRN
+  db.findOne({ email: userEmail }, (err, adminUser) => {
+    if (err || !adminUser || !adminUser.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Check for special admin LRN
+    if (adminUser.lrn !== '010101010101') {
+      return res.status(403).send({ success: false, message: 'Special admin LRN required for grade promotion' });
+    }
+
+    // Update the student's grade and section
+    db.update(
+      { email: email },
+      { $set: { grade: newGrade, section: newSection || '' } },
+      {},
+      (err, numReplaced) => {
+        if (err) {
+          console.error("Error updating student grade:", err);
+          return res.status(500).send({ success: false, message: 'Server error' });
+        }
+
+        if (numReplaced === 0) {
+          return res.status(404).send({ success: false, message: 'Student not found' });
+        }
+
+        // Log the grade promotion activity
+        const activityLog = {
+          type: 'grade_promotion',
+          adminEmail: userEmail,
+          studentEmail: email,
+          newGrade: newGrade,
+          newSection: newSection || '',
+          timestamp: new Date(),
+          description: adminUser.name + " " + adminUser.surname + " promoted student to Grade " + newGrade + (newSection ? " Section " + newSection : "")
+        };
+
+        activityDb.insert(activityLog, (err) => {
+          if (err) console.error("Error logging grade promotion:", err);
+        });
+
+        console.log("Grade updated for student:", email, "to Grade", newGrade, "Section", newSection);
+        res.send({ success: true, message: 'Student grade updated successfully' });
+      }
+    );
+  });
+});
+
 const server = http.createServer(app);
 const io = socketIo(server);
 

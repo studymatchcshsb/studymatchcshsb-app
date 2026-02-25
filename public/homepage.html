@@ -109,6 +109,8 @@
       <svg class="icon" onclick="toggleMenu()" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
       <!-- Help/Question Icon -->
       <svg id="help-icon" class="icon" onclick="openHelpModal()" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+      <!-- Grade Promotion Icon (only for special admin LRN) -->
+      <svg id="grade-promotion-icon" class="icon" onclick="openGradePromotionModal()" title="Grade Promotion" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
     </aside>
 
     <div id="menu-modal" class="modal" style="display:none;">
@@ -240,6 +242,45 @@
               <p>No recommendations available yet.</p>
               <p>Make sure you've completed your profile with strengths and weaknesses!</p>
           </div>
+      </div>
+  </div>
+
+  <!-- Grade Promotion Modal (for special admin LRN 010101010101) -->
+  <div id="grade-promotion-modal" class="modal" style="display:none;">
+      <div class="modal-content" style="max-width: 800px; max-height: 85vh;">
+          <span class="close-btn" onclick="closeGradePromotionModal()">&times;</span>
+          <h3><b>🎓 Grade Promotion Management</b></h3>
+          <p style="color: #666; margin-bottom: 15px;">Select a promotion date and update student grades/sections:</p>
+          
+          <div style="margin-bottom: 20px;">
+              <label for="promotion-date" style="font-weight: bold;">Promotion Date:</label>
+              <input type="date" id="promotion-date" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-left: 10px;">
+          </div>
+          
+          <div id="grade-promotion-table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px;">
+              <table id="grade-promotion-table" style="width: 100%; border-collapse: collapse;">
+                  <thead style="background: #f8f9fa; position: sticky; top: 0;">
+                      <tr>
+                          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Name</th>
+                          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Surname</th>
+                          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Username</th>
+                          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">LRN</th>
+                          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Grade</th>
+                          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Section</th>
+                      </tr>
+                  </thead>
+                  <tbody id="students-list-body">
+                      <!-- Students will be loaded here -->
+                  </tbody>
+              </table>
+          </div>
+          
+          <div style="margin-top: 20px; text-align: right;">
+              <button onclick="saveGradePromotions()" style="padding: 12px 24px; background: linear-gradient(135deg, #82E0AA, #ABEBC6); color: #1B5E20; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
+                  💾 Save Changes & Log Out Affected Users
+              </button>
+          </div>
+          <p id="grade-promotion-message" style="margin-top: 10px; text-align: center;"></p>
       </div>
   </div>
 
@@ -714,6 +755,164 @@
         document.getElementById('weekly-recommendations-modal').style.display = 'none';
     }
 
+    // Grade Promotion functions
+    function openGradePromotionModal() {
+        document.getElementById('grade-promotion-modal').style.display = 'block';
+        loadStudentsForPromotion();
+        
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('promotion-date').value = today;
+    }
+
+    function closeGradePromotionModal() {
+        document.getElementById('grade-promotion-modal').style.display = 'none';
+    }
+
+    async function loadStudentsForPromotion() {
+        try {
+            const response = await fetch(`${backendURL}/admin/get-all-students-for-promotion`, {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to fetch students');
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                displayStudentsForPromotion(data.students);
+            } else {
+                document.getElementById('students-list-body').innerHTML = 
+                    '<tr><td colspan="6" style="text-align: center; padding: 20px; color: red;">' + data.message + '</td></tr>';
+            }
+        } catch (error) {
+            console.error("Error loading students:", error);
+            document.getElementById('students-list-body').innerHTML = 
+                '<tr><td colspan="6" style="text-align: center; padding: 20px; color: red;">Failed to load students. ' + error.message + '</td></tr>';
+        }
+    }
+
+    function displayStudentsForPromotion(students) {
+        const tbody = document.getElementById('students-list-body');
+        
+        if (!students || students.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #666;">No students found.</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        students.forEach((student, index) => {
+            html += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">${student.name || ''}</td>
+                    <td style="padding: 10px;">${student.surname || ''}</td>
+                    <td style="padding: 10px;">${student.username || ''}</td>
+                    <td style="padding: 10px;">${student.lrn || ''}</td>
+                    <td style="padding: 10px;">
+                        <input type="text" 
+                               id="grade-${index}" 
+                               value="${student.grade || ''}" 
+                               style="width: 60px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;"
+                               data-email="${student.email}">
+                    </td>
+                    <td style="padding: 10px;">
+                        <input type="text" 
+                               id="section-${index}" 
+                               value="${student.section || ''}" 
+                               style="width: 80px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;"
+                               data-email="${student.email}">
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    async function saveGradePromotions() {
+        const messageEl = document.getElementById('grade-promotion-message');
+        const promotionDate = document.getElementById('promotion-date').value;
+        
+        if (!promotionDate) {
+            messageEl.innerText = 'Please select a promotion date.';
+            messageEl.style.color = 'red';
+            return;
+        }
+        
+        // Gather all updated grades and sections
+        const updates = [];
+        const rows = document.querySelectorAll('#students-list-body tr');
+        
+        rows.forEach((row, index) => {
+            const gradeInput = document.getElementById(`grade-${index}`);
+            const sectionInput = document.getElementById(`section-${index}`);
+            
+            if (gradeInput) {
+                updates.push({
+                    email: gradeInput.dataset.email,
+                    newGrade: gradeInput.value,
+                    newSection: sectionInput.value
+                });
+            }
+        });
+        
+        if (updates.length === 0) {
+            messageEl.innerText = 'No students to update.';
+            messageEl.style.color = 'orange';
+            return;
+        }
+        
+        messageEl.innerText = 'Saving changes...';
+        messageEl.style.color = 'blue';
+        
+        let successCount = 0;
+        let affectedEmails = [];
+        
+        // Update each student one by one
+        for (const update of updates) {
+            try {
+                const response = await fetch(`${backendURL}/admin/update-student-grade`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: update.email,
+                        newGrade: update.newGrade,
+                        newSection: update.newSection
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    successCount++;
+                    affectedEmails.push(update.email);
+                } else {
+                    console.error('Failed to update:', update.email, data.message);
+                }
+            } catch (error) {
+                console.error('Error updating student:', update.email, error);
+            }
+        }
+        
+        if (successCount > 0) {
+            messageEl.innerText = `Successfully updated ${successCount} student(s). Affected users will be logged out.`;
+            messageEl.style.color = 'green';
+            
+            // Log out affected users by redirecting to login after a delay
+            setTimeout(() => {
+                alert(`Grade promotion completed! ${successCount} student(s) have been updated. They will need to log in again.`);
+                closeGradePromotionModal();
+            }, 1000);
+        } else {
+            messageEl.innerText = 'Failed to update any students.';
+            messageEl.style.color = 'red';
+        }
+    }
+
     async function loadWeeklyRecommendations() {
         try {
             const response = await fetch(`${backendURL}/get-weekly-recommendations`);
@@ -1032,6 +1231,11 @@
             const findKaStudySection = document.querySelector('.find-kastudy-corner');
             if (findKaStudySection) {
               findKaStudySection.style.display = 'none';
+            }
+            
+            // Show grade promotion icon only for special admin LRN
+            if (data.user.lrn === '010101010101') {
+              document.getElementById('grade-promotion-icon').style.display = 'block';
             }
           }
 
