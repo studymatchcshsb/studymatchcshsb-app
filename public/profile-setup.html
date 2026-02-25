@@ -36,7 +36,7 @@
       <!-- Step 1: Enter LRN to lookup student info -->
       <div id="lrn-lookup-step">
         <input type="text" id="lrn-input" inputmode="numeric" placeholder="Enter your LRN (12 digits)" required minlength="12" maxlength="12" pattern="\d{12}" title="Please enter exactly 12 digits for the LRN." />
-        <button type="button" onclick="lookupLRN()">Verify LRN</button>
+        <button type="button" onclick="lookupLRN()" style="background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Verify LRN</button>
         <p id="lrn-message" style="color: red;"></p>
       </div>
 
@@ -51,7 +51,7 @@
         <input type="text" id="username" name="username" placeholder="Choose your Username/Codename (3-20 characters)" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" title="Username can only contain letters, numbers, and underscores." oninput="checkUsername()" />
         <div id="username-status" class="username-status"></div>
         
-        <button type="submit" id="submit-btn" disabled>Complete Profile</button>
+        <button type="submit" id="submit-btn" disabled style="background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; width: 100%;">Complete Profile</button>
       </div>
     </form>
     <p id="form-message" style="color: red;"></p>
