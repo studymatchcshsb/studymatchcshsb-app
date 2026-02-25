@@ -152,7 +152,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                         echo "Invalid Action";
                         break;
 
+    }
 
+} else if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action'])) {
+
+    $action = $_GET['action'];
+    
+    switch ($action) {
+        case "getAdminUsers":
+            $sql = "SELECT email, username FROM students WHERE isAdmin = 1";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(["success" => true, "admins" => $admins]);
+            break;
+            
+        default:
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Invalid Action"]);
+            break;
     }
 
 } else {

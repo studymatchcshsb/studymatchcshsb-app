@@ -530,7 +530,7 @@
         Study Buddies
       </div>
       
-      <div class="helped-section">
+      <div class="helped-section" id="helped-sections">
         <div class="helped-section-title">Comsayanos' You've Helped:</div>
         <div class="helped-list" id="helped-by-me-list">
           <div class="empty-state" style="font-size: 12px;">No one yet</div>
@@ -539,6 +539,13 @@
         <div class="helped-section-title">Comsayanos' Who've Helped You:</div>
         <div class="helped-list" id="helped-me-list">
           <div class="empty-state" style="font-size: 12px;">No one yet</div>
+        </div>
+      </div>
+      
+      <div class="helped-section" id="admins-section" style="display: none;">
+        <div class="helped-section-title">Registered Admins:</div>
+        <div class="helped-list" id="admins-list">
+          <div class="empty-state" style="font-size: 12px;">Loading...</div>
         </div>
       </div>
 
@@ -607,6 +614,7 @@
     let currentUserEmail = '';
     let currentUsername = '';
     let selectedRecipient = '';
+    let isAdmin = false;
     let selectedRecipientName = '';
     let selectedFiles = [];
     let activeChatSessions = {}; // Track active chat sessions
@@ -615,7 +623,15 @@
     window.onload = async function() {
       await fetchUserProfile();
       await loadActiveChatSessions();
-      await loadHelpedLists();
+      
+      // Show/hide sections based on user role
+      if (isAdmin) {
+        document.getElementById('helped-sections').style.display = 'none';
+        document.getElementById('admins-section').style.display = 'block';
+        document.getElementById('chat-list').innerHTML = '<div class="empty-state">Select an admin to start chatting!</div>';
+      } else {
+        await loadHelpedLists();
+      }
       
       // Check if redirected from notification with chat parameter
       const urlParams = new URLSearchParams(window.location.search);
@@ -642,6 +658,13 @@
         if (data.success) {
           currentUserEmail = data.user.email;
           currentUsername = data.user.username;
+          isAdmin = data.user.isAdmin || false;
+          
+          // If admin, load admin users; otherwise load helped sections
+          if (isAdmin) {
+            loadAdminUsers();
+          }
+          
           socket.emit('join', currentUserEmail);
         }
       } catch (error) {
@@ -731,6 +754,42 @@
         }
       } catch (error) {
         console.error("Error loading helped lists:", error);
+      }
+    }
+    
+    async function loadAdminUsers() {
+      try {
+        const response = await fetch(`${backendURL}/endpoint/api.php?action=getAdminUsers`);
+        if (!response.ok) throw new Error('Failed to fetch admin users');
+        
+        const data = await response.json();
+        const adminsList = document.getElementById('admins-list');
+        
+        if (data.admins && data.admins.length > 0) {
+          adminsList.innerHTML = '';
+          data.admins.forEach(admin => {
+            // Don't show current user
+            if (admin.email === currentUserEmail) return;
+            
+            const item = document.createElement('div');
+            item.className = 'helped-item';
+            item.style.cursor = 'pointer';
+            item.onclick = () => selectChat(admin.email, admin.username);
+            item.innerHTML = `
+              <div class="helped-item-avatar">👑</div>
+              <div>${admin.username}</div>
+            `;
+            adminsList.appendChild(item);
+          });
+          
+          if (adminsList.children.length === 0) {
+            adminsList.innerHTML = '<div class="empty-state" style="font-size: 12px;">No other admins</div>';
+          }
+        } else {
+          adminsList.innerHTML = '<div class="empty-state" style="font-size: 12px;">No other admins</div>';
+        }
+      } catch (error) {
+        console.error("Error loading admin users:", error);
       }
     }
 

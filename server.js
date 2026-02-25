@@ -788,11 +788,17 @@ app.post('/find-kastudy', async (req, res) => {
       return res.status(404).send({ success: false, message: 'User not found' });
     }
 
+    // Admins cannot send help requests
+    if (currentUser.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admins cannot send help requests' });
+    }
+
     console.log('[/find-kastudy] Current user:', currentUser.username);
 
-    // Find all users (excluding current user) to send notification to everyone
+    // Find all users (excluding current user and admins) to send notification to
     db.find({ 
-      email: { $ne: userEmail } 
+      email: { $ne: userEmail },
+      isAdmin: { $ne: true }
     }, (err, potentialHelpers) => {
       if (err) {
         console.error("Error finding potential helpers:", err);
@@ -1702,8 +1708,10 @@ app.get('/get-weekly-recommendations', async (req, res) => {
     // 1. They have strengths that match current user's weaknesses (can help you)
     // 2. Current user's strengths match their weaknesses (you can help them)
     // 3. Same grade and section preferred
+    // 4. Exclude admins
     db.find({ 
       email: { $ne: userEmail },
+      isAdmin: { $ne: true },
       grade: userGrade,
       section: userSection,
       profileComplete: true
