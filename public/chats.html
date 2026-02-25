@@ -471,8 +471,8 @@
     }
 
     .send-button {
-      background: linear-gradient(135deg, #82E0AA, #ABEBC6);
-      color: #1B5E20;
+      background: linear-gradient(135deg, #4CAF50, #388E3C);
+      color: white;
       border: none;
       padding: 10px 20px;
       border-radius: 25px;
@@ -530,7 +530,7 @@
         Study Buddies
       </div>
       
-      <div class="helped-section" id="helped-sections">
+      <div class="helped-section" id="helped-sections" style="display: none;">
         <div class="helped-section-title">Comsayanos' You've Helped:</div>
         <div class="helped-list" id="helped-by-me-list">
           <div class="empty-state" style="font-size: 12px;">No one yet</div>
@@ -630,6 +630,8 @@
         document.getElementById('admins-section').style.display = 'block';
         document.getElementById('chat-list').innerHTML = '<div class="empty-state">Select an admin to start chatting!</div>';
       } else {
+        document.getElementById('helped-sections').style.display = 'block';
+        document.getElementById('admins-section').style.display = 'none';
         await loadHelpedLists();
       }
       
