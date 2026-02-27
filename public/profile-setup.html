@@ -34,10 +34,10 @@
   <div class="container">
     <h2>Finish Setting Up Profile</h2>
     <form id="profile-form" onsubmit="prepareAndSubmit(event)">
-      <!-- Step 1: Enter LRN to lookup student info -->
+      <!-- Step 1: Enter ID Number to lookup student info -->
       <div id="lrn-lookup-step">
-        <input type="text" id="lrn-input" inputmode="numeric" placeholder="Enter your LRN (12 digits)" required minlength="12" maxlength="12" pattern="\d{12}" title="Please enter exactly 12 digits for the LRN." />
-        <button type="button" onclick="lookupLRN()" style="background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Verify LRN</button>
+        <input type="text" id="lrn-input" inputmode="numeric" placeholder="Enter your ID Number (12 digits)" required minlength="12" maxlength="12" pattern="\d{12}" title="Please enter exactly 12 digits for the ID Number." />
+        <button type="button" onclick="lookupLRN()" style="background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Verify ID Number</button>
         <p id="lrn-message" style="color: red;"></p>
       </div>
 
@@ -45,7 +45,7 @@
       <div id="profile-fields-step" style="display: none;">
         <input type="text" id="name" name="name" placeholder="Name" readonly class="readonly-field" required />
         <input type="text" id="surname" name="surname" placeholder="Surname" readonly class="readonly-field" required />
-        <input type="text" id="lrn" name="lrn" placeholder="LRN" readonly class="readonly-field" required />
+        <input type="text" id="lrn" name="lrn" placeholder="ID Number" readonly class="readonly-field" required />
         <input type="text" id="grade" name="grade" placeholder="Grade" readonly class="readonly-field" required />
         <input type="text" id="section" name="section" placeholder="Section" readonly class="readonly-field" required />
         
@@ -128,7 +128,7 @@
       const messageEl = document.getElementById('lrn-message');
 
       if (lrn.length !== 12) {
-        messageEl.innerText = "Please enter a valid 12-digit LRN.";
+        messageEl.innerText = "Please enter a valid 12-digit ID Number.";
         messageEl.style.color = 'red';
         return;
       }
@@ -170,6 +170,9 @@
             document.getElementById('username-status').className = 'username-status available';
             isUsernameValid = true;
             document.getElementById('submit-btn').disabled = false;
+            
+            // Store teaching subject for admin
+            window.adminTeachingSubject = data.student.teachingSubject || null;
           }
 
           // Hide LRN lookup step and show profile fields
@@ -276,7 +279,8 @@
           username: formData.get('username').trim(),
           lrn: formData.get('lrn'),
           grade: formData.get('grade'),
-          section: formData.get('section')
+          section: formData.get('section'),
+          teachingSubject: window.adminTeachingSubject || null
         };
 
         // Save profile

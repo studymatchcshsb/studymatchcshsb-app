@@ -170,6 +170,27 @@
     const backendURL = window.location.origin;
     const subjects = ["Filipino", "English", "Science", "Math", "ICT", "ESP", "AP", "MAPEH"];
 
+    // Check if user is admin and redirect if so
+    async function checkAdminAndRedirect() {
+      try {
+        const response = await fetch(`${backendURL}/get-profile`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user.isAdmin) {
+            // Admin users should not edit their subjects, redirect to profile
+            window.location.href = '/profile.html';
+            return true;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+      return false;
+    }
+
+    // Check on page load
+    checkAdminAndRedirect();
+
     function createCheckboxes(containerId, groupName) {
       const container = document.getElementById(containerId);
       subjects.forEach(subject => {

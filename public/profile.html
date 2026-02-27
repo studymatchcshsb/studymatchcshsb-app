@@ -227,7 +227,7 @@
         <div class="profile-left-section">
           <div class="profile-details">
             <div class="detail-row">
-              <span class="detail-label">LRN:</span>
+              <span class="detail-label">ID Number:</span>
               <span class="detail-value lrn-value" id="user-lrn">-</span>
             </div>
             <div class="detail-row">
@@ -255,7 +255,7 @@
       </div>
       
       <div class="profile-actions">
-        <a href="/edit-profile.html" class="btn-customize">Customize</a>
+        <a href="/edit-profile.html" class="btn-customize" id="customize-btn">Customize</a>
         <a href="/homepage.html" class="btn-back">Back to Dashboard</a>
       </div>
     </div>
@@ -275,6 +275,14 @@
         if (data.success) {
           const user = data.user;
           
+          // Check if user is admin
+          const isAdmin = user.isAdmin || false;
+          
+          // Hide customize button for admins
+          if (isAdmin) {
+            document.getElementById('customize-btn').style.display = 'none';
+          }
+          
           // Set full name
           const fullName = [user.name || '', user.surname || ''].filter(n => n).join(' ') || 'User';
           document.getElementById('user-fullname').innerText = fullName;
@@ -291,33 +299,51 @@
           document.getElementById('user-grade').innerText = user.grade ? 'Grade ' + user.grade : '-';
           document.getElementById('user-section').innerText = user.section || '-';
           
-          // Set strengths
+          // Set strengths - for admins, show teaching subject
           const strengthsList = document.getElementById('strengths-list');
           strengthsList.innerHTML = '';
-          (user.strengths || []).forEach(item => {
-            if (item) {
-              const span = document.createElement('span');
-              span.className = 'subject-tag';
-              span.textContent = item;
-              strengthsList.appendChild(span);
+          if (isAdmin && user.teachingSubject) {
+            // Admin shows their teaching subject
+            const span = document.createElement('span');
+            span.className = 'subject-tag';
+            span.textContent = user.teachingSubject;
+            strengthsList.appendChild(span);
+          } else if (user.strengths && user.strengths.length > 0) {
+            // Regular user shows their strengths
+            (user.strengths || []).forEach(item => {
+              if (item) {
+                const span = document.createElement('span');
+                span.className = 'subject-tag';
+                span.textContent = item;
+                strengthsList.appendChild(span);
+              }
+            });
+            if (strengthsList.children.length === 0) {
+              strengthsList.innerHTML = '<span class="subject-tag" style="background: rgba(255, 255, 255, 0.3); color: #FFD700; border-color: #FFD700;">Not set</span>';
             }
-          });
-          if (strengthsList.children.length === 0) {
+          } else {
             strengthsList.innerHTML = '<span class="subject-tag" style="background: rgba(255, 255, 255, 0.3); color: #FFD700; border-color: #FFD700;">Not set</span>';
           }
           
-          // Set weaknesses
+          // Set weaknesses - for admins, show "None (Teacher)"
           const weaknessesList = document.getElementById('weaknesses-list');
           weaknessesList.innerHTML = '';
-          (user.weaknesses || []).forEach(item => {
-            if (item) {
-              const span = document.createElement('span');
-              span.className = 'subject-tag';
-              span.textContent = item;
-              weaknessesList.appendChild(span);
+          if (isAdmin) {
+            // Admins don't have weaknesses
+            weaknessesList.innerHTML = '<span class="subject-tag" style="background: rgba(255, 255, 255, 0.3); color: #FFD700; border-color: #FFD700;">None (Teacher)</span>';
+          } else if (user.weaknesses && user.weaknesses.length > 0) {
+            (user.weaknesses || []).forEach(item => {
+              if (item) {
+                const span = document.createElement('span');
+                span.className = 'subject-tag';
+                span.textContent = item;
+                weaknessesList.appendChild(span);
+              }
+            });
+            if (weaknessesList.children.length === 0) {
+              weaknessesList.innerHTML = '<span class="subject-tag" style="background: rgba(255, 255, 255, 0.3); color: #FFD700; border-color: #FFD700;">Not set</span>';
             }
-          });
-          if (weaknessesList.children.length === 0) {
+          } else {
             weaknessesList.innerHTML = '<span class="subject-tag" style="background: rgba(255, 255, 255, 0.3); color: #FFD700; border-color: #FFD700;">Not set</span>';
           }
         } else {

@@ -120,6 +120,8 @@
       <svg id="help-icon" class="icon" onclick="openHelpModal()" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
       <!-- Grade Promotion Icon (only for special admin LRN) -->
       <svg id="grade-promotion-icon" class="icon" onclick="openGradePromotionModal()" title="Grade Promotion" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+      <!-- Add User Icon (only for admins) -->
+      <svg id="add-user-icon" class="icon" onclick="openAddUserModal()" title="Add New User" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
     </aside>
 
     <div id="menu-modal" class="modal" style="display:none;">
@@ -275,7 +277,7 @@
                           <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Name</th>
                           <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Surname</th>
                           <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Username</th>
-                          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">LRN</th>
+                          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">ID Number</th>
                           <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Grade</th>
                           <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Section</th>
                       </tr>
@@ -292,6 +294,73 @@
               </button>
           </div>
           <p id="grade-promotion-message" style="margin-top: 10px; text-align: center;"></p>
+      </div>
+  </div>
+
+  <!-- Add User Modal (for admins) -->
+  <div id="add-user-modal" class="modal" style="display:none;">
+      <div class="modal-content" style="max-width: 500px;">
+          <span class="close-btn" onclick="closeAddUserModal()">&times;</span>
+          <h3><b>✅ Add New User</b></h3>
+          <p style="color: #666; margin-bottom: 20px;">Add a new student to the allowed ID Number list:</p>
+          
+          <div style="margin-bottom: 15px;">
+              <label for="new-user-lrn" style="font-weight: bold;">ID Number (12 digits):</label>
+              <input type="text" id="new-user-lrn" placeholder="123456789012" maxlength="12" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+              <label for="new-user-name" style="font-weight: bold;">First Name:</label>
+              <input type="text" id="new-user-name" placeholder="Juan" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+              <label for="new-user-surname" style="font-weight: bold;">Surname:</label>
+              <input type="text" id="new-user-surname" placeholder="Dela Cruz" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+              <label for="new-user-grade" style="font-weight: bold;">Grade:</label>
+              <select id="new-user-grade" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px;">
+                  <option value="">Select Grade</option>
+                  <option value="7">Grade 7</option>
+                  <option value="8">Grade 8</option>
+                  <option value="9">Grade 9</option>
+                  <option value="10">Grade 10</option>
+              </select>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+              <label for="new-user-section" style="font-weight: bold;">Section:</label>
+              <input type="text" id="new-user-section" placeholder="A" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+              <label style="font-weight: bold;">
+                  <input type="checkbox" id="new-user-is-admin" style="margin-right: 8px;">
+                  Is Admin (Teacher)
+              </label>
+          </div>
+          
+          <div id="teaching-subject-field" style="margin-bottom: 15px; display: none;">
+              <label for="new-user-teaching-subject" style="font-weight: bold;">Teaching Subject:</label>
+              <select id="new-user-teaching-subject" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px;">
+                  <option value="">Select Subject</option>
+                  <option value="Filipino">Filipino</option>
+                  <option value="English">English</option>
+                  <option value="Science">Science</option>
+                  <option value="Math">Math</option>
+                  <option value="ICT">ICT</option>
+                  <option value="ESP">ESP</option>
+                  <option value="AP">AP</option>
+                  <option value="MAPEH">MAPEH</option>
+              </select>
+          </div>
+          
+          <button onclick="addNewUser()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px;">
+              ✅ Add User
+          </button>
+          <p id="add-user-message" style="margin-top: 10px; text-align: center;"></p>
       </div>
   </div>
 
@@ -780,6 +849,126 @@
         document.getElementById('grade-promotion-modal').style.display = 'none';
     }
 
+    // Add User functions
+    function openAddUserModal() {
+        document.getElementById('add-user-modal').style.display = 'block';
+        // Clear previous values
+        document.getElementById('new-user-lrn').value = '';
+        document.getElementById('new-user-name').value = '';
+        document.getElementById('new-user-surname').value = '';
+        document.getElementById('new-user-grade').value = '';
+        document.getElementById('new-user-section').value = '';
+        document.getElementById('new-user-is-admin').checked = false;
+        document.getElementById('new-user-teaching-subject').value = '';
+        document.getElementById('teaching-subject-field').style.display = 'none';
+        document.getElementById('add-user-message').innerText = '';
+    }
+    
+    // Show/hide teaching subject field based on admin checkbox
+    document.getElementById('new-user-is-admin')?.addEventListener('change', function() {
+        const teachingField = document.getElementById('teaching-subject-field');
+        if (this.checked) {
+            teachingField.style.display = 'block';
+            document.getElementById('new-user-grade').closest('div').style.display = 'none';
+            document.getElementById('new-user-section').closest('div').style.display = 'none';
+        } else {
+            teachingField.style.display = 'none';
+            document.getElementById('new-user-grade').closest('div').style.display = 'block';
+            document.getElementById('new-user-section').closest('div').style.display = 'block';
+        }
+    });
+
+    function closeAddUserModal() {
+        document.getElementById('add-user-modal').style.display = 'none';
+    }
+
+    async function addNewUser() {
+        const lrn = document.getElementById('new-user-lrn').value.trim();
+        const name = document.getElementById('new-user-name').value.trim();
+        const surname = document.getElementById('new-user-surname').value.trim();
+        const grade = document.getElementById('new-user-grade').value;
+        const section = document.getElementById('new-user-section').value.trim();
+        const isAdmin = document.getElementById('new-user-is-admin')?.checked || false;
+        const teachingSubject = document.getElementById('new-user-teaching-subject')?.value || null;
+        const messageEl = document.getElementById('add-user-message');
+        
+        // Validation
+        if (!lrn || lrn.length !== 12) {
+            messageEl.innerText = 'Please enter a valid 12-digit ID Number.';
+            messageEl.style.color = 'red';
+            return;
+        }
+        
+        if (!name) {
+            messageEl.innerText = 'Please enter the first name.';
+            messageEl.style.color = 'red';
+            return;
+        }
+        
+        if (!surname) {
+            messageEl.innerText = 'Please enter the surname.';
+            messageEl.style.color = 'red';
+            return;
+        }
+        
+        if (isAdmin) {
+            if (!teachingSubject) {
+                messageEl.innerText = 'Please select a teaching subject for admin.';
+                messageEl.style.color = 'red';
+                return;
+            }
+        } else {
+            if (!grade) {
+                messageEl.innerText = 'Please select a grade.';
+                messageEl.style.color = 'red';
+                return;
+            }
+            
+            if (!section) {
+                messageEl.innerText = 'Please enter the section.';
+                messageEl.style.color = 'red';
+                return;
+            }
+        }
+        
+        messageEl.innerText = 'Adding user...';
+        messageEl.style.color = 'blue';
+        
+        try {
+            const response = await fetch(`${backendURL}/admin/add-lrn-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    lrn: lrn,
+                    firstName: name,
+                    surname: surname,
+                    grade: grade,
+                    section: section,
+                    isAdmin: isAdmin,
+                    teachingSubject: teachingSubject
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                messageEl.innerText = 'User added successfully!';
+                messageEl.style.color = 'green';
+                setTimeout(() => {
+                    closeAddUserModal();
+                }, 1500);
+            } else {
+                messageEl.innerText = data.message || 'Failed to add user.';
+                messageEl.style.color = 'red';
+            }
+        } catch (error) {
+            console.error('Error adding user:', error);
+            messageEl.innerText = 'An error occurred. Please try again.';
+            messageEl.style.color = 'red';
+        }
+    }
+
     async function loadStudentsForPromotion() {
         try {
             const response = await fetch(`${backendURL}/admin/get-all-students-for-promotion`, {
@@ -1243,6 +1432,9 @@
             if (findKaStudySection) {
               findKaStudySection.style.display = 'none';
             }
+            
+            // Show add user icon for all admins
+            document.getElementById('add-user-icon').style.display = 'block';
             
             // Show grade promotion icon only for special admin LRN
             if (data.user.lrn === '010101010101') {

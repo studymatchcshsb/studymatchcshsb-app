@@ -399,7 +399,8 @@ app.post('/lookup-lrn', (req, res) => {
         lrn: student.lrn,
         grade: student.grade,
         section: student.section,
-        isAdmin: student.isAdmin || false
+        isAdmin: student.isAdmin || false,
+        teachingSubject: student.teachingSubject || null
       }
     });
   });
@@ -508,6 +509,7 @@ app.post('/save-profile', async (req, res) => {
       lrn: req.body.lrn,
       grade: isAdmin ? null : req.body.grade,
       section: isAdmin ? null : req.body.section,
+      teachingSubject: req.body.teachingSubject || null,
       profileComplete: true
     };
 
@@ -1926,6 +1928,99 @@ app.post('/admin/update-student-grade', async (req, res) => {
         res.send({ success: true, message: 'Student grade updated successfully' });
       }
     );
+  });
+});
+
+// Admin: Add new user LRN to allowed-lrns.json
+app.post('/admin/add-lrn-user', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { lrn, firstName, surname, grade, section, isAdmin, teachingSubject } = req.body;
+
+  // Validate required fields
+  if (!lrn || !firstName || !surname) {
+    return res.status(400).send({ success: false, message: 'LRN, First Name, and Surname are required' });
+  }
+
+  // Validate LRN format (12 digits)
+  if (!/^\d{12}$/.test(lrn)) {
+    return res.status(400).send({ success: false, message: 'LRN must be 12 digits' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, adminUser) => {
+    if (err || !adminUser || !adminUser.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Read the allowed-lrns.json file
+    fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
+      if (err) {
+        console.error("Error reading LRN file:", err);
+        return res.status(500).send({ success: false, message: 'Server error reading LRN file' });
+      }
+
+      let lrnData;
+      try {
+        lrnData = JSON.parse(data);
+      } catch (parseError) {
+        console.error("Error parsing LRN file:", parseError);
+        return res.status(500).send({ success: false, message: 'Error parsing LRN data' });
+      }
+
+      // Check if LRN already exists
+      const existingStudent = lrnData.students.find(s => s.lrn === lrn);
+      if (existingStudent) {
+        return res.status(400).send({ success: false, message: 'This LRN already exists in the system' });
+      }
+
+      // Add new student
+      const newStudent = {
+        lrn: lrn,
+        firstName: firstName.trim(),
+        surname: surname.trim(),
+        grade: grade || '',
+        section: section || '',
+        used: false,
+        isAdmin: isAdmin || false,
+        teachingSubject: teachingSubject || null
+      };
+
+      lrnData.students.push(newStudent);
+
+      // Write back to file
+      fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
+        if (err) {
+          console.error("Error saving LRN file:", err);
+          return res.status(500).send({ success: false, message: 'Server error saving LRN data' });
+        }
+
+        // Log the activity
+        const activityLog = {
+          type: 'user_added',
+          adminEmail: userEmail,
+          adminName: adminUser.name,
+          adminSurname: adminUser.surname,
+          newLrn: lrn,
+          newFirstName: firstName,
+          newSurname: surname,
+          newGrade: grade || '',
+          newSection: section || '',
+          timestamp: new Date(),
+          description: adminUser.name + " " + adminUser.surname + " added new user: " + firstName + " " + surname + " (LRN: " + lrn + ")"
+        };
+
+        activityDb.insert(activityLog, (err) => {
+          if (err) console.error("Error logging activity:", err);
+        });
+
+        console.log("New user added by admin:", lrn, "-", firstName, surname);
+        res.send({ success: true, message: 'User added successfully!' });
+      });
+    });
   });
 });
 
