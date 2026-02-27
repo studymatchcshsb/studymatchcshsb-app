@@ -330,14 +330,28 @@
               </select>
           </div>
           
-          <div style="margin-bottom: 20px;">
+          <div style="margin-bottom: 15px;">
               <label for="new-user-section" style="font-weight: bold;">Section:</label>
-              <input type="text" id="new-user-section" placeholder="A" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px;">
+              <select id="new-user-section" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px;">
+                  <option value="">Select Section</option>
+                  <option value="Android">Android</option>
+                  <option value="Oracle">Oracle</option>
+                  <option value="Symbian">Symbian</option>
+                  <option value="Macintosh">Macintosh</option>
+                  <option value="Redhat">Redhat</option>
+                  <option value="Unix">Unix</option>
+                  <option value="Fedora">Fedora</option>
+                  <option value="Minix">Minix</option>
+                  <option value="Solaris">Solaris</option>
+                  <option value="Chimera">Chimera</option>
+                  <option value="Linux">Linux</option>
+                  <option value="Xenix">Xenix</option>
+              </select>
           </div>
           
           <div style="margin-bottom: 15px;">
-              <label style="font-weight: bold;">
-                  <input type="checkbox" id="new-user-is-admin" style="margin-right: 8px;">
+              <label style="font-weight: bold; display: flex; align-items: center;">
+                  <input type="checkbox" id="new-user-is-admin" style="margin-right: 10px;">
                   Is Admin (Teacher)
               </label>
           </div>
@@ -361,6 +375,25 @@
               ✅ Add User
           </button>
           <p id="add-user-message" style="margin-top: 10px; text-align: center;"></p>
+          
+          <!-- List of Added Users -->
+          <div style="margin-top: 25px; border-top: 2px solid #ddd; padding-top: 15px;">
+              <h4 style="margin: 0 0 10px 0; color: #347433;">List of Added Users</h4>
+              <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px;">
+                  <table id="added-users-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                      <thead style="background: #f8f9fa; position: sticky; top: 0;">
+                          <tr>
+                              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">ID Number</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Name</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Type</th>
+                          </tr>
+                      </thead>
+                      <tbody id="added-users-tbody">
+                          <tr><td colspan="3" style="padding: 10px; text-align: center; color: #666;">Loading...</td></tr>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
       </div>
   </div>
 
@@ -862,6 +895,43 @@
         document.getElementById('new-user-teaching-subject').value = '';
         document.getElementById('teaching-subject-field').style.display = 'none';
         document.getElementById('add-user-message').innerText = '';
+        
+        // Load the list of added users
+        loadAddedUsers();
+    }
+    
+    // Load the list of added users
+    async function loadAddedUsers() {
+        const tbody = document.getElementById('added-users-tbody');
+        tbody.innerHTML = '<tr><td colspan="3" style="padding: 10px; text-align: center; color: #666;">Loading...</td></tr>';
+        
+        try {
+            const response = await fetch(`${backendURL}/admin/get-allowed-users`, {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.users.length > 0) {
+                    let html = '';
+                    data.users.forEach(user => {
+                        html += `<tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 8px;">${user.lrn}</td>
+                            <td style="padding: 8px;">${user.firstName} ${user.surname}</td>
+                            <td style="padding: 8px;">${user.isAdmin ? '<span style="color: #e74c3c; font-weight: bold;">Admin</span>' : '<span style="color: #347433;">Student</span>'}</td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" style="padding: 10px; text-align: center; color: #666;">No users added yet</td></tr>';
+                }
+            } else {
+                tbody.innerHTML = '<tr><td colspan="3" style="padding: 10px; text-align: center; color: red;">Failed to load users</td></tr>';
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            tbody.innerHTML = '<tr><td colspan="3" style="padding: 10px; text-align: center; color: red;">Error loading users</td></tr>';
+        }
     }
     
     // Show/hide teaching subject field based on admin checkbox
@@ -925,7 +995,7 @@
             }
             
             if (!section) {
-                messageEl.innerText = 'Please enter the section.';
+                messageEl.innerText = 'Please select a section.';
                 messageEl.style.color = 'red';
                 return;
             }
@@ -955,6 +1025,8 @@
             if (data.success) {
                 messageEl.innerText = 'User added successfully!';
                 messageEl.style.color = 'green';
+                // Reload the user list to reflect the new user
+                loadAddedUsers();
                 setTimeout(() => {
                     closeAddUserModal();
                 }, 1500);

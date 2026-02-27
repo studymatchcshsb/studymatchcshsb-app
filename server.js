@@ -2024,6 +2024,39 @@ app.post('/admin/add-lrn-user', async (req, res) => {
   });
 });
 
+// Admin: Get list of allowed users
+app.get('/admin/get-allowed-users', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, adminUser) => {
+    if (err || !adminUser || !adminUser.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Read the allowed-lrns.json file
+    fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
+      if (err) {
+        console.error("Error reading LRN file:", err);
+        return res.status(500).send({ success: false, message: 'Server error reading LRN file' });
+      }
+
+      let lrnData;
+      try {
+        lrnData = JSON.parse(data);
+      } catch (parseError) {
+        console.error("Error parsing LRN file:", parseError);
+        return res.status(500).send({ success: false, message: 'Error parsing LRN data' });
+      }
+
+      res.send({ success: true, users: lrnData.students });
+    });
+  });
+});
+
 const server = http.createServer(app);
 const io = socketIo(server);
 
