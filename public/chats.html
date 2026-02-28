@@ -804,7 +804,7 @@
     
     async function loadAdminUsers() {
       try {
-        const response = await fetch(`${backendURL}/endpoint/api.php?action=getAdminUsers`);
+        const response = await fetch(`${backendURL}/get-admin-users`);
         if (!response.ok) throw new Error('Failed to fetch admin users');
         
         const data = await response.json();

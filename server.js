@@ -1780,6 +1780,33 @@ app.get('/get-active-users', async (req, res) => {
   }
 });
 
+// Get admin users from NeDB (for admin-to-admin messaging)
+app.get('/get-admin-users', async (req, res) => {
+  try {
+    // Get all admin users from NeDB
+    db.find({ isAdmin: true }, (err, admins) => {
+      if (err) {
+        console.error("Error finding admin users:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const adminUsers = admins.map(admin => ({
+        email: admin.email,
+        username: admin.username || admin.email.split('@')[0]
+      }));
+
+      console.log('Found admin users:', adminUsers.length);
+      res.send({ 
+        success: true, 
+        admins: adminUsers
+      });
+    });
+  } catch (error) {
+    console.error("Error in get-admin-users:", error);
+    res.status(500).send({ success: false, message: 'Server error' });
+  }
+});
+
 // Admin endpoints
 app.get('/admin/get-all-users', async (req, res) => {
   const userEmail = await getUserFromSession(req);
