@@ -1639,7 +1639,7 @@ app.get('/admin/get-all-users', async (req, res) => {
     const limit = parseInt(req.query.limit) || 500; // Default limit 500 users
     
     // Get users where isAdmin is not true (includes false, undefined, or null)
-    db.find({ $or: [{ isAdmin: false }, { isAdmin: { $exists: false } }] }).limit(limit, (err, users) => {
+    db.find({ $or: [{ isAdmin: false }, { isAdmin: { $exists: false } }] }).limit(limit).exec((err, users) => {
       if (err) {
         console.error("Error finding users:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
@@ -1744,7 +1744,7 @@ app.get('/admin/get-helping-rankings', async (req, res) => {
     const limit = parseInt(req.query.limit) || 1000; // Default limit 1000 sessions
     
     // Get all closed chat sessions with limit
-    chatSessionsDb.find({ active: false }).limit(limit, (err, sessions) => {
+    chatSessionsDb.find({ active: false }).limit(limit).exec((err, sessions) => {
       if (err) {
         console.error("Error finding sessions:", err);
         return res.status(500).send({ success: false, message: 'Server error' });

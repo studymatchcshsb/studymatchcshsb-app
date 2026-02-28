@@ -598,13 +598,11 @@
       document.getElementById('count-view').style.display = 'none';
       document.getElementById('active-detailed-view').style.display = 'none';
       document.getElementById('all-users-view').style.display = 'block';
-      document.getElementById('activity-logs-view').style.display = 'none';
       document.getElementById('helping-rankings-view').style.display = 'none';
       
       document.getElementById('btn-count-view').classList.remove('active');
       document.getElementById('btn-active-detailed').classList.remove('active');
       document.getElementById('btn-all-users').classList.add('active');
-      document.getElementById('btn-activity-logs').classList.remove('active');
       document.getElementById('btn-helping-rankings').classList.remove('active');
       
       await loadAllUsers();
@@ -623,7 +621,6 @@
       document.getElementById('btn-count-view').classList.remove('active');
       document.getElementById('btn-active-detailed').classList.remove('active');
       document.getElementById('btn-all-users').classList.remove('active');
-      document.getElementById('btn-activity-logs').classList.add('active');
       document.getElementById('btn-helping-rankings').classList.remove('active');
       
       await loadActivityLogs();
@@ -636,13 +633,11 @@
       document.getElementById('count-view').style.display = 'none';
       document.getElementById('active-detailed-view').style.display = 'none';
       document.getElementById('all-users-view').style.display = 'none';
-      document.getElementById('activity-logs-view').style.display = 'none';
       document.getElementById('helping-rankings-view').style.display = 'block';
       
       document.getElementById('btn-count-view').classList.remove('active');
       document.getElementById('btn-active-detailed').classList.remove('active');
       document.getElementById('btn-all-users').classList.remove('active');
-      document.getElementById('btn-activity-logs').classList.remove('active');
       document.getElementById('btn-helping-rankings').classList.add('active');
       
       await loadHelpingRankings();
