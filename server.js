@@ -979,7 +979,7 @@ app.post('/respond-help-request', async (req, res) => {
     return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
   }
 
-  // Remove the notification from current user's notifications
+  // Remove the notification from current user's notifications only
   db.update(
     { email: userEmail },
     { $pull: { notifications: { id: notificationId } } },
@@ -990,20 +990,7 @@ app.post('/respond-help-request', async (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error' });
       }
 
-      // ALSO remove this help request notification from ALL other users who received it
-      // This ensures the notification is removed from everyone once someone responds
-      db.update(
-        { 
-          email: { $ne: userEmail },
-          notifications: { $elemMatch: { id: notificationId } }
-        },
-        { $pull: { notifications: { id: notificationId } } },
-        { multi: true },
-        (err) => {
-          if (err) console.error("Error removing notification from other users:", err);
-          console.log('Removed help request notification from all users who received it');
-        }
-      );
+      console.log('Removed notification from user:', userEmail, '- num removed:', numReplaced);
 
       if (response === 'accept' && requesterEmail) {
         // Get helper's name for the notification
@@ -1114,7 +1101,7 @@ app.post('/respond-kastudy-request', async (req, res) => {
     return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
   }
 
-  // Remove the notification from current user's notifications
+  // Remove the notification from current user's notifications only
   db.update(
     { email: userEmail },
     { $pull: { notifications: { id: notificationId } } },
@@ -1125,20 +1112,7 @@ app.post('/respond-kastudy-request', async (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error' });
       }
 
-      // ALSO remove this help request notification from ALL other users who received it
-      // This ensures the notification is removed from everyone once someone responds
-      db.update(
-        { 
-          email: { $ne: userEmail },
-          notifications: { $elemMatch: { id: notificationId } }
-        },
-        { $pull: { notifications: { id: notificationId } } },
-        { multi: true },
-        (err) => {
-          if (err) console.error("Error removing notification from other users:", err);
-          console.log('Removed kastudy request notification from all users who received it');
-        }
-      );
+      console.log('Removed notification from user:', userEmail, '- num removed:', numReplaced);
 
       if (response === 'accept' && requesterEmail) {
         // Get helper's name for the notification
