@@ -251,14 +251,16 @@
       background: #F9E79F;
       color: #1B5E20;
       border: none;
-      padding: 6px 12px;
-      border-radius: 15px;
+      padding: 5px 10px;
+      border-radius: 12px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 12px;
+      font-size: 11px;
       border: 2px solid white;
       white-space: nowrap;
+      min-width: auto;
+      width: auto;
     }
 
     .done-button:hover {
@@ -479,13 +481,15 @@
       background: linear-gradient(135deg, #4CAF50, #388E3C);
       color: white;
       border: none;
-      padding: 8px 12px;
-      border-radius: 15px;
+      padding: 6px 10px;
+      border-radius: 12px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 12px;
+      font-size: 11px;
       flex-shrink: 0;
+      min-width: auto;
+      width: auto;
     }
 
     .send-button:hover {
@@ -968,6 +972,19 @@
         document.getElementById('file-preview').style.display = 'none';
         document.getElementById('file-preview').innerHTML = '';
         document.getElementById('file-input').value = '';
+      }
+      
+      // Clear the notification for this chat after sending first message
+      if (selectedRecipient) {
+        try {
+          await fetch(`${backendURL}/clear-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerEmail: selectedRecipient })
+          });
+        } catch (e) {
+          console.log('Could not clear notification');
+        }
       }
       
       input.value = '';

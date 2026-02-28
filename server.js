@@ -1454,6 +1454,36 @@ app.post('/close-chat', async (req, res) => {
   });
 });
 
+// Clear notification when user sends messages in a chat
+app.post('/clear-notification', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { partnerEmail } = req.body;
+
+  if (!partnerEmail) {
+    return res.status(400).send({ success: false, message: 'Partner email is required' });
+  }
+
+  // Remove any kastudy_accepted notifications related to this partner
+  db.update(
+    { email: userEmail },
+    { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': partnerEmail } } },
+    { multi: true },
+    (err, numReplaced) => {
+      if (err) {
+        console.error("Error clearing notification:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+      
+      console.log('Cleared notifications for', userEmail, 'related to', partnerEmail, '- num removed:', numReplaced);
+      res.send({ success: true });
+    }
+  );
+});
+
 // File upload endpoint
 const multer = require('multer');
 const path = require('path');
