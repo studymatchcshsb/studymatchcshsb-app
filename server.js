@@ -979,10 +979,14 @@ app.post('/respond-help-request', async (req, res) => {
     return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
   }
 
+  // Convert notificationId to number if it's a string (for consistent matching)
+  const notificationIdNum = typeof notificationId === 'string' ? parseFloat(notificationId) : notificationId;
+
   // Remove the notification from current user's notifications only
+  // Try matching as both number and string
   db.update(
     { email: userEmail },
-    { $pull: { notifications: { id: notificationId } } },
+    { $pull: { notifications: { $or: [{ id: notificationIdNum }, { id: notificationId.toString() }] } } },
     { multi: true },
     (err, numReplaced) => {
       if (err) {
@@ -1101,10 +1105,14 @@ app.post('/respond-kastudy-request', async (req, res) => {
     return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
   }
 
+  // Convert notificationId to number if it's a string (for consistent matching)
+  const notificationIdNum = typeof notificationId === 'string' ? parseFloat(notificationId) : notificationId;
+
   // Remove the notification from current user's notifications only
+  // Try matching as both number and string
   db.update(
     { email: userEmail },
-    { $pull: { notifications: { id: notificationId } } },
+    { $pull: { notifications: { $or: [{ id: notificationIdNum }, { id: notificationId.toString() }] } } },
     { multi: true },
     (err, numReplaced) => {
       if (err) {
