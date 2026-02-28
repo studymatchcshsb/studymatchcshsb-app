@@ -1339,11 +1339,49 @@ app.get('/get-active-chats', async (req, res) => {
           partnerEmail: partnerEmail,
           partnerUsername: partner ? partner.username : partnerEmail,
           subject: session.subject,
-          createdAt: session.createdAt
+          createdAt: session.createdAt,
+          isRequester: session.requester === userEmail // Add this flag
         };
       });
 
       res.send({ chats });
+    });
+  });
+});
+
+// Get specific chat session details
+app.get('/get-chat-session/:partnerEmail', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const partnerEmail = req.params.partnerEmail;
+
+  chatSessionsDb.findOne({
+    $or: [
+      { user1: userEmail, user2: partnerEmail },
+      { user1: partnerEmail, user2: userEmail }
+    ],
+    active: true
+  }, (err, session) => {
+    if (err) {
+      console.error("Error finding chat session:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (!session) {
+      return res.status(404).send({ success: false, message: 'Chat session not found' });
+    }
+
+    res.send({ 
+      success: true, 
+      session: {
+        sessionId: session._id,
+        partnerEmail: partnerEmail,
+        isRequester: session.requester === userEmail,
+        subject: session.subject
+      }
     });
   });
 });
@@ -1512,6 +1550,83 @@ app.post('/clear-notification', async (req, res) => {
       res.send({ success: true });
     }
   );
+});
+
+// Decline a chat (only for requester - User A can decline a helper they don't want)
+app.post('/decline-chat', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { partnerEmail } = req.body;
+
+  if (!partnerEmail) {
+    return res.status(400).send({ success: false, message: 'Partner email is required' });
+  }
+
+  // Find and close the chat session
+  chatSessionsDb.findOne({
+    $or: [
+      { user1: userEmail, user2: partnerEmail },
+      { user1: partnerEmail, user2: userEmail }
+    ],
+    active: true
+  }, (err, session) => {
+    if (err) {
+      console.error("Error finding session:", err);
+      return res.status(500).send({ success: false, message: 'Server error' });
+    }
+
+    if (!session) {
+      return res.status(404).send({ success: false, message: 'Chat session not found' });
+    }
+
+    // Check if current user is the requester (only requester can decline)
+    if (session.requester !== userEmail) {
+      return res.status(403).send({ success: false, message: 'Only the requester can decline a chat' });
+    }
+
+    // Mark session as closed with declined status
+    chatSessionsDb.update(
+      { _id: session._id },
+      { $set: { active: false, closedAt: new Date(), closedBy: userEmail, declined: true } },
+      {},
+      (err, numReplaced) => {
+        if (err) {
+          console.error("Error declining session:", err);
+          return res.status(500).send({ success: false, message: 'Server error' });
+        }
+
+        // Remove notifications for both users related to this chat
+        db.update(
+          { email: userEmail },
+          { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': partnerEmail } } },
+          { multi: true },
+          (err) => {
+            if (err) console.error("Error removing notification for user:", err);
+          }
+        );
+        
+        db.update(
+          { email: partnerEmail },
+          { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': userEmail } } },
+          { multi: true },
+          (err) => {
+            if (err) console.error("Error removing notification for partner:", err);
+          }
+        );
+
+        // Notify the other user via socket
+        const partnerSocket = connectedUsers[partnerEmail.toLowerCase()];
+        if (partnerSocket) {
+          io.to(partnerSocket).emit('chat_declined', { partnerEmail: userEmail });
+        }
+
+        res.send({ success: true, message: 'Chat declined successfully' });
+      }
+    );
+  });
 });
 
 // File upload endpoint

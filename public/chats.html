@@ -269,6 +269,33 @@
       box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
     }
 
+    .decline-button {
+      background: #f8d7da;
+      color: #721c24;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 11px;
+      border: 2px solid white;
+      white-space: nowrap;
+      min-width: auto;
+      width: auto;
+    }
+
+    .decline-button:hover {
+      background: #f5c6cb;
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(245, 198, 203, 0.4);
+    }
+
+    .button-container {
+      display: flex;
+      gap: 8px;
+    }
+
     .messages-container {
       flex: 1;
       overflow-y: auto;
@@ -592,9 +619,14 @@
             <div class="chat-partner-avatar" id="partner-avatar">A</div>
             <div class="chat-partner-name" id="partner-name">Select a chat</div>
           </div>
-          <button class="done-button" id="done-button" onclick="closeChat()">
-            ✓ Done
-          </button>
+          <div class="button-container">
+            <button class="decline-button" id="decline-button" onclick="declineChat()" style="display: none;">
+              ✕ Decline
+            </button>
+            <button class="done-button" id="done-button" onclick="closeChat()">
+              ✓ Done
+            </button>
+          </div>
         </div>
 
         <div class="messages-container" id="messages-container">
@@ -628,6 +660,7 @@
     let selectedRecipientName = '';
     let selectedFiles = [];
     let activeChatSessions = {}; // Track active chat sessions
+    let isCurrentUserRequester = false; // Track if current user is the requester (User A)
 
     // Initialize
     window.onload = async function() {
@@ -822,6 +855,24 @@
           item.classList.add('active');
         }
       });
+      
+      // Check if current user is the requester (User A)
+      try {
+        const response = await fetch(`${backendURL}/get-chat-session/${recipientEmail}`);
+        const data = await response.json();
+        if (data.success && data.session) {
+          isCurrentUserRequester = data.session.isRequester;
+          // Show/hide decline button based on whether current user is requester
+          document.getElementById('decline-button').style.display = isCurrentUserRequester ? 'inline-block' : 'none';
+        } else {
+          isCurrentUserRequester = false;
+          document.getElementById('decline-button').style.display = 'none';
+        }
+      } catch (error) {
+        console.error("Error fetching chat session:", error);
+        isCurrentUserRequester = false;
+        document.getElementById('decline-button').style.display = 'none';
+      }
       
       // Load messages
       await loadMessages(recipientEmail);
@@ -1051,6 +1102,40 @@
         alert('Failed to close chat');
       }
     }
+    
+    async function declineChat() {
+      if (!selectedRecipient) return;
+      
+      if (!confirm(`Are you sure you want to decline this chat with ${selectedRecipientName}? This helper will be notified and you won't be able to chat with them again unless they send another help request.`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${backendURL}/decline-chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ partnerEmail: selectedRecipient })
+        });
+        
+        if (!response.ok) throw new Error('Failed to decline chat');
+        
+        const data = await response.json();
+        if (data.success) {
+          alert('Chat declined successfully!');
+          selectedRecipient = '';
+          selectedRecipientName = '';
+          isCurrentUserRequester = false;
+          document.getElementById('no-chat-view').style.display = 'flex';
+          document.getElementById('chat-view').style.display = 'none';
+          document.getElementById('decline-button').style.display = 'none';
+          await loadActiveChatSessions();
+          await loadHelpedLists();
+        }
+      } catch (error) {
+        console.error('Error declining chat:', error);
+        alert('Failed to decline chat');
+      }
+    }
 
     // Socket listeners
     socket.on('receive message', (data) => {
@@ -1076,6 +1161,20 @@
         selectedRecipientName = '';
         document.getElementById('no-chat-view').style.display = 'flex';
         document.getElementById('chat-view').style.display = 'none';
+      }
+      loadActiveChatSessions();
+      loadHelpedLists();
+    });
+
+    socket.on('chat_declined', (data) => {
+      if (data.partnerEmail === selectedRecipient) {
+        alert(`${selectedRecipientName} has declined your chat request.`);
+        selectedRecipient = '';
+        selectedRecipientName = '';
+        isCurrentUserRequester = false;
+        document.getElementById('no-chat-view').style.display = 'flex';
+        document.getElementById('chat-view').style.display = 'none';
+        document.getElementById('decline-button').style.display = 'none';
       }
       loadActiveChatSessions();
       loadHelpedLists();
