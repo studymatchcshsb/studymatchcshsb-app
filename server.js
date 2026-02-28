@@ -1457,30 +1457,41 @@ app.post('/close-chat', async (req, res) => {
         }
 
         // Remove notifications for both users related to this chat
-        // Find any kastudy_accepted notifications from the partner
-        const partnerUsername = session.user1 === userEmail 
-          ? (session.user2.split('@')[0]) 
-          : (session.user1.split('@')[0]);
-        
-        const notificationMessagePattern = partnerUsername + " wants to help you";
-        
-        // Remove notifications for current user (any kastudy_accepted from partner)
+        // Remove kastudy_accepted notifications (for when user clicked Yes)
         db.update(
           { email: userEmail },
           { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': partnerEmail } } },
           { multi: true },
           (err) => {
-            if (err) console.error("Error removing notification for user:", err);
+            if (err) console.error("Error removing kastudy_accepted notification for user:", err);
           }
         );
         
-        // Remove notifications for partner (any kastudy_accepted from current user)
         db.update(
           { email: partnerEmail },
           { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': userEmail } } },
           { multi: true },
           (err) => {
-            if (err) console.error("Error removing notification for partner:", err);
+            if (err) console.error("Error removing kastudy_accepted notification for partner:", err);
+          }
+        );
+        
+        // Also remove any help_request notifications (for when user clicked Yes, the help_request should also be cleared)
+        db.update(
+          { email: userEmail },
+          { $pull: { notifications: { type: 'help_request', 'fromUser.email': partnerEmail } } },
+          { multi: true },
+          (err) => {
+            if (err) console.error("Error removing help_request notification for user:", err);
+          }
+        );
+        
+        db.update(
+          { email: partnerEmail },
+          { $pull: { notifications: { type: 'help_request', 'fromUser.email': userEmail } } },
+          { multi: true },
+          (err) => {
+            if (err) console.error("Error removing help_request notification for partner:", err);
           }
         );
 
@@ -1573,12 +1584,13 @@ app.post('/decline-chat', async (req, res) => {
         }
 
         // Remove notifications for both users related to this chat
+        // Remove kastudy_accepted notifications
         db.update(
           { email: userEmail },
           { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': partnerEmail } } },
           { multi: true },
           (err) => {
-            if (err) console.error("Error removing notification for user:", err);
+            if (err) console.error("Error removing kastudy_accepted notification for user:", err);
           }
         );
         
@@ -1587,7 +1599,26 @@ app.post('/decline-chat', async (req, res) => {
           { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': userEmail } } },
           { multi: true },
           (err) => {
-            if (err) console.error("Error removing notification for partner:", err);
+            if (err) console.error("Error removing kastudy_accepted notification for partner:", err);
+          }
+        );
+        
+        // Also remove any help_request notifications
+        db.update(
+          { email: userEmail },
+          { $pull: { notifications: { type: 'help_request', 'fromUser.email': partnerEmail } } },
+          { multi: true },
+          (err) => {
+            if (err) console.error("Error removing help_request notification for user:", err);
+          }
+        );
+        
+        db.update(
+          { email: partnerEmail },
+          { $pull: { notifications: { type: 'help_request', 'fromUser.email': userEmail } } },
+          { multi: true },
+          (err) => {
+            if (err) console.error("Error removing help_request notification for partner:", err);
           }
         );
 
