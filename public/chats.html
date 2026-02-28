@@ -251,13 +251,14 @@
       background: #F9E79F;
       color: #1B5E20;
       border: none;
-      padding: 8px 20px;
-      border-radius: 25px;
+      padding: 8px 16px;
+      border-radius: 20px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 14px;
+      font-size: 13px;
       border: 2px solid white;
+      white-space: nowrap;
     }
 
     .done-button:hover {
@@ -382,7 +383,7 @@
 
     .message-input-area {
       background: white;
-      padding: 20px;
+      padding: 15px;
       border-top: 2px solid #ddd;
       display: flex;
       gap: 10px;
@@ -393,14 +394,17 @@
       background: #F9E79F;
       color: #1B5E20;
       border: none;
-      padding: 10px 12px;
-      border-radius: 10px;
+      padding: 10px;
+      border-radius: 50%;
       cursor: pointer;
       font-weight: bold;
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 45px;
+      height: 45px;
+      flex-shrink: 0;
     }
 
     .file-upload-button:hover {
@@ -475,12 +479,13 @@
       background: linear-gradient(135deg, #4CAF50, #388E3C);
       color: white;
       border: none;
-      padding: 10px 20px;
-      border-radius: 25px;
+      padding: 10px 16px;
+      border-radius: 20px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 14px;
+      font-size: 13px;
+      flex-shrink: 0;
     }
 
     .send-button:hover {
