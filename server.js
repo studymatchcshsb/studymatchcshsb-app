@@ -1577,8 +1577,10 @@ app.get('/admin/get-all-users', async (req, res) => {
       return res.status(403).send({ success: false, message: 'Admin access required' });
     }
 
-    // Get all users except admins
-    db.find({ isAdmin: { $ne: true } }, (err, users) => {
+    // Get all users except admins with limit for performance
+    const limit = parseInt(req.query.limit) || 500; // Default limit 500 users
+    
+    db.find({ isAdmin: { $ne: true } }).limit(limit, (err, users) => {
       if (err) {
         console.error("Error finding users:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
@@ -1594,7 +1596,7 @@ app.get('/admin/get-all-users', async (req, res) => {
         email: u.email
       }));
 
-      res.send({ success: true, users: userList });
+      res.send({ success: true, users: userList, total: users.length });
     });
   });
 });
@@ -1678,8 +1680,11 @@ app.get('/admin/get-helping-rankings', async (req, res) => {
       return res.status(403).send({ success: false, message: 'Admin access required' });
     }
 
-    // Get all closed chat sessions where someone was helped
-    chatSessionsDb.find({ active: false }, (err, sessions) => {
+    // Limit the number of sessions to process for better performance
+    const limit = parseInt(req.query.limit) || 1000; // Default limit 1000 sessions
+    
+    // Get all closed chat sessions with limit
+    chatSessionsDb.find({ active: false }).limit(limit, (err, sessions) => {
       if (err) {
         console.error("Error finding sessions:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
@@ -1699,7 +1704,8 @@ app.get('/admin/get-helping-rankings', async (req, res) => {
       // Convert to array and sort
       const rankings = Object.entries(helperCounts)
         .map(([email, count]) => ({ email, count }))
-        .sort((a, b) => b.count - a.count);
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 50); // Only return top 50 helpers
 
       // Get user details for each helper
       const helperEmails = rankings.map(r => r.email);

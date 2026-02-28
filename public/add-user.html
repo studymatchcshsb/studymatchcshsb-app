@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
+  <title>Add User - StudyMatch</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #c1dcba, #d4e8d1);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .add-user-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #FFCF50, #f0d975);
+      padding: 30px;
+      text-align: center;
+      border-bottom: 4px solid #c1dcba;
+    }
+
+    .header h1 {
+      margin: 0;
+      color: #1B5E20;
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .header p {
+      margin: 10px 0 0 0;
+      color: #2E7D32;
+      font-size: 16px;
+    }
+
+    .back-button {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      background: #347433;
+      color: #FFCF50;
+      padding: 10px 20px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      border: 2px solid #FFCF50;
+    }
+
+    .back-button:hover {
+      background: #1B5E20;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .form-section {
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      border: 3px solid #82E0AA;
+    }
+
+    .form-section h2 {
+      color: #1B5E20;
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      color: #2E7D32;
+      margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #4CAF50, #388E3C);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.4);
+    }
+
+    .message {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    /* User List Section */
+    .user-list-section {
+      margin-top: 40px;
+    }
+
+    .user-list-section h2 {
+      color: #1B5E20;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .user-table-container {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+    }
+
+    .user-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    .user-table th {
+      background: linear-gradient(135deg, #2E7D32, #4CAF50);
+      color: #FFD700;
+      padding: 15px;
+      text-align: left;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+    }
+
+    .user-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .user-table tr:hover {
+      background: #f5f5f5;
+    }
+
+    .user-type {
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .user-type.admin {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .user-type.student {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 18px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    /* Hide elements */
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <a href="/homepage.html" class="back-button">← Back to Dashboard</a>
+  
+  <div class="add-user-container">
+    <div class="header">
+      <h1>✅ Add New User</h1>
+      <p>Add a new student to the allowed ID Number list</p>
+    </div>
+
+    <div class="content">
+      <!-- Add User Form -->
+      <div class="form-section">
+        <h2>User Information</h2>
+        
+        <div class="form-group">
+          <label for="new-user-lrn">ID Number (12 digits):</label>
+          <input type="text" id="new-user-lrn" placeholder="123456789012" maxlength="12">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new-user-name">First Name:</label>
+            <input type="text" id="new-user-name" placeholder="Juan">
+          </div>
+          
+          <div class="form-group">
+            <label for="new-user-surname">Surname:</label>
+            <input type="text" id="new-user-surname" placeholder="Dela Cruz">
+          </div>
+        </div>
+        
+        <div class="form-row" id="student-fields">
+          <div class="form-group">
+            <label for="new-user-grade">Grade:</label>
+            <select id="new-user-grade">
+              <option value="">Select Grade</option>
+              <option value="7">Grade 7</option>
+              <option value="8">Grade 8</option>
+              <option value="9">Grade 9</option>
+              <option value="10">Grade 10</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="new-user-section">Section:</label>
+            <select id="new-user-section">
+              <option value="">Select Section</option>
+              <option value="Android">Android</option>
+              <option value="Oracle">Oracle</option>
+              <option value="Symbian">Symbian</option>
+              <option value="Macintosh">Macintosh</option>
+              <option value="Redhat">Redhat</option>
+              <option value="Unix">Unix</option>
+              <option value="Fedora">Fedora</option>
+              <option value="Minix">Minix</option>
+              <option value="Solaris">Solaris</option>
+              <option value="Chimera">Chimera</option>
+              <option value="Linux">Linux</option>
+              <option value="Xenix">Xenix</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="new-user-is-admin">
+            <label for="new-user-is-admin">Is Admin (Teacher)</label>
+          </div>
+        </div>
+        
+        <div id="teaching-subject-field" class="form-group hidden">
+          <label for="new-user-teaching-subject">Teaching Subject:</label>
+          <select id="new-user-teaching-subject">
+            <option value="">Select Subject</option>
+            <option value="Filipino">Filipino</option>
+            <option value="English">English</option>
+            <option value="Science">Science</option>
+            <option value="Math">Math</option>
+            <option value="ICT">ICT</option>
+            <option value="ESP">ESP</option>
+            <option value="AP">AP</option>
+            <option value="MAPEH">MAPEH</option>
+          </select>
+        </div>
+        
+        <button onclick="addNewUser()" class="submit-btn">✅ Add User</button>
+        <div id="add-user-message" class="message hidden"></div>
+      </div>
+
+      <!-- List of Added Users -->
+      <div class="user-list-section">
+        <h2>📋 List of Added Users</h2>
+        <div class="user-table-container">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>ID Number</th>
+                <th>Name</th>
+                <th>Grade</th>
+                <th>Section</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody id="added-users-tbody">
+              <tr>
+                <td colspan="5" class="loading">Loading users...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const backendURL = window.location.origin;
+    let currentUserIsAdmin = false;
+
+    // Check authentication on page load
+    window.onload = async function() {
+      await checkAuthentication();
+      await fetchUserProfile();
+      loadAddedUsers();
+    };
+
+    async function checkAuthentication() {
+      try {
+        const response = await fetch(`${backendURL}/check-session`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          window.location.href = '/index.html';
+          return;
+        }
+
+        const data = await response.json();
+        if (!data.loggedIn) {
+          window.location.href = '/index.html';
+          return;
+        }
+
+        if (!data.profileComplete) {
+          window.location.href = '/profile-setup.html';
+          return;
+        }
+      } catch (error) {
+        console.log('Authentication check failed:', error);
+        window.location.href = '/index.html';
+      }
+    }
+
+    async function fetchUserProfile() {
+      try {
+        const response = await fetch(`${backendURL}/get-profile`, {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+          currentUserIsAdmin = data.user.isAdmin || false;
+          
+          if (!currentUserIsAdmin) {
+            // Not admin, redirect to homepage
+            alert('Access denied. Admin only.');
+            window.location.href = '/homepage.html';
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        window.location.href = '/index.html';
+      }
+    }
+
+    // Show/hide teaching subject field based on admin checkbox
+    document.getElementById('new-user-is-admin')?.addEventListener('change', function() {
+      const teachingField = document.getElementById('teaching-subject-field');
+      const studentFields = document.getElementById('student-fields');
+      
+      if (this.checked) {
+        teachingField.classList.remove('hidden');
+        studentFields.classList.add('hidden');
+      } else {
+        teachingField.classList.add('hidden');
+        studentFields.classList.remove('hidden');
+      }
+    });
+
+    // Load the list of added users
+    async function loadAddedUsers() {
+      const tbody = document.getElementById('added-users-tbody');
+      tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading users...</td></tr>';
+      
+      try {
+        const response = await fetch(`${backendURL}/admin/get-allowed-users`, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.users.length > 0) {
+            let html = '';
+            data.users.forEach(user => {
+              const userType = user.isAdmin ? 
+                '<span class="user-type admin">Admin</span>' : 
+                '<span class="user-type student">Student</span>';
+              
+              html += `<tr>
+                <td>${user.lrn}</td>
+                <td>${user.firstName} ${user.surname}</td>
+                <td>${user.grade || '-'}</td>
+                <td>${user.section || '-'}</td>
+                <td>${userType}</td>
+              </tr>`;
+            });
+            tbody.innerHTML = html;
+          } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No users added yet</td></tr>';
+          }
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Failed to load users</td></tr>';
+        }
+      } catch (error) {
+        console.error('Error loading users:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error loading users</td></tr>';
+      }
+    }
+
+    async function addNewUser() {
+      const lrn = document.getElementById('new-user-lrn').value.trim();
+      const name = document.getElementById('new-user-name').value.trim();
+      const surname = document.getElementById('new-user-surname').value.trim();
+      const grade = document.getElementById('new-user-grade').value;
+      const section = document.getElementById('new-user-section').value;
+      const isAdmin = document.getElementById('new-user-is-admin')?.checked || false;
+      const teachingSubject = document.getElementById('new-user-teaching-subject')?.value || null;
+      const messageEl = document.getElementById('add-user-message');
+      
+      // Validation
+      if (!lrn || lrn.length !== 12) {
+        showMessage('Please enter a valid 12-digit ID Number.', 'error');
+        return;
+      }
+      
+      if (!name) {
+        showMessage('Please enter the first name.', 'error');
+        return;
+      }
+      
+      if (!surname) {
+        showMessage('Please enter the surname.', 'error');
+        return;
+      }
+      
+      if (isAdmin) {
+        if (!teachingSubject) {
+          showMessage('Please select a teaching subject for admin.', 'error');
+          return;
+        }
+      } else {
+        if (!grade) {
+          showMessage('Please select a grade.', 'error');
+          return;
+        }
+        
+        if (!section) {
+          showMessage('Please select a section.', 'error');
+          return;
+        }
+      }
+      
+      showMessage('Adding user...', 'success');
+      
+      try {
+        const response = await fetch(`${backendURL}/admin/add-lrn-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            lrn: lrn,
+            firstName: name,
+            surname: surname,
+            grade: grade,
+            section: section,
+            isAdmin: isAdmin,
+            teachingSubject: teachingSubject
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showMessage('User added successfully!', 'success');
+          
+          // Clear form
+          document.getElementById('new-user-lrn').value = '';
+          document.getElementById('new-user-name').value = '';
+          document.getElementById('new-user-surname').value = '';
+          document.getElementById('new-user-grade').value = '';
+          document.getElementById('new-user-section').value = '';
+          document.getElementById('new-user-is-admin').checked = false;
+          document.getElementById('new-user-teaching-subject').value = '';
+          document.getElementById('teaching-subject-field').classList.add('hidden');
+          document.getElementById('student-fields').classList.remove('hidden');
+          
+          // Reload user list
+          loadAddedUsers();
+        } else {
+          showMessage(data.message || 'Failed to add user.', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding user:', error);
+        showMessage('An error occurred. Please try again.', 'error');
+      }
+    }
+
+    function showMessage(text, type) {
+      const messageEl = document.getElementById('add-user-message');
+      messageEl.innerText = text;
+      messageEl.className = 'message ' + type;
+      messageEl.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
