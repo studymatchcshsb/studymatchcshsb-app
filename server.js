@@ -973,7 +973,7 @@ app.post('/respond-help-request', async (req, res) => {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
 
-  const { notificationId, response, requesterEmail } = req.body;
+  const { notificationId, response, requesterEmail, subject } = req.body;
 
   if (!notificationId || !response) {
     return res.status(400).send({ success: false, message: 'Notification ID and response are required' });
@@ -983,12 +983,27 @@ app.post('/respond-help-request', async (req, res) => {
   db.update(
     { email: userEmail },
     { $pull: { notifications: { id: notificationId } } },
-    {},
+    { multi: true },
     (err, numReplaced) => {
       if (err) {
         console.error("Error removing notification:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
       }
+
+      // ALSO remove this help request notification from ALL other users who received it
+      // This ensures the notification is removed from everyone once someone responds
+      db.update(
+        { 
+          email: { $ne: userEmail },
+          notifications: { $elemMatch: { id: notificationId } }
+        },
+        { $pull: { notifications: { id: notificationId } } },
+        { multi: true },
+        (err) => {
+          if (err) console.error("Error removing notification from other users:", err);
+          console.log('Removed help request notification from all users who received it');
+        }
+      );
 
       if (response === 'accept' && requesterEmail) {
         // Get helper's name for the notification
@@ -1012,9 +1027,9 @@ app.post('/respond-help-request', async (req, res) => {
                 requesterUsername: requester.username,
                 requesterName: requester.name,
                 requesterSurname: requester.surname,
-                subject: req.body.subject,
+                subject: subject,
                 timestamp: new Date(),
-                description: helper.name + " " + helper.surname + " wants to help " + requester.name + " " + requester.surname + " in " + req.body.subject + "."
+                description: helper.name + " " + helper.surname + " wants to help " + requester.name + " " + requester.surname + " in " + subject + "."
               };
               
               activityDb.insert(activityLog, (err) => {
@@ -1029,7 +1044,7 @@ app.post('/respond-help-request', async (req, res) => {
             user2: userEmail,
             requester: requesterEmail,
             helper: userEmail,
-            subject: req.body.subject,
+            subject: subject,
             active: true,
             createdAt: new Date()
           };
@@ -1049,9 +1064,9 @@ app.post('/respond-help-request', async (req, res) => {
                 username: helper.username,
                 email: userEmail
               },
-              subject: req.body.subject,
+              subject: subject,
               timestamp: new Date(),
-              message: helper.username + " accepted your help request for " + req.body.subject + "! Start chatting now!",
+              message: helper.username + " accepted your help request for " + subject + "! Start chatting now!",
               redirectUrl: '/chats.html?chat=' + userEmail
             };
 
@@ -1103,12 +1118,27 @@ app.post('/respond-kastudy-request', async (req, res) => {
   db.update(
     { email: userEmail },
     { $pull: { notifications: { id: notificationId } } },
-    {},
+    { multi: true },
     (err, numReplaced) => {
       if (err) {
         console.error("Error removing notification:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
       }
+
+      // ALSO remove this help request notification from ALL other users who received it
+      // This ensures the notification is removed from everyone once someone responds
+      db.update(
+        { 
+          email: { $ne: userEmail },
+          notifications: { $elemMatch: { id: notificationId } }
+        },
+        { $pull: { notifications: { id: notificationId } } },
+        { multi: true },
+        (err) => {
+          if (err) console.error("Error removing notification from other users:", err);
+          console.log('Removed kastudy request notification from all users who received it');
+        }
+      );
 
       if (response === 'accept' && requesterEmail) {
         // Get helper's name for the notification
