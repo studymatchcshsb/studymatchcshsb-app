@@ -1414,6 +1414,34 @@ app.post('/close-chat', async (req, res) => {
           return res.status(500).send({ success: false, message: 'Server error' });
         }
 
+        // Remove notifications for both users related to this chat
+        // Find any kastudy_accepted notifications from the partner
+        const partnerUsername = session.user1 === userEmail 
+          ? (session.user2.split('@')[0]) 
+          : (session.user1.split('@')[0]);
+        
+        const notificationMessagePattern = partnerUsername + " wants to help you";
+        
+        // Remove notifications for current user (any kastudy_accepted from partner)
+        db.update(
+          { email: userEmail },
+          { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': partnerEmail } } },
+          { multi: true },
+          (err) => {
+            if (err) console.error("Error removing notification for user:", err);
+          }
+        );
+        
+        // Remove notifications for partner (any kastudy_accepted from current user)
+        db.update(
+          { email: partnerEmail },
+          { $pull: { notifications: { type: 'kastudy_accepted', 'fromUser.email': userEmail } } },
+          { multi: true },
+          (err) => {
+            if (err) console.error("Error removing notification for partner:", err);
+          }
+        );
+
         // Notify the other user via socket
         const partnerSocket = connectedUsers[partnerEmail.toLowerCase()];
         if (partnerSocket) {
