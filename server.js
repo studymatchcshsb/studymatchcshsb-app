@@ -1638,7 +1638,8 @@ app.get('/admin/get-all-users', async (req, res) => {
     // Get all users except admins with limit for performance
     const limit = parseInt(req.query.limit) || 500; // Default limit 500 users
     
-    db.find({ isAdmin: { $ne: true } }).limit(limit, (err, users) => {
+    // Get users where isAdmin is not true (includes false, undefined, or null)
+    db.find({ $or: [{ isAdmin: false }, { isAdmin: { $exists: false } }] }).limit(limit, (err, users) => {
       if (err) {
         console.error("Error finding users:", err);
         return res.status(500).send({ success: false, message: 'Server error' });
@@ -1654,6 +1655,7 @@ app.get('/admin/get-all-users', async (req, res) => {
         email: u.email
       }));
 
+      console.log('Admin get-all-users: Found', userList.length, 'users');
       res.send({ success: true, users: userList, total: users.length });
     });
   });
@@ -1748,6 +1750,8 @@ app.get('/admin/get-helping-rankings', async (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error' });
       }
 
+      console.log('Admin get-helping-rankings: Found', sessions.length, 'closed sessions');
+
       // Count how many times each user helped others
       const helperCounts = {};
       sessions.forEach(session => {
@@ -1764,6 +1768,8 @@ app.get('/admin/get-helping-rankings', async (req, res) => {
         .map(([email, count]) => ({ email, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 50); // Only return top 50 helpers
+
+      console.log('Admin get-helping-rankings: Found', rankings.length, 'helpers');
 
       // Get user details for each helper
       const helperEmails = rankings.map(r => r.email);
