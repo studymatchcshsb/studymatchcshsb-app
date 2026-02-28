@@ -98,6 +98,13 @@
     .help-btn.no-btn {
       background: #c0392b;
     }
+
+    /* Weekly Recommendations Modal */
+    #weekly-recommendations-modal .modal-content {
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
@@ -105,6 +112,8 @@
     <aside class="sidebar">
       <!-- Active Users Icon -->
       <svg class="icon" onclick="window.location.href='/active-users.html'" title="Active Users" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <!-- Weekly Recommendations Icon (in sidebar) -->
+      <svg class="icon" onclick="openWeeklyRecommendations()" title="Weekly Study Partner Recommendations" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
       <!-- Hamburger Menu Icon -->
       <svg class="icon" onclick="toggleMenu()" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
       <!-- Help/Question Icon -->
@@ -229,6 +238,22 @@
           </div>
           <div id="no-notifications" style="text-align: center; color: #666; padding: 20px;">
               <p>No notifications yet.</p>
+          </div>
+      </div>
+  </div>
+
+  <!-- Weekly Recommendations Modal -->
+  <div id="weekly-recommendations-modal" class="modal" style="display:none;">
+      <div class="modal-content">
+          <span class="close-btn" onclick="closeWeeklyRecommendations()">&times;</span>
+          <h3><b>📅 Weekly Study Partner Recommendations</b></h3>
+          <p style="color: #666; margin-bottom: 20px;">Based on your profile and subjects, here are recommended study partners for you:</p>
+          <div id="weekly-recommendations-list">
+              <!-- Recommendations will be loaded here -->
+          </div>
+          <div id="no-recommendations" style="text-align: center; color: #666; padding: 20px; display: none;">
+              <p>No recommendations available yet.</p>
+              <p>Make sure you've completed your profile with strengths and weaknesses!</p>
           </div>
       </div>
   </div>
@@ -833,6 +858,16 @@
         document.getElementById('notifications-modal').style.display = 'none';
     }
 
+    // Weekly Recommendations functions
+    function openWeeklyRecommendations() {
+        document.getElementById('weekly-recommendations-modal').style.display = 'block';
+        loadWeeklyRecommendations();
+    }
+
+    function closeWeeklyRecommendations() {
+        document.getElementById('weekly-recommendations-modal').style.display = 'none';
+    }
+
     // Grade Promotion functions
     function openGradePromotionModal() {
         document.getElementById('grade-promotion-modal').style.display = 'block';
@@ -1147,6 +1182,91 @@
         } else {
             messageEl.innerText = 'Failed to update any students.';
             messageEl.style.color = 'red';
+        }
+    }
+
+    async function loadWeeklyRecommendations() {
+        try {
+            const response = await fetch(`${backendURL}/get-weekly-recommendations`);
+            if (!response.ok) throw new Error('Failed to fetch recommendations');
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                displayWeeklyRecommendations(data);
+            }
+        } catch (error) {
+            console.error("Error loading recommendations:", error);
+            document.getElementById('weekly-recommendations-list').innerHTML = 
+                '<div style="text-align: center; color: #666; padding: 20px;">Failed to load recommendations.</div>';
+        }
+    }
+
+    function displayWeeklyRecommendations(data) {
+        const container = document.getElementById('weekly-recommendations-list');
+        const noRec = document.getElementById('no-recommendations');
+
+        if (!data.recommendations || data.recommendations.length === 0) {
+            container.innerHTML = '';
+            noRec.style.display = 'block';
+            noRec.innerHTML = `<p>${data.message || 'No recommendations available yet.'}</p>`;
+            return;
+        }
+
+        noRec.style.display = 'none';
+        let html = `<p style="color: #1B5E20; font-weight: bold; margin-bottom: 15px;">You've been with StudyMatch for ${data.weeksActive} week(s)! Here are your matched study partners:</p>`;
+        
+        data.recommendations.forEach((rec, index) => {
+            const matchReasons = [];
+            if (rec.canHelpYou > 0) {
+                matchReasons.push(`Can help you with: ${rec.strengths.filter(s => (data.userWeaknesses || []).includes(s)).slice(0, 3).join(', ')}`);
+            }
+            if (rec.youCanHelp > 0) {
+                matchReasons.push(`You can help with: ${rec.weaknesses.filter(w => (data.userStrengths || []).includes(w)).slice(0, 3).join(', ')}`);
+            }
+            
+            html += `
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #347433;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div>
+                            <strong style="font-size: 16px; color: #1B5E20;">${rec.name} ${rec.surname}</strong>
+                            <span style="color: #666; margin-left: 10px;">@${rec.username}</span>
+                        </div>
+                        <span style="background: #c1dcba; color: #347433; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">Match Score: ${rec.score}</span>
+                    </div>
+                    <div style="font-size: 13px; color: #666;">
+                        <div><strong>Their Strengths:</strong> ${rec.strengths.join(', ') || 'Not set'}</div>
+                        <div><strong>Needs Help With:</strong> ${rec.weaknesses.join(', ') || 'Not set'}</div>
+                    </div>
+                    <button onclick="requestAsStudyPartner('${rec.email}', '${rec.username}')" style="margin-top: 10px; width: 100%; padding: 10px; background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        🤝 Request as Study Partner
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    async function requestAsStudyPartner(email, username) {
+        if (!confirm(`Request ${username} as your study partner?`)) return;
+        
+        try {
+            const response = await fetch(`${backendURL}/find-kastudy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    grade: parseInt(document.getElementById('quick-grade')?.value || 7),
+                    subject: 'STUDY_PARTNER'
+                }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            alert(data.message || 'Study partner request sent!');
+        } catch (error) {
+            console.error('Error requesting study partner:', error);
+            alert('Failed to send request. Please try again.');
         }
     }
 

@@ -355,6 +355,9 @@
       <button class="admin-button" id="btn-all-users" onclick="showAllUsers()">
         📋 Comsayanos in StudyMatch
       </button>
+      <button class="admin-button" id="btn-helping-rankings" onclick="showHelpingRankings()">
+        🏆 Helping Rankings
+      </button>
     </div>
 
     <div class="content">
@@ -600,7 +603,6 @@
       document.getElementById('btn-count-view').classList.remove('active');
       document.getElementById('btn-active-detailed').classList.remove('active');
       document.getElementById('btn-all-users').classList.add('active');
-      document.getElementById('btn-helping-rankings').classList.remove('active');
       
       await loadAllUsers();
     }
