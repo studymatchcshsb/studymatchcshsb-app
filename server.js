@@ -2382,43 +2382,275 @@ app.get('/get-quiz-results', async (req, res) => {
 
 // Helper function to generate plausible wrong answers
 function generateWrongAnswers(question, subject, correctAnswer) {
-  // Common wrong answer patterns based on subject
-  const subjectLower = (subject || '').toLowerCase();
-  
-  // Generate wrong answers based on common mistakes or variations
   const wrongAnswers = [];
+  const subjectLower = (subject || '').toLowerCase();
+  const questionLower = question.toLowerCase();
+  const answerLower = correctAnswer.toLowerCase();
   
-  // For math questions - generate nearby numbers
-  if (subjectLower.includes('math') || containsMathKeywords(question)) {
-    const numMatch = correctAnswer.match(/\d+/);
-    if (numMatch) {
-      const num = parseInt(numMatch[0]);
-      wrongAnswers.push(String(num + Math.floor(Math.random() * 10) + 1));
-      wrongAnswers.push(String(num - Math.floor(Math.random() * 10) - 1));
-      wrongAnswers.push(String(num * 2));
-      wrongAnswers.push(String(num / 2));
+  console.log('[AI] Generating wrong answers - Subject:', subject, 'Question:', question.substring(0, 50), 'Answer:', correctAnswer);
+  
+  // Try to detect subject from question keywords if not provided
+  let detectedSubject = subjectLower;
+  if (!detectedSubject || detectedSubject === 'general') {
+    if (containsMathKeywords(question)) {
+      detectedSubject = 'math';
+    } else if (questionLower.includes('physics') || questionLower.includes('velocity') || questionLower.includes('force') || questionLower.includes('energy')) {
+      detectedSubject = 'physics';
+    } else if (questionLower.includes('chemistry') || questionLower.includes('atom') || questionLower.includes('element') || questionLower.includes('molecule')) {
+      detectedSubject = 'chemistry';
+    } else if (questionLower.includes('biology') || questionLower.includes('cell') || questionLower.includes('dna') || questionLower.includes('organ')) {
+      detectedSubject = 'biology';
+    } else if (questionLower.includes('history') || questionLower.includes('year') || questionLower.includes('century') || questionLower.includes('president')) {
+      detectedSubject = 'history';
+    } else if (questionLower.includes('geography') || questionLower.includes('country') || questionLower.includes('capital') || questionLower.includes('continent')) {
+      detectedSubject = 'geography';
+    } else if (questionLower.includes('define') || questionLower.includes('what is') || questionLower.includes('meaning')) {
+      detectedSubject = 'definition';
     }
   }
   
-  // For science - generate related but incorrect terms
-  if (subjectLower.includes('science') || subjectLower.includes('physics') || subjectLower.includes('chemistry') || subjectLower.includes('biology')) {
-    const scienceTerms = getScienceWrongAnswers(subjectLower, correctAnswer);
-    wrongAnswers.push(...scienceTerms);
+  console.log('[AI] Detected subject:', detectedSubject);
+  
+  // Strategy 1: For MATH - generate number-based wrong answers
+  if (detectedSubject.includes('math') || containsMathKeywords(question)) {
+    const mathWrong = generateMathWrongAnswers(correctAnswer);
+    if (mathWrong.length > 0) {
+      wrongAnswers.push(...mathWrong);
+    }
   }
   
-  // For English/Filipino - generate common mistakes
-  if (subjectLower.includes('english') || subjectLower.includes('filipino') || subjectLower.includes('language')) {
-    const languageWrong = getLanguageWrongAnswers(correctAnswer);
-    wrongAnswers.push(...languageWrong);
+  // Strategy 2: For SCIENCE - use subject-specific terms
+  if (detectedSubject.includes('science') || detectedSubject.includes('physics') || 
+      detectedSubject.includes('chemistry') || detectedSubject.includes('biology')) {
+    const scienceWrong = generateScienceWrongAnswers(detectedSubject, correctAnswer, question);
+    wrongAnswers.push(...scienceWrong);
   }
   
-  // If we don't have enough wrong answers, generate generic ones
-  while (wrongAnswers.length < 3) {
-    wrongAnswers.push('Option ' + (Math.floor(Math.random() * 100) + 1));
+  // Strategy 3: For DEFINITIONS - use opposite/related but wrong definitions
+  if (detectedSubject === 'definition' || questionLower.includes('define') || questionLower.includes('what is')) {
+    const definitionWrong = generateDefinitionWrongAnswers(correctAnswer, question);
+    wrongAnswers.push(...definitionWrong);
   }
   
-  // Return unique wrong answers (not matching correct answer)
-  return [...new Set(wrongAnswers)].filter(ans => ans !== correctAnswer).slice(0, 3);
+  // Strategy 4: For HISTORY - use wrong dates/years
+  if (detectedSubject.includes('history')) {
+    const historyWrong = generateHistoryWrongAnswers(correctAnswer, question);
+    wrongAnswers.push(...historyWrong);
+  }
+  
+  // Strategy 5: For GEOGRAPHY - use wrong locations
+  if (detectedSubject.includes('geography') || questionLower.includes('capital') || questionLower.includes('country')) {
+    const geoWrong = generateGeographyWrongAnswers(correctAnswer, question);
+    wrongAnswers.push(...geoWrong);
+  }
+  
+  // Strategy 6: General pattern-based wrong answers (works for any subject)
+  if (wrongAnswers.length < 3) {
+    const generalWrong = generateGeneralWrongAnswers(correctAnswer, question);
+    wrongAnswers.push(...generalWrong);
+  }
+  
+  // Filter out duplicates and the correct answer
+  const uniqueWrong = [...new Set(wrongAnswers)].filter(ans => 
+    ans !== correctAnswer && 
+    ans.toLowerCase() !== answerLower &&
+    ans.trim().length > 0
+  );
+  
+  console.log('[AI] Generated wrong answers:', uniqueWrong);
+  
+  return uniqueWrong.slice(0, 3);
+}
+
+function generateMathWrongAnswers(correctAnswer) {
+  const wrongAnswers = [];
+  const numMatch = correctAnswer.match(/\d+/);
+  
+  if (numMatch) {
+    const num = parseInt(numMatch[0]);
+    // Common math mistakes: off by 1, 10, 100
+    wrongAnswers.push(String(num + 1));
+    wrongAnswers.push(String(num - 1));
+    wrongAnswers.push(String(num + 10));
+    wrongAnswers.push(String(num - 10));
+    if (num > 1) wrongAnswers.push(String(num * 2));
+    if (num > 0) wrongAnswers.push(String(num / 2));
+  } else {
+    // For non-numeric math answers, try common variations
+    const lower = correctAnswer.toLowerCase();
+    if (lower.includes('odd') || lower.includes('even')) {
+      wrongAnswers.push('odd number');
+      wrongAnswers.push('even number');
+      wrongAnswers.push('prime number');
+    }
+    if (lower.includes('positive') || lower.includes('negative')) {
+      wrongAnswers.push('positive');
+      wrongAnswers.push('negative');
+      wrongAnswers.push('zero');
+    }
+  }
+  
+  return wrongAnswers;
+}
+
+function generateScienceWrongAnswers(subject, correctAnswer, question) {
+  const wrongAnswers = [];
+  const answerLower = correctAnswer.toLowerCase();
+  
+  const physicsTerms = ['velocity', 'acceleration', 'force', 'mass', 'energy', 'power', 'gravity', 'friction', 'momentum', 'weight', 'speed', 'distance', 'time', 'work', 'heat'];
+  const chemistryTerms = ['atom', 'molecule', 'element', 'compound', 'mixture', 'reaction', 'bond', 'electron', 'proton', 'neutron', 'ion', 'isotope', 'acid', 'base', 'salt'];
+  const biologyTerms = ['cell', 'tissue', 'organ', 'system', 'DNA', 'RNA', 'protein', 'enzyme', 'bacteria', 'virus', 'mitochondria', 'nucleus', 'membrane', 'gene', 'chromosome'];
+  
+  let relevantTerms = [];
+  if (subject.includes('physics')) relevantTerms = physicsTerms;
+  else if (subject.includes('chemistry')) relevantTerms = chemistryTerms;
+  else if (subject.includes('biology')) relevantTerms = biologyTerms;
+  else relevantTerms = [...physicsTerms, ...chemistryTerms, ...biologyTerms];
+  
+  // Add related but wrong terms
+  const otherTerms = relevantTerms.filter(t => !answerLower.includes(t)).slice(0, 4);
+  wrongAnswers.push(...otherTerms);
+  
+  // For definition-type questions
+  if (question.toLowerCase().includes('what is') || question.toLowerCase().includes('define')) {
+    wrongAnswers.push('A type of ' + correctAnswer);
+    wrongAnswers.push('The opposite of ' + correctAnswer);
+    wrongAnswers.push('Similar to ' + correctAnswer);
+  }
+  
+  return wrongAnswers;
+}
+
+function generateDefinitionWrongAnswers(correctAnswer, question) {
+  const wrongAnswers = [];
+  
+  // For definitions, create plausible wrong definitions
+  wrongAnswers.push('A type of ' + correctAnswer);
+  wrongAnswers.push('The process of ' + correctAnswer);
+  wrongAnswers.push('The opposite of ' + correctAnswer);
+  wrongAnswers.push('Related to ' + correctAnswer);
+  wrongAnswers.push('A method for ' + correctAnswer);
+  
+  return wrongAnswers;
+}
+
+function generateHistoryWrongAnswers(correctAnswer, question) {
+  const wrongAnswers = [];
+  
+  // Try to extract years from history answers
+  const yearMatch = correctAnswer.match(/\b(1[0-9]{3}|20[0-2][0-9])\b/);
+  if (yearMatch) {
+    const year = parseInt(yearMatch[0]);
+    wrongAnswers.push(String(year + 10));
+    wrongAnswers.push(String(year - 10));
+    wrongAnswers.push(String(year + 5));
+    wrongAnswers.push(String(year - 5));
+    wrongAnswers.push(String(year + 1));
+    wrongAnswers.push(String(year - 1));
+  }
+  
+  // For person-based questions
+  if (question.toLowerCase().includes('who') || question.toLowerCase().includes('president') || question.toLowerCase().includes('king')) {
+    wrongAnswers.push('A famous leader');
+    wrongAnswers.push('An important figure');
+    wrongAnswers.push('A historical ruler');
+  }
+  
+  return wrongAnswers;
+}
+
+function generateGeographyWrongAnswers(correctAnswer, question) {
+  const wrongAnswers = [];
+  const answerLower = correctAnswer.toLowerCase();
+  
+  // Common wrong country/capital pairs
+  const capitalPairs = {
+    'paris': ['London', 'Berlin', 'Madrid', 'Rome'],
+    'london': ['Paris', 'Berlin', 'Madrid', 'Rome'],
+    'tokyo': ['Beijing', 'Seoul', 'Bangkok', 'Manila'],
+    'washington': ['New York', 'Los Angeles', 'Chicago', 'Boston'],
+    'manila': ['Tokyo', 'Beijing', 'Seoul', 'Bangkok']
+  };
+  
+  for (const [capital, wrongs] of Object.entries(capitalPairs)) {
+    if (answerLower.includes(capital)) {
+      wrongAnswers.push(...wrongs);
+      break;
+    }
+  }
+  
+  // For other geography questions
+  if (wrongAnswers.length === 0) {
+    wrongAnswers.push('A neighboring country');
+    wrongAnswers.push('A continent');
+    wrongAnswers.push('A region');
+    wrongAnswers.push('A capital city');
+  }
+  
+  return wrongAnswers;
+}
+
+function generateGeneralWrongAnswers(correctAnswer, question) {
+  const wrongAnswers = [];
+  const lower = correctAnswer.toLowerCase();
+  
+  // Try to extract key words from the answer and modify them
+  const words = correctAnswer.split(' ').filter(w => w.length > 3);
+  
+  if (words.length > 0) {
+    // Add 'not' or opposite prefixes
+    wrongAnswers.push('not ' + correctAnswer);
+    wrongAnswers.push('un' + words[0]);
+    wrongAnswers.push('im' + words[0]);
+    wrongAnswers.push('non-' + words[0]);
+    
+    // Swap words
+    if (words.length > 1) {
+      wrongAnswers.push(words[1] + ' ' + words[0]);
+    }
+  }
+  
+  // Add common wrong answers based on question type
+  const questionLower = question.toLowerCase();
+  
+  if (questionLower.includes('which') || questionLower.includes('what')) {
+    wrongAnswers.push('None of the above');
+    wrongAnswers.push('All of the above');
+  }
+  
+  if (questionLower.includes('who')) {
+    wrongAnswers.push('A famous person');
+    wrongAnswers.push('An unknown individual');
+  }
+  
+  if (questionLower.includes('where')) {
+    wrongAnswers.push('Somewhere else');
+    wrongAnswers.push('A different place');
+  }
+  
+  if (questionLower.includes('when')) {
+    wrongAnswers.push('A long time ago');
+    wrongAnswers.push('In the future');
+  }
+  
+  if (questionLower.includes('why')) {
+    wrongAnswers.push('For no particular reason');
+    wrongAnswers.push('Because of random factors');
+  }
+  
+  if (questionLower.includes('how')) {
+    wrongAnswers.push('Through a different method');
+    wrongAnswers.push('By an unknown process');
+  }
+  
+  // If still not enough, add some generic but plausible options
+  if (wrongAnswers.length < 3) {
+    wrongAnswers.push('Option A');
+    wrongAnswers.push('Option B');
+    wrongAnswers.push('Option C');
+  }
+  
+  return wrongAnswers;
 }
 
 function containsMathKeywords(question) {
@@ -2426,36 +2658,6 @@ function containsMathKeywords(question) {
   return mathKeywords.some(keyword => question.toLowerCase().includes(keyword));
 }
 
-function getScienceWrongAnswers(subject, correctAnswer) {
-  const scienceTerms = {
-    physics: ['velocity', 'acceleration', 'force', 'mass', 'energy', 'power', 'gravity', 'friction', 'momentum', 'weight'],
-    chemistry: ['atom', 'molecule', 'element', 'compound', 'mixture', 'reaction', 'bond', 'electron', 'proton', 'neutron'],
-    biology: ['cell', 'tissue', 'organ', 'system', 'DNA', 'RNA', 'protein', 'enzyme', 'bacteria', 'virus'],
-    general: ['matter', 'element', 'compound', 'solution', 'solvent', 'solute', 'acid', 'base', 'gas', 'liquid']
-  };
-  
-  let terms = scienceTerms.general;
-  if (subject.includes('physics')) terms = scienceTerms.physics;
-  else if (subject.includes('chemistry')) terms = scienceTerms.chemistry;
-  else if (subject.includes('biology')) terms = scienceTerms.biology;
-  
-  return terms.filter(term => term !== correctAnswer.toLowerCase());
-}
-
-function getLanguageWrongAnswers(correctAnswer) {
-  // Generate common language mistakes
-  const wrongAnswers = [
-    correctAnswer + 's',
-    correctAnswer + 'ed',
-    correctAnswer.replace(/[aeiou]/g, ''),
-    'not ' + correctAnswer,
-    'un' + correctAnswer,
-    'im' + correctAnswer,
-    'dis' + correctAnswer,
-    're' + correctAnswer
-  ];
-  return wrongAnswers.slice(0, 3);
-}
 
 function shuffleArray(array) {
   const shuffled = [...array];

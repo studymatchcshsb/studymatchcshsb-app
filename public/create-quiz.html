@@ -934,12 +934,15 @@
       generateBtn.textContent = 'Generating... ⏳';
 
       try {
+        // Get subject from folder name or use a default
+        const subject = currentFolder || 'General';
         const response = await fetch(`${window.location.origin}/ai-generate-choices`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             question: question,
-            correctAnswer: correctAnswer
+            correctAnswer: correctAnswer,
+            subject: subject
           })
         });
 
