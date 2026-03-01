@@ -1859,6 +1859,613 @@ app.get('/get-admin-users', async (req, res) => {
   }
 });
 
+// AI Quiz Generator - Generate multiple choice options from a question
+app.post('/ai-generate-choices', async (req, res) => {
+  const { question, subject, correctAnswer } = req.body;
+
+  if (!question || !correctAnswer) {
+    return res.status(400).send({ success: false, message: 'Question and correct answer are required' });
+  }
+
+  console.log('[AI Quiz] Generating choices for:', question);
+
+  // Simple AI-like logic to generate plausible wrong answers based on subject
+  // In production, this would call an actual AI API like OpenAI
+  const wrongAnswers = generateWrongAnswers(question, subject, correctAnswer);
+
+  // Create the choices array with the correct answer and wrong answers
+  const choices = [
+    { text: correctAnswer, isCorrect: true },
+    ...wrongAnswers.map(ans => ({ text: ans, isCorrect: false }))
+  ];
+
+  // Shuffle the choices
+  const shuffledChoices = shuffleArray(choices);
+
+  res.send({
+    success: true,
+    choices: shuffledChoices,
+    correctAnswer: correctAnswer
+  });
+});
+
+// Submit quiz answers and get score
+app.post('/submit-quiz', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { quizName, answers } = req.body;
+
+  if (!quizName || !answers || !Array.isArray(answers)) {
+    return res.status(400).send({ success: false, message: 'Quiz name and answers are required' });
+  }
+
+  console.log('[Quiz] Submitting quiz:', quizName, 'from:', userEmail, 'answers:', answers.length);
+
+  // Find the user's quiz
+  db.findOne({ email: userEmail, 'quizzes.quizName': quizName }, (err, user) => {
+    if (err || !user) {
+      return res.status(404).send({ success: false, message: 'Quiz not found' });
+    }
+
+    // Find the specific quiz
+    const quiz = user.quizzes.find(q => q.quizName === quizName);
+    if (!quiz || !quiz.flashcards) {
+      return res.status(404).send({ success: false, message: 'Quiz not found or has no questions' });
+    }
+
+    // Calculate score
+    let correctCount = 0;
+    const results = [];
+
+    answers.forEach((answer, index) => {
+      const question = quiz.flashcards[index];
+      if (!question) return;
+
+      const isCorrect = answer.selectedAnswer === question.correctAnswer;
+      if (isCorrect) correctCount++;
+
+      results.push({
+        questionIndex: index,
+        question: question.question || question.front,
+        correctAnswer: question.correctAnswer || question.back,
+        selectedAnswer: answer.selectedAnswer,
+        isCorrect: isCorrect
+      });
+    });
+
+    const score = Math.round((correctCount / quiz.flashcards.length) * 100);
+
+    // Save quiz result
+    const quizResult = {
+      quizName: quizName,
+      score: score,
+      correctCount: correctCount,
+      totalQuestions: quiz.flashcards.length,
+      completedAt: new Date()
+    };
+
+    // Add to user's quiz results
+    db.update(
+      { email: userEmail },
+      { $push: { quizResults: quizResult } },
+      {},
+      (err) => {
+        if (err) {
+          console.error('Error saving quiz result:', err);
+        }
+      }
+    );
+
+    console.log('[Quiz] Score for', userEmail, ':', score, '%');
+
+    res.send({
+      success: true,
+      score: score,
+      correctCount: correctCount,
+      totalQuestions: quiz.flashcards.length,
+      results: results
+    });
+  });
+});
+
+// Share a quiz with another user
+app.post('/share-quiz', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { targetEmail, quizName } = req.body;
+
+  if (!targetEmail || !quizName) {
+    return res.status(400).send({ success: false, message: 'Target email and quiz name are required' });
+  }
+
+  console.log('[Quiz Share] User', userEmail, 'sharing quiz', quizName, 'with', targetEmail);
+
+  // Check if target user exists
+  db.findOne({ email: targetEmail }, (err, targetUser) => {
+    if (err || !targetUser) {
+      return res.status(404).send({ success: false, message: 'Target user not found' });
+    }
+
+    // Get the quiz from the sender
+    db.findOne({ email: userEmail, 'quizzes.quizName': quizName }, (err, senderUser) => {
+      if (err || !senderUser) {
+        return res.status(404).send({ success: false, message: 'Quiz not found' });
+      }
+
+      const quiz = senderUser.quizzes.find(q => q.quizName === quizName);
+      if (!quiz) {
+        return res.status(404).send({ success: false, message: 'Quiz not found' });
+      }
+
+      // Create share record
+      const shareRecord = {
+        id: Date.now().toString(),
+        fromEmail: userEmail,
+        fromUsername: senderUser.username,
+        quizName: quizName,
+        flashcards: quiz.flashcards,
+        sharedAt: new Date()
+      };
+
+      // Add shared quiz to target user's received quizzes
+      db.update(
+        { email: targetEmail },
+        { $push: { sharedQuizzes: shareRecord } },
+        {},
+        (err) => {
+          if (err) {
+            console.error('Error sharing quiz:', err);
+            return res.status(500).send({ success: false, message: 'Failed to share quiz' });
+          }
+
+          // Create notification for target user
+          const notification = {
+            id: Date.now().toString(),
+            type: 'quiz_share',
+            fromUser: {
+              email: userEmail,
+              username: senderUser.username
+            },
+            quizName: quizName,
+            message: `${senderUser.username} wants to share their quiz "${quizName}" with you!`,
+            createdAt: new Date()
+          };
+
+          // Add notification to target user
+          db.update(
+            { email: targetEmail },
+            { $push: { notifications: notification } },
+            {},
+            (err) => {
+              if (err) {
+                console.error('Error creating notification:', err);
+              }
+
+              // Send real-time notification via socket
+              io.to(targetEmail).emit('new_notification', notification);
+
+              console.log('[Quiz Share] Notification sent to', targetEmail);
+            }
+          );
+
+          res.send({ success: true, message: 'Quiz shared successfully!' });
+        }
+      );
+    });
+  });
+});
+
+// Respond to quiz share (accept or decline)
+app.post('/respond-quiz-share', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { notificationId, response, fromEmail, quizName } = req.body;
+
+  if (!notificationId || !response || !fromEmail || !quizName) {
+    return res.status(400).send({ success: false, message: 'All fields are required' });
+  }
+
+  console.log('[Quiz Share] User', userEmail, response, 'quiz share request for', quizName);
+
+  // Remove notification from current user
+  db.update(
+    { email: userEmail },
+    { $pull: { notifications: { id: notificationId } } },
+    {},
+    (err) => {
+      if (err) {
+        console.error('Error removing notification:', err);
+      }
+    }
+  );
+
+  if (response === 'accept') {
+    // Get the shared quiz from current user's sharedQuizzes
+    db.findOne({ email: userEmail, 'sharedQuizzes.quizName': quizName }, (err, user) => {
+      if (err || !user) {
+        return res.status(404).send({ success: false, message: 'Shared quiz not found' });
+      }
+
+      const sharedQuiz = user.sharedQuizzes.find(q => q.quizName === quizName);
+      if (!sharedQuiz) {
+        return res.status(404).send({ success: false, message: 'Shared quiz not found' });
+      }
+
+      // Add quiz to user's own quizzes
+      const newQuiz = {
+        quizName: sharedQuiz.quizName,
+        folderName: 'Shared with Me',
+        flashcards: sharedQuiz.flashcards,
+        createdAt: sharedQuiz.sharedAt,
+        sharedBy: sharedQuiz.fromUsername
+      };
+
+      // Check if user already has a "Shared with Me" folder
+      const existingFolder = user.quizzes ? user.quizzes.find(q => q.folderName === 'Shared with Me') : null;
+
+      if (existingFolder) {
+        // Add to existing folder
+        db.update(
+          { email: userEmail, 'quizzes.folderName': 'Shared with Me' },
+          { $push: { 'quizzes.$.flashcards': { $each: sharedQuiz.flashcards } } },
+          {},
+          (err) => {
+            if (err) {
+              console.error('Error adding quiz to folder:', err);
+            }
+          }
+        );
+      } else {
+        // Create new folder and add quiz
+        db.update(
+          { email: userEmail },
+          { $push: { quizzes: { folderName: 'Shared with Me', quizName: sharedQuiz.quizName, flashcards: sharedQuiz.flashcards, createdAt: new Date() } } },
+          {},
+          (err) => {
+            if (err) {
+              console.error('Error creating shared folder:', err);
+            }
+          }
+        );
+      }
+
+      // Send notification back to sender
+      db.findOne({ email: fromEmail }, (err, senderUser) => {
+        if (err || !senderUser) return;
+
+        const acceptNotification = {
+          id: Date.now().toString(),
+          type: 'quiz_share_accepted',
+          fromUser: {
+            email: userEmail,
+            username: user.username
+          },
+          quizName: quizName,
+          message: `${user.username} accepted your quiz "${quizName}"! You can now compete for top scores together.`,
+          createdAt: new Date()
+        };
+
+        db.update(
+          { email: fromEmail },
+          { $push: { notifications: acceptNotification } },
+          {},
+          (err) => {
+            if (err) {
+              console.error('Error sending accept notification:', err);
+            }
+            io.to(fromEmail).emit('new_notification', acceptNotification);
+          }
+        );
+      });
+
+      res.send({ success: true, message: 'Quiz added to your collection!' });
+    });
+  } else if (response === 'decline') {
+    // Remove shared quiz from user's sharedQuizzes
+    db.update(
+      { email: userEmail },
+      { $pull: { sharedQuizzes: { quizName: quizName } } },
+      {},
+      (err) => {
+        if (err) {
+          console.error('Error removing shared quiz:', err);
+        }
+      }
+    );
+
+    // Send decline notification to sender
+    db.findOne({ email: fromEmail }, (err, senderUser) => {
+      if (err || !senderUser) return;
+
+      const declineNotification = {
+        id: Date.now().toString(),
+        type: 'quiz_share_declined',
+        fromUser: {
+          email: userEmail,
+          username: user.username
+        },
+        quizName: quizName,
+        message: `${user.username} declined your quiz "${quizName}".`,
+        createdAt: new Date()
+      };
+
+      db.update(
+        { email: fromEmail },
+        { $push: { notifications: declineNotification } },
+        {},
+        (err) => {
+          if (err) {
+            console.error('Error sending decline notification:', err);
+          }
+          io.to(fromEmail).emit('new_notification', declineNotification);
+        }
+      );
+    });
+
+    res.send({ success: true, message: 'Quiz share declined' });
+  }
+});
+
+// Share quiz to entire grade level (for teachers/admins)
+app.post('/share-quiz-to-grade', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { quizName, gradeLevels } = req.body;
+
+  if (!quizName || !gradeLevels || !Array.isArray(gradeLevels) || gradeLevels.length === 0) {
+    return res.status(400).send({ success: false, message: 'Quiz name and at least one grade level are required' });
+  }
+
+  if (gradeLevels.length > 3) {
+    return res.status(400).send({ success: false, message: 'Maximum 3 grade levels allowed' });
+  }
+
+  console.log('[Quiz Share] Teacher', userEmail, 'sharing quiz', quizName, 'to grades:', gradeLevels);
+
+  // Check if user is an admin
+  db.findOne({ email: userEmail }, (err, teacherUser) => {
+    if (err || !teacherUser) {
+      return res.status(404).send({ success: false, message: 'User not found' });
+    }
+
+    if (!teacherUser.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Only teachers can share quizzes to grade levels' });
+    }
+
+    // Get the quiz from the teacher
+    db.findOne({ email: userEmail, 'quizzes.quizName': quizName }, (err, senderUser) => {
+      if (err || !senderUser) {
+        return res.status(404).send({ success: false, message: 'Quiz not found' });
+      }
+
+      const quiz = senderUser.quizzes.find(q => q.quizName === quizName);
+      if (!quiz) {
+        return res.status(404).send({ success: false, message: 'Quiz not found' });
+      }
+
+      // Find all students in the specified grade levels
+      const gradeNumbers = gradeLevels.map(g => parseInt(g));
+      
+      db.find({ grade: { $in: gradeNumbers }, isAdmin: false }, (err, students) => {
+        if (err) {
+          console.error('Error finding students:', err);
+          return res.status(500).send({ success: false, message: 'Failed to find students' });
+        }
+
+        if (students.length === 0) {
+          return res.status(404).send({ success: false, message: 'No students found in the specified grade levels' });
+        }
+
+        console.log('[Quiz Share] Found', students.length, 'students in grades', gradeLevels);
+
+        let sharedCount = 0;
+        let notificationCount = 0;
+
+        // Share quiz to each student
+        students.forEach(student => {
+          const shareRecord = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            fromEmail: userEmail,
+            fromUsername: senderUser.username,
+            quizName: quizName,
+            flashcards: quiz.flashcards,
+            sharedAt: new Date(),
+            isTeacherShare: true,
+            gradeLevels: gradeLevels
+          };
+
+          // Add shared quiz to student's record
+          db.update(
+            { email: student.email },
+            { $push: { sharedQuizzes: shareRecord } },
+            {},
+            (err) => {
+              if (!err) {
+                sharedCount++;
+
+                // Create notification for student
+                const notification = {
+                  id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                  type: 'quiz_share',
+                  fromUser: {
+                    email: userEmail,
+                    username: senderUser.username
+                  },
+                  quizName: quizName,
+                  message: `Your teacher ${senderUser.username} shared a quiz "${quizName}" with Grade ${gradeLevels.join(', ')} students!`,
+                  createdAt: new Date()
+                };
+
+                db.update(
+                  { email: student.email },
+                  { $push: { notifications: notification } },
+                  {},
+                  (err) => {
+                    if (!err) {
+                      notificationCount++;
+                      io.to(student.email).emit('new_notification', notification);
+                    }
+                  }
+                );
+              }
+            }
+          );
+        });
+
+        // Send summary to teacher
+        setTimeout(() => {
+          console.log('[Quiz Share] Shared to', sharedCount, 'students,', notificationCount, 'notifications sent');
+          res.send({ 
+            success: true, 
+            message: `Quiz shared to ${sharedCount} student(s) in Grade ${gradeLevels.join(', ')}!` 
+          });
+        }, 1000);
+      });
+    });
+  });
+});
+
+// Get teacher's teaching grades
+app.get('/get-teacher-grades', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  db.findOne({ email: userEmail }, (err, user) => {
+    if (err || !user) {
+      return res.status(404).send({ success: false, message: 'User not found' });
+    }
+
+    if (!user.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Only teachers can access this' });
+    }
+
+    // Get grades from teachingGrades field or extract from existing data
+    const grades = user.teachingGrades || [];
+    
+    res.send({ success: true, grades: grades });
+  });
+});
+
+// Get user's quiz history
+app.get('/get-quiz-results', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  db.findOne({ email: userEmail }, (err, user) => {
+    if (err || !user) {
+      return res.send({ results: [] });
+    }
+
+    const results = user.quizResults || [];
+    // Sort by most recent first
+    results.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+    res.send({ results: results });
+  });
+});
+
+// Helper function to generate plausible wrong answers
+function generateWrongAnswers(question, subject, correctAnswer) {
+  // Common wrong answer patterns based on subject
+  const subjectLower = (subject || '').toLowerCase();
+  
+  // Generate wrong answers based on common mistakes or variations
+  const wrongAnswers = [];
+  
+  // For math questions - generate nearby numbers
+  if (subjectLower.includes('math') || containsMathKeywords(question)) {
+    const numMatch = correctAnswer.match(/\d+/);
+    if (numMatch) {
+      const num = parseInt(numMatch[0]);
+      wrongAnswers.push(String(num + Math.floor(Math.random() * 10) + 1));
+      wrongAnswers.push(String(num - Math.floor(Math.random() * 10) - 1));
+      wrongAnswers.push(String(num * 2));
+      wrongAnswers.push(String(num / 2));
+    }
+  }
+  
+  // For science - generate related but incorrect terms
+  if (subjectLower.includes('science') || subjectLower.includes('physics') || subjectLower.includes('chemistry') || subjectLower.includes('biology')) {
+    const scienceTerms = getScienceWrongAnswers(subjectLower, correctAnswer);
+    wrongAnswers.push(...scienceTerms);
+  }
+  
+  // For English/Filipino - generate common mistakes
+  if (subjectLower.includes('english') || subjectLower.includes('filipino') || subjectLower.includes('language')) {
+    const languageWrong = getLanguageWrongAnswers(correctAnswer);
+    wrongAnswers.push(...languageWrong);
+  }
+  
+  // If we don't have enough wrong answers, generate generic ones
+  while (wrongAnswers.length < 3) {
+    wrongAnswers.push('Option ' + (Math.floor(Math.random() * 100) + 1));
+  }
+  
+  // Return unique wrong answers (not matching correct answer)
+  return [...new Set(wrongAnswers)].filter(ans => ans !== correctAnswer).slice(0, 3);
+}
+
+function containsMathKeywords(question) {
+  const mathKeywords = ['add', 'subtract', 'multiply', 'divide', 'plus', 'minus', 'times', 'equal', 'equation', 'solve', 'number', 'integer', 'fraction', 'decimal', 'percentage'];
+  return mathKeywords.some(keyword => question.toLowerCase().includes(keyword));
+}
+
+function getScienceWrongAnswers(subject, correctAnswer) {
+  const scienceTerms = {
+    physics: ['velocity', 'acceleration', 'force', 'mass', 'energy', 'power', 'gravity', 'friction', 'momentum', 'weight'],
+    chemistry: ['atom', 'molecule', 'element', 'compound', 'mixture', 'reaction', 'bond', 'electron', 'proton', 'neutron'],
+    biology: ['cell', 'tissue', 'organ', 'system', 'DNA', 'RNA', 'protein', 'enzyme', 'bacteria', 'virus'],
+    general: ['matter', 'element', 'compound', 'solution', 'solvent', 'solute', 'acid', 'base', 'gas', 'liquid']
+  };
+  
+  let terms = scienceTerms.general;
+  if (subject.includes('physics')) terms = scienceTerms.physics;
+  else if (subject.includes('chemistry')) terms = scienceTerms.chemistry;
+  else if (subject.includes('biology')) terms = scienceTerms.biology;
+  
+  return terms.filter(term => term !== correctAnswer.toLowerCase());
+}
+
+function getLanguageWrongAnswers(correctAnswer) {
+  // Generate common language mistakes
+  const wrongAnswers = [
+    correctAnswer + 's',
+    correctAnswer + 'ed',
+    correctAnswer.replace(/[aeiou]/g, ''),
+    'not ' + correctAnswer,
+    'un' + correctAnswer,
+    'im' + correctAnswer,
+    'dis' + correctAnswer,
+    're' + correctAnswer
+  ];
+  return wrongAnswers.slice(0, 3);
+}
+
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // Admin endpoints
 app.get('/admin/get-all-users', async (req, res) => {
   const userEmail = await getUserFromSession(req);

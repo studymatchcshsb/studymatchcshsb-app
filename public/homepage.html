@@ -112,6 +112,8 @@
     <aside class="sidebar">
       <!-- Active Users Icon -->
       <svg class="icon" onclick="window.location.href='/active-users.html'" title="Active Users" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <!-- Quiz Manager Icon -->
+      <svg class="icon" onclick="window.location.href='/create-quiz.html'" title="Quiz Manager" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
       <!-- Weekly Recommendations Icon (in sidebar) -->
       <svg class="icon" onclick="openWeeklyRecommendations()" title="Weekly Study Partner Recommendations" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
       <!-- Hamburger Menu Icon -->
@@ -1323,7 +1325,9 @@
             if (notification.type === 'help_request') {
                 const notificationDiv = document.createElement('div');
                 notificationDiv.className = 'notification-item';
+                notificationDiv.id = 'notif-' + notification.id;
                 notificationDiv.innerHTML = `
+                    <button class="notif-close-btn" onclick="dismissNotification('${notification.id}')">&times;</button>
                     <div class="notification-content">
                         <strong>STUDYMATCH CSHSB</strong><br>
                         ${notification.message}
@@ -1337,7 +1341,9 @@
             } else if (notification.type === 'kastudy_request') {
                 const notificationDiv = document.createElement('div');
                 notificationDiv.className = 'notification-item';
+                notificationDiv.id = 'notif-' + notification.id;
                 notificationDiv.innerHTML = `
+                    <button class="notif-close-btn" onclick="dismissNotification('${notification.id}')">&times;</button>
                     <div class="notification-content">
                         <strong>STUDYMATCH CSHSB</strong><br>
                         ${notification.message}
@@ -1352,7 +1358,9 @@
                 const notificationDiv = document.createElement('div');
                 notificationDiv.className = 'notification-item kastudy_accepted';
                 const chatUrl = notification.redirectUrl || '/chats.html?chat=' + encodeURIComponent(notification.fromUser.email);
+                notificationDiv.id = 'notif-' + notification.id;
                 notificationDiv.innerHTML = `
+                    <button class="notif-close-btn" onclick="dismissNotification('${notification.id}')">&times;</button>
                     <div class="notification-content">
                         <strong>STUDYMATCH CSHSB</strong><br>
                         ${notification.message}
@@ -1362,8 +1370,139 @@
                     </div>
                 `;
                 container.appendChild(notificationDiv);
+            } else if (notification.type === 'quiz_share') {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'notification-item quiz-share-notif';
+                notificationDiv.id = 'notif-' + notification.id;
+                notificationDiv.innerHTML = `
+                    <button class="notif-close-btn" onclick="dismissNotification('${notification.id}')">&times;</button>
+                    <div class="notification-icon">📝</div>
+                    <div class="notification-content">
+                        <strong>Quiz Shared!</strong><br>
+                        ${notification.message}
+                    </div>
+                    <div class="notification-actions">
+                        <button class="help-btn yes-btn" onclick="respondToQuizShare('${notification.id}', 'accept', '${notification.fromUser.email}', '${notification.quizName}')">Accept</button>
+                        <button class="help-btn no-btn" onclick="respondToQuizShare('${notification.id}', 'decline', '${notification.fromUser.email}', '${notification.quizName}')">Decline</button>
+                    </div>
+                `;
+                container.appendChild(notificationDiv);
+            } else if (notification.type === 'quiz_share_accepted') {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'notification-item quiz-accepted-notif';
+                notificationDiv.id = 'notif-' + notification.id;
+                notificationDiv.innerHTML = `
+                    <button class="notif-close-btn" onclick="dismissNotification('${notification.id}')">&times;</button>
+                    <div class="notification-icon">🎉</div>
+                    <div class="notification-content">
+                        <strong>Quiz Accepted!</strong><br>
+                        ${notification.message}
+                    </div>
+                    <div class="notification-actions">
+                        <button class="help-btn yes-btn" onclick="window.location.href='/create-quiz.html'" style="width: 100%;">View Quiz</button>
+                    </div>
+                `;
+                container.appendChild(notificationDiv);
+            } else if (notification.type === 'quiz_share_declined') {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'notification-item quiz-declined-notif';
+                notificationDiv.id = 'notif-' + notification.id;
+                notificationDiv.innerHTML = `
+                    <button class="notif-close-btn" onclick="dismissNotification('${notification.id}')">&times;</button>
+                    <div class="notification-icon">😔</div>
+                    <div class="notification-content">
+                        <strong>Quiz Declined</strong><br>
+                        ${notification.message}
+                    </div>
+                `;
+                container.appendChild(notificationDiv);
             }
         });
+    }
+
+    // Dismiss a notification without taking action
+    async function dismissNotification(notificationId) {
+        const element = document.getElementById('notif-' + notificationId);
+        if (element) {
+            element.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => element.remove(), 300);
+        }
+        
+        // Update count
+        unreadCount = Math.max(0, unreadCount - 1);
+        updateNotificationDot(unreadCount);
+        
+        // Also remove from server
+        try {
+            await fetch(`${backendURL}/respond-quiz-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    notificationId,
+                    response: 'dismiss',
+                    fromEmail: '',
+                    quizName: ''
+                })
+            });
+        } catch (error) {
+            console.error('Error dismissing notification:', error);
+        }
+        
+        // Check if there are no more notifications
+        setTimeout(() => {
+            const remaining = document.querySelectorAll('.notification-item');
+            if (remaining.length === 0) {
+                document.getElementById('no-notifications').style.display = 'block';
+            }
+        }, 350);
+    }
+
+    // Handle quiz share response
+    async function respondToQuizShare(notificationId, response, fromEmail, quizName) {
+        // Immediately remove the notification element from the UI
+        const element = document.getElementById('notif-' + notificationId);
+        if (element) {
+            element.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => element.remove(), 300);
+        }
+        
+        // Update notification count
+        unreadCount = Math.max(0, unreadCount - 1);
+        updateNotificationDot(unreadCount);
+        
+        try {
+            const responseData = await fetch(`${backendURL}/respond-quiz-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    notificationId,
+                    response,
+                    fromEmail,
+                    quizName
+                })
+            });
+
+            const data = await responseData.json();
+
+            if (response === 'accept') {
+                alert(data.message || 'Quiz added to your collection!');
+                // Redirect to quiz page
+                setTimeout(() => {
+                    window.location.href = '/create-quiz.html';
+                }, 1000);
+            } else {
+                // Check if no more notifications
+                setTimeout(() => {
+                    const remaining = document.querySelectorAll('.notification-item');
+                    if (remaining.length === 0) {
+                        document.getElementById('no-notifications').style.display = 'block';
+                    }
+                }, 350);
+            }
+        } catch (error) {
+            console.error('Error responding to quiz share:', error);
+            alert('Error processing your response. Please try again.');
+        }
     }
 
     // Handle help request response
