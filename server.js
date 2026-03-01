@@ -1076,6 +1076,32 @@ app.post('/respond-help-request', async (req, res) => {
                   io.to(requesterSocket1).emit('new_notification', successNotification);
                 }
 
+                // ANTI-SPAM: Remove the help request from ALL other users who received it
+                // This prevents multiple users from responding to the same request
+                console.log('[Anti-Spam] Removing help request notification from all users for subject:', subject, 'from:', requesterEmail);
+                
+                db.update(
+                  { 
+                    email: { $ne: userEmail }, // Exclude the helper (current user)
+                    notifications: { 
+                      $elemMatch: { 
+                        type: 'help_request',
+                        'fromUser.email': requesterEmail,
+                        subject: subject
+                      } 
+                    }
+                  },
+                  { $pull: { notifications: { type: 'help_request', 'fromUser.email': requesterEmail, subject: subject } } },
+                  { multi: true },
+                  (err, numRemoved) => {
+                    if (err) {
+                      console.error("Error removing spam notifications:", err);
+                    } else {
+                      console.log('[Anti-Spam] Removed help request notifications from', numRemoved, 'other users');
+                    }
+                  }
+                );
+
                 res.send({ 
                   success: true, 
                   message: 'Help request accepted! Starting chat...',
@@ -1200,6 +1226,32 @@ app.post('/respond-kastudy-request', async (req, res) => {
                 if (requesterSocket2) {
                   io.to(requesterSocket2).emit('new_notification', successNotification);
                 }
+
+                // ANTI-SPAM: Remove the help request from ALL other users who received it
+                // This prevents multiple users from responding to the same request
+                console.log('[Anti-Spam] Removing help request notification from all users for subject:', subject, 'from:', requesterEmail);
+                
+                db.update(
+                  { 
+                    email: { $ne: userEmail }, // Exclude the helper (current user)
+                    notifications: { 
+                      $elemMatch: { 
+                        type: 'help_request',
+                        'fromUser.email': requesterEmail,
+                        subject: subject
+                      } 
+                    }
+                  },
+                  { $pull: { notifications: { type: 'help_request', 'fromUser.email': requesterEmail, subject: subject } } },
+                  { multi: true },
+                  (err, numRemoved) => {
+                    if (err) {
+                      console.error("Error removing spam notifications:", err);
+                    } else {
+                      console.log('[Anti-Spam] Removed help request notifications from', numRemoved, 'other users');
+                    }
+                  }
+                );
 
                 res.send({ 
                   success: true, 
