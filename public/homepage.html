@@ -123,8 +123,6 @@
     <aside class="sidebar">
       <!-- Active Users Icon (Table/Spreadsheet) -->
       <svg class="icon" onclick="window.location.href='/active-users.html'" title="Users on StudyMatch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3v18h18V3H3zm8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>
-      <!-- Quiz Manager Icon -->
-      <svg class="icon" onclick="window.location.href='/create-quiz.html'" title="Quiz Manager" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
       <!-- Weekly Recommendations Icon (in sidebar) -->
       <svg class="icon" onclick="openWeeklyRecommendations()" title="Weekly Study Partner Recommendations" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
       <!-- Hamburger Menu Icon -->
@@ -451,7 +449,7 @@
       // User is authenticated and profile is complete, continue with page load
       console.log('User authenticated:', data.email);
     } catch (error) {
-      console.log('Authentication check failed:', error);
+      
       // On error, redirect to login to be safe
       window.location.href = '/index.html';
     }
@@ -531,7 +529,7 @@
           container.appendChild(todoEl);
         });
       } catch (error) {
-        console.error("Error fetching todos:", error);
+        
         // Optionally show an error to the user
       }
     }
@@ -561,7 +559,7 @@
         closeTodoModal();
         fetchTodos(); // Refresh the list
       } catch (error) {
-        console.error("Error adding todo:", error);
+        
         alert(`Error: ${error.message}`);
       }
     }
@@ -582,7 +580,7 @@
         }
         fetchTodos(); // Refresh the list
       } catch (error) {
-        console.error("Error deleting todo:", error);
+        
         alert(`Error: ${error.message}`);
       }
     }
@@ -675,17 +673,16 @@
                 messageEl.innerText = data.message;
             }
         } catch (error) {
-            console.error("Error changing password:", error);
+            
             messageEl.innerText = "An error occurred. Please try again.";
         }
     }
 
     async function logout() {
         if (confirm("Save password for future log-ins?")) {
-            console.log("User chose to save password.");
-            // Password is already saved in localStorage from login
+            
         } else {
-            console.log("User chose not to save password.");
+            
             localStorage.removeItem('savedEmail');
             localStorage.removeItem('savedPassword');
         }
@@ -694,7 +691,7 @@
             await fetch(`${backendURL}/logout`, { method: 'POST' });
             window.location.href = '/index.html';
         } catch (error) {
-            console.error("Error logging out:", error);
+            
         }
     }
 
@@ -713,7 +710,7 @@
           return inappropriateWords.some(word => lowerText.includes(word));
         }
         
-        console.log('quickFindKaStudy called - grade:', grade, 'subject:', subject);
+        
         
         // Check for inappropriate words
         if (containsInappropriateWords(subject)) {
@@ -760,7 +757,7 @@
                 alert('Error: ' + data.message);
             }
         } catch (error) {
-            console.error('Error:', error);
+            
             resultEl.innerText = 'Network error: ' + error.message;
             resultEl.style.color = 'red';
         }
@@ -846,7 +843,7 @@
                 selectedGrade = null;
                 selectedSubject = null;
             } catch (error) {
-                console.error('Error sending help request:', error);
+                
                 alert('Error sending help request. Please try again. Error: ' + error.message);
             }
         } else {
@@ -943,7 +940,7 @@
                 tbody.innerHTML = '<tr><td colspan="3" style="padding: 10px; text-align: center; color: red;">Failed to load users</td></tr>';
             }
         } catch (error) {
-            console.error('Error loading users:', error);
+            
             tbody.innerHTML = '<tr><td colspan="3" style="padding: 10px; text-align: center; color: red;">Error loading users</td></tr>';
         }
     }
@@ -1049,7 +1046,7 @@
                 messageEl.style.color = 'red';
             }
         } catch (error) {
-            console.error('Error adding user:', error);
+            
             messageEl.innerText = 'An error occurred. Please try again.';
             messageEl.style.color = 'red';
         }
@@ -1075,7 +1072,7 @@
                     '<tr><td colspan="6" style="text-align: center; padding: 20px; color: red;">' + data.message + '</td></tr>';
             }
         } catch (error) {
-            console.error("Error loading students:", error);
+            
             document.getElementById('students-list-body').innerHTML = 
                 '<tr><td colspan="6" style="text-align: center; padding: 20px; color: red;">Failed to load students. ' + error.message + '</td></tr>';
         }
@@ -1177,10 +1174,10 @@
                     successCount++;
                     affectedEmails.push(update.email);
                 } else {
-                    console.error('Failed to update:', update.email, data.message);
+                    
                 }
             } catch (error) {
-                console.error('Error updating student:', update.email, error);
+                
             }
         }
         
@@ -1210,7 +1207,7 @@
                 displayWeeklyRecommendations(data);
             }
         } catch (error) {
-            console.error("Error loading recommendations:", error);
+            
             document.getElementById('weekly-recommendations-list').innerHTML = 
                 '<div style="text-align: center; color: #666; padding: 20px;">Failed to load recommendations.</div>';
         }
@@ -1279,7 +1276,7 @@
             const data = await response.json();
             alert(data.message || 'Study partner request sent!');
         } catch (error) {
-            console.error('Error requesting study partner:', error);
+            
             alert('Failed to send request. Please try again.');
         }
     }
@@ -1312,7 +1309,7 @@
             
             displayNotifications(notifications);
         } catch (error) {
-            console.error("Error loading notifications:", error);
+            
         }
     }
 
@@ -1411,7 +1408,7 @@
                         ${notification.message}
                     </div>
                     <div class="notification-actions">
-                        <button class="help-btn yes-btn" onclick="window.location.href='/create-quiz.html'" style="width: 100%;">View Quiz</button>
+                        <button class="help-btn yes-btn" onclick="respondToKastudyRequest('${notification.id}', 'accept', '${notification.fromUser.email}', '${notification.subject}', '${notification.fromUser.username || ''}')" style="width: 100%;">Yes</button>
                     </div>
                 `;
                 container.appendChild(notificationDiv);
@@ -1457,7 +1454,7 @@
                 })
             });
         } catch (error) {
-            console.error('Error dismissing notification:', error);
+            
         }
         
         // Check if there are no more notifications
@@ -1498,10 +1495,6 @@
 
             if (response === 'accept') {
                 alert(data.message || 'Quiz added to your collection!');
-                // Redirect to quiz page
-                setTimeout(() => {
-                    window.location.href = '/create-quiz.html';
-                }, 1000);
             } else {
                 // Check if no more notifications
                 setTimeout(() => {
@@ -1512,7 +1505,7 @@
                 }, 350);
             }
         } catch (error) {
-            console.error('Error responding to quiz share:', error);
+            
             alert('Error processing your response. Please try again.');
         }
     }
@@ -1566,7 +1559,7 @@
                 loadNotifications();
             }
         } catch (error) {
-            console.error("Error responding to help request:", error);
+            
             alert('Error processing your response. Please try again.');
         }
     }
@@ -1621,7 +1614,7 @@
                 loadNotifications();
             }
         } catch (error) {
-            console.error("Error responding to kastudy request:", error);
+            
             alert('Error processing your response. Please try again.');
         }
     }
@@ -1702,13 +1695,13 @@
         // Start polling for notifications as backup
         startNotificationPolling();
       } catch (error) {
-        console.error('Error in DOMContentLoaded:', error);
+        
       }
     });
 
     // Socket.io event listeners for real-time notifications
     socket.on('new_notification', (notification) => {
-      console.log('New notification received:', notification);
+      
       
       // Increment unread count and show dot
       unreadCount++;
@@ -1783,7 +1776,7 @@
     document.head.appendChild(style);
 
     socket.on('help_request_accepted', (data) => {
-      console.log('Help request accepted:', data);
+      
       alert(`Someone accepted your help request for ${data.subject}! Check your chats.`);
       // Redirect to chats page
       setTimeout(() => {

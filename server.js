@@ -12,7 +12,7 @@ const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
 const saltRounds = 10;
 
-console.log("--- SERVER.JS UPDATED - SENDGRID EMAIL VERIFICATION ENABLED ---");
+// Server startup
 
 // Profanity filter - list of inappropriate words to censor
 const inappropriateWords = [
@@ -57,7 +57,7 @@ function containsInappropriateWords(text) {
 // Configure SendGrid
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  console.log("SendGrid configured successfully");
+  
 }
 
 const app = express();
@@ -92,8 +92,7 @@ function generateSessionId() {
 
 function getUserFromSession(req) {
   const sessionId = req.cookies.sessionId;
-  console.log('Checking session, sessionId:', sessionId ? 'exists' : 'missing');
-  console.log('All cookies:', req.cookies);
+  
   
   if (!sessionId) return null;
 
@@ -113,7 +112,7 @@ function getUserFromSession(req) {
         return resolve(null);
       }
 
-      console.log('Session found for:', session.email);
+      
       resolve(session.email);
     });
   });
@@ -146,8 +145,7 @@ function createSession(email, res) {
         path: '/' // Ensure cookie is available for all paths
       });
 
-      console.log('Session created for:', email, 'with sessionId:', sessionId);
-      console.log('Cookie settings: httpOnly=true, secure=true, sameSite=lax, maxAge=30days');
+      
       
       resolve();
     });
@@ -192,7 +190,7 @@ app.post('/send-code', (req, res) => {
   currentCode = Math.floor(100000 + Math.random() * 900000).toString();
   codeEmail = normalizedEmail;
 
-  console.log("Generated verification code " + currentCode + " for " + normalizedEmail);
+  
 
   // Send email with OTP via SendGrid
   const msg = {
@@ -219,7 +217,7 @@ app.post('/send-code', (req, res) => {
   };
 
   sgMail.send(msg).then(() => {
-    console.log('SendGrid email sent successfully');
+    
     res.send({ 
       success: true, 
       message: 'Verification code sent to your email.'
@@ -323,7 +321,7 @@ app.post('/register', async (req, res) => {
           return res.status(500).send({ success: false, message: 'Server error saving user.' });
         }
 
-        console.log("User registered successfully:", normalizedEmail, "isAdmin:", isAdmin);
+        
 
         // Create session for the new user
         try {
@@ -551,7 +549,7 @@ app.post('/save-profile', async (req, res) => {
             return res.status(404).send({ success: false, message: 'User not found.' });
           }
 
-          console.log("Profile saved successfully for:", email);
+          
           storedEmail = email; // Update storedEmail for backward compatibility
           res.send({ success: true, message: 'Profile saved successfully!' });
         });
@@ -576,7 +574,7 @@ app.post('/update-profile', async (req, res) => {
     if (numReplaced === 0) {
       return res.status(404).send({ success: false, message: 'User not found.' });
     }
-    console.log("Profile updated for email: " + userEmail);
+    
     res.send({ success: true, message: 'Profile updated successfully!' });
   });
 });
@@ -589,20 +587,20 @@ app.get('/get-todos', async (req, res) => {
     console.log('[/get-todos] No session found, returning 401');
     return res.status(401).send([]);
   }
-  console.log('[/get-todos] Fetching todos for:', userEmail);
+  
   todosDb.find({ userEmail: userEmail }, (err, docs) => {
     if (err) {
       console.error('[/get-todos] Database error:', err);
       return res.status(500).send([]);
     }
-    console.log('[/get-todos] Found todos:', docs.length);
+    
     res.send(docs);
   });
 });
 
 app.post('/add-todo', async (req, res) => {
   const userEmail = await getUserFromSession(req);
-  console.log('[/add-todo] userEmail:', userEmail);
+  
   if (!userEmail) {
     return res.status(401).send({ success: false, message: 'Unauthorized' });
   }
@@ -613,13 +611,13 @@ app.post('/add-todo', async (req, res) => {
     userEmail: userEmail,
     createdAt: new Date()
   };
-  console.log('[/add-todo] Creating todo:', newTodo);
+  
   todosDb.insert(newTodo, (err, doc) => {
     if (err) {
       console.error('[/add-todo] Database error:', err);
       return res.status(500).send({ success: false, message: 'Server error' });
     }
-    console.log('[/add-todo] Todo created successfully, id:', doc._id);
+    
     res.send({ success: true, todo: doc });
   });
 });
@@ -833,7 +831,7 @@ app.post('/find-kastudy', async (req, res) => {
     return res.status(400).send({ success: false, message: 'Subject contains inappropriate words. Please use appropriate language.' });
   }
   
-  console.log('[/find-kastudy] Received request - grade:', grade, 'subject:', subject, 'from:', userEmail);
+  
 
   if (!grade || !subject) {
     return res.status(400).send({ success: false, message: 'Grade and subject are required.' });
@@ -855,7 +853,7 @@ app.post('/find-kastudy', async (req, res) => {
       return res.status(403).send({ success: false, message: 'Admins cannot send help requests' });
     }
 
-    console.log('[/find-kastudy] Current user:', currentUser.username);
+    
 
     // Find all users (excluding current user and admins) to send notification to
     db.find({ 
@@ -867,7 +865,7 @@ app.post('/find-kastudy', async (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error' });
       }
 
-      console.log('[/find-kastudy] Found', potentialHelpers.length, 'potential helpers');
+      
 
       if (potentialHelpers.length === 0) {
         return res.send({ success: true, message: 'No other registered users found.' });
@@ -909,7 +907,7 @@ app.post('/find-kastudy', async (req, res) => {
       const total = potentialHelpers.length;
 
       potentialHelpers.forEach(helper => {
-        console.log('[/find-kastudy] Adding notification to helper:', helper.email);
+        
         
         db.update(
           { email: helper.email },
@@ -919,20 +917,20 @@ app.post('/find-kastudy', async (req, res) => {
             if (err) {
               console.error("Error adding notification:", err);
             } else {
-              console.log('[/find-kastudy] Notification added to:', helper.email);
+              
               
               // Try to send real-time notification
               const socketId = connectedUsers[helper.email.toLowerCase()];
               if (socketId) {
-                console.log('[/find-kastudy] Sending real-time notification to:', helper.email, 'socket:', socketId);
+                
                 io.to(socketId).emit('new_notification', notification);
               } else {
-                console.log('[/find-kastudy] Helper not connected via socket:', helper.email);
+                
               }
             }
             completed++;
             if (completed === total) {
-              console.log('[/find-kastudy] All notifications sent. Total:', total);
+              
               res.send({
                 success: true,
                 message: "Help request sent to all " + total + " registered users!"
@@ -1270,63 +1268,6 @@ app.post('/respond-kastudy-request', async (req, res) => {
 });
 
 
-// Quiz endpoints
-app.post('/save-quiz', async (req, res) => {
-  const userEmail = await getUserFromSession(req);
-  if (!userEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  const { folderName, quizName, flashcards } = req.body;
-
-  if (!folderName || !quizName || !flashcards || flashcards.length === 0) {
-    return res.status(400).send({ success: false, message: 'Missing required quiz data' });
-  }
-
-  const quizData = {
-    folderName,
-    quizName,
-    flashcards,
-    createdAt: new Date()
-  };
-
-  // Find user and add quiz to their quizzes array
-  db.update(
-    { email: userEmail },
-    { $push: { quizzes: quizData } },
-    { upsert: true },
-    (err, numReplaced) => {
-      if (err) {
-        console.error("Error saving quiz:", err);
-        return res.status(500).send({ success: false, message: 'Server error saving quiz' });
-      }
-
-      console.log('Quiz "' + quizName + '" saved for user ' + userEmail);
-      res.send({ success: true, message: 'Quiz saved successfully' });
-    }
-  );
-});
-
-app.get('/get-quizzes', async (req, res) => {
-  const userEmail = await getUserFromSession(req);
-  if (!userEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  db.findOne({ email: userEmail }, (err, user) => {
-    if (err) {
-      console.error("Error finding user:", err);
-      return res.status(500).send({ success: false, message: 'Server error' });
-    }
-
-    if (!user || !user.quizzes) {
-      return res.send({ quizzes: [] });
-    }
-
-    res.send({ quizzes: user.quizzes });
-  });
-});
-
 // New Chat System Endpoints
 
 // Create a new database for chat sessions
@@ -1591,7 +1532,7 @@ app.post('/clear-notification', async (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error' });
       }
       
-      console.log('Cleared notifications for', userEmail, 'related to', partnerEmail, '- num removed:', numReplaced);
+      
       res.send({ success: true });
     }
   );
@@ -1847,7 +1788,7 @@ app.get('/get-admin-users', async (req, res) => {
         username: admin.username || admin.email.split('@')[0]
       }));
 
-      console.log('Found admin users:', adminUsers.length);
+      
       res.send({ 
         success: true, 
         admins: adminUsers
@@ -1859,816 +1800,6 @@ app.get('/get-admin-users', async (req, res) => {
   }
 });
 
-// AI Quiz Generator - Generate multiple choice options from a question
-app.post('/ai-generate-choices', async (req, res) => {
-  const { question, subject, correctAnswer } = req.body;
-
-  if (!question || !correctAnswer) {
-    return res.status(400).send({ success: false, message: 'Question and correct answer are required' });
-  }
-
-  console.log('[AI Quiz] Generating choices for:', question);
-
-  // Simple AI-like logic to generate plausible wrong answers based on subject
-  // In production, this would call an actual AI API like OpenAI
-  const wrongAnswers = generateWrongAnswers(question, subject, correctAnswer);
-
-  // Create the choices array with the correct answer and wrong answers
-  const choices = [
-    { text: correctAnswer, isCorrect: true },
-    ...wrongAnswers.map(ans => ({ text: ans, isCorrect: false }))
-  ];
-
-  // Shuffle the choices
-  const shuffledChoices = shuffleArray(choices);
-
-  res.send({
-    success: true,
-    choices: shuffledChoices,
-    correctAnswer: correctAnswer
-  });
-});
-
-// Submit quiz answers and get score
-app.post('/submit-quiz', async (req, res) => {
-  const userEmail = await getUserFromSession(req);
-  if (!userEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  const { quizName, answers } = req.body;
-
-  if (!quizName || !answers || !Array.isArray(answers)) {
-    return res.status(400).send({ success: false, message: 'Quiz name and answers are required' });
-  }
-
-  console.log('[Quiz] Submitting quiz:', quizName, 'from:', userEmail, 'answers:', answers.length);
-
-  // Find the user's quiz
-  db.findOne({ email: userEmail, 'quizzes.quizName': quizName }, (err, user) => {
-    if (err || !user) {
-      return res.status(404).send({ success: false, message: 'Quiz not found' });
-    }
-
-    // Find the specific quiz
-    const quiz = user.quizzes.find(q => q.quizName === quizName);
-    if (!quiz || !quiz.flashcards) {
-      return res.status(404).send({ success: false, message: 'Quiz not found or has no questions' });
-    }
-
-    // Calculate score
-    let correctCount = 0;
-    const results = [];
-
-    answers.forEach((answer, index) => {
-      const question = quiz.flashcards[index];
-      if (!question) return;
-
-      const isCorrect = answer.selectedAnswer === question.correctAnswer;
-      if (isCorrect) correctCount++;
-
-      results.push({
-        questionIndex: index,
-        question: question.question || question.front,
-        correctAnswer: question.correctAnswer || question.back,
-        selectedAnswer: answer.selectedAnswer,
-        isCorrect: isCorrect
-      });
-    });
-
-    const score = Math.round((correctCount / quiz.flashcards.length) * 100);
-
-    // Save quiz result
-    const quizResult = {
-      quizName: quizName,
-      score: score,
-      correctCount: correctCount,
-      totalQuestions: quiz.flashcards.length,
-      completedAt: new Date()
-    };
-
-    // Add to user's quiz results
-    db.update(
-      { email: userEmail },
-      { $push: { quizResults: quizResult } },
-      {},
-      (err) => {
-        if (err) {
-          console.error('Error saving quiz result:', err);
-        }
-      }
-    );
-
-    console.log('[Quiz] Score for', userEmail, ':', score, '%');
-
-    res.send({
-      success: true,
-      score: score,
-      correctCount: correctCount,
-      totalQuestions: quiz.flashcards.length,
-      results: results
-    });
-  });
-});
-
-// Share a quiz with another user
-app.post('/share-quiz', async (req, res) => {
-  const userEmail = await getUserFromSession(req);
-  if (!userEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  const { targetEmail, quizName } = req.body;
-
-  if (!targetEmail || !quizName) {
-    return res.status(400).send({ success: false, message: 'Target email and quiz name are required' });
-  }
-
-  console.log('[Quiz Share] User', userEmail, 'sharing quiz', quizName, 'with', targetEmail);
-
-  // Check if target user exists
-  db.findOne({ email: targetEmail }, (err, targetUser) => {
-    if (err || !targetUser) {
-      return res.status(404).send({ success: false, message: 'Target user not found' });
-    }
-
-    // Get the quiz from the sender
-    db.findOne({ email: userEmail, 'quizzes.quizName': quizName }, (err, senderUser) => {
-      if (err || !senderUser) {
-        return res.status(404).send({ success: false, message: 'Quiz not found' });
-      }
-
-      const quiz = senderUser.quizzes.find(q => q.quizName === quizName);
-      if (!quiz) {
-        return res.status(404).send({ success: false, message: 'Quiz not found' });
-      }
-
-      // Create share record
-      const shareRecord = {
-        id: Date.now().toString(),
-        fromEmail: userEmail,
-        fromUsername: senderUser.username,
-        quizName: quizName,
-        flashcards: quiz.flashcards,
-        sharedAt: new Date()
-      };
-
-      // Add shared quiz to target user's received quizzes
-      db.update(
-        { email: targetEmail },
-        { $push: { sharedQuizzes: shareRecord } },
-        {},
-        (err) => {
-          if (err) {
-            console.error('Error sharing quiz:', err);
-            return res.status(500).send({ success: false, message: 'Failed to share quiz' });
-          }
-
-          // Create notification for target user
-          const notification = {
-            id: Date.now().toString(),
-            type: 'quiz_share',
-            fromUser: {
-              email: userEmail,
-              username: senderUser.username
-            },
-            quizName: quizName,
-            message: `${senderUser.username} wants to share their quiz "${quizName}" with you!`,
-            createdAt: new Date()
-          };
-
-          // Add notification to target user
-          db.update(
-            { email: targetEmail },
-            { $push: { notifications: notification } },
-            {},
-            (err) => {
-              if (err) {
-                console.error('Error creating notification:', err);
-              }
-
-              // Send real-time notification via socket
-              io.to(targetEmail).emit('new_notification', notification);
-
-              console.log('[Quiz Share] Notification sent to', targetEmail);
-            }
-          );
-
-          res.send({ success: true, message: 'Quiz shared successfully!' });
-        }
-      );
-    });
-  });
-});
-
-// Respond to quiz share (accept or decline)
-app.post('/respond-quiz-share', async (req, res) => {
-  const userEmail = await getUserFromSession(req);
-  if (!userEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  const { notificationId, response, fromEmail, quizName } = req.body;
-
-  if (!notificationId || !response || !fromEmail || !quizName) {
-    return res.status(400).send({ success: false, message: 'All fields are required' });
-  }
-
-  console.log('[Quiz Share] User', userEmail, response, 'quiz share request for', quizName);
-
-  // Remove notification from current user
-  db.update(
-    { email: userEmail },
-    { $pull: { notifications: { id: notificationId } } },
-    {},
-    (err) => {
-      if (err) {
-        console.error('Error removing notification:', err);
-      }
-    }
-  );
-
-  if (response === 'accept') {
-    // Get the shared quiz from current user's sharedQuizzes
-    db.findOne({ email: userEmail, 'sharedQuizzes.quizName': quizName }, (err, user) => {
-      if (err || !user) {
-        return res.status(404).send({ success: false, message: 'Shared quiz not found' });
-      }
-
-      const sharedQuiz = user.sharedQuizzes.find(q => q.quizName === quizName);
-      if (!sharedQuiz) {
-        return res.status(404).send({ success: false, message: 'Shared quiz not found' });
-      }
-
-      // Add quiz to user's own quizzes
-      const newQuiz = {
-        quizName: sharedQuiz.quizName,
-        folderName: 'Shared with Me',
-        flashcards: sharedQuiz.flashcards,
-        createdAt: sharedQuiz.sharedAt,
-        sharedBy: sharedQuiz.fromUsername
-      };
-
-      // Check if user already has a "Shared with Me" folder
-      const existingFolder = user.quizzes ? user.quizzes.find(q => q.folderName === 'Shared with Me') : null;
-
-      if (existingFolder) {
-        // Add to existing folder
-        db.update(
-          { email: userEmail, 'quizzes.folderName': 'Shared with Me' },
-          { $push: { 'quizzes.$.flashcards': { $each: sharedQuiz.flashcards } } },
-          {},
-          (err) => {
-            if (err) {
-              console.error('Error adding quiz to folder:', err);
-            }
-          }
-        );
-      } else {
-        // Create new folder and add quiz
-        db.update(
-          { email: userEmail },
-          { $push: { quizzes: { folderName: 'Shared with Me', quizName: sharedQuiz.quizName, flashcards: sharedQuiz.flashcards, createdAt: new Date() } } },
-          {},
-          (err) => {
-            if (err) {
-              console.error('Error creating shared folder:', err);
-            }
-          }
-        );
-      }
-
-      // Send notification back to sender
-      db.findOne({ email: fromEmail }, (err, senderUser) => {
-        if (err || !senderUser) return;
-
-        const acceptNotification = {
-          id: Date.now().toString(),
-          type: 'quiz_share_accepted',
-          fromUser: {
-            email: userEmail,
-            username: user.username
-          },
-          quizName: quizName,
-          message: `${user.username} accepted your quiz "${quizName}"! You can now compete for top scores together.`,
-          createdAt: new Date()
-        };
-
-        db.update(
-          { email: fromEmail },
-          { $push: { notifications: acceptNotification } },
-          {},
-          (err) => {
-            if (err) {
-              console.error('Error sending accept notification:', err);
-            }
-            io.to(fromEmail).emit('new_notification', acceptNotification);
-          }
-        );
-      });
-
-      res.send({ success: true, message: 'Quiz added to your collection!' });
-    });
-  } else if (response === 'decline') {
-    // Remove shared quiz from user's sharedQuizzes
-    db.update(
-      { email: userEmail },
-      { $pull: { sharedQuizzes: { quizName: quizName } } },
-      {},
-      (err) => {
-        if (err) {
-          console.error('Error removing shared quiz:', err);
-        }
-      }
-    );
-
-    // Send decline notification to sender
-    db.findOne({ email: fromEmail }, (err, senderUser) => {
-      if (err || !senderUser) return;
-
-      const declineNotification = {
-        id: Date.now().toString(),
-        type: 'quiz_share_declined',
-        fromUser: {
-          email: userEmail,
-          username: user.username
-        },
-        quizName: quizName,
-        message: `${user.username} declined your quiz "${quizName}".`,
-        createdAt: new Date()
-      };
-
-      db.update(
-        { email: fromEmail },
-        { $push: { notifications: declineNotification } },
-        {},
-        (err) => {
-          if (err) {
-            console.error('Error sending decline notification:', err);
-          }
-          io.to(fromEmail).emit('new_notification', declineNotification);
-        }
-      );
-    });
-
-    res.send({ success: true, message: 'Quiz share declined' });
-  }
-});
-
-// Share quiz to entire grade level (for teachers/admins)
-app.post('/share-quiz-to-grade', async (req, res) => {
-  const userEmail = await getUserFromSession(req);
-  if (!userEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  const { quizName, gradeLevels } = req.body;
-
-  if (!quizName || !gradeLevels || !Array.isArray(gradeLevels) || gradeLevels.length === 0) {
-    return res.status(400).send({ success: false, message: 'Quiz name and at least one grade level are required' });
-  }
-
-  if (gradeLevels.length > 3) {
-    return res.status(400).send({ success: false, message: 'Maximum 3 grade levels allowed' });
-  }
-
-  console.log('[Quiz Share] Teacher', userEmail, 'sharing quiz', quizName, 'to grades:', gradeLevels);
-
-  // Check if user is an admin
-  db.findOne({ email: userEmail }, (err, teacherUser) => {
-    if (err || !teacherUser) {
-      return res.status(404).send({ success: false, message: 'User not found' });
-    }
-
-    if (!teacherUser.isAdmin) {
-      return res.status(403).send({ success: false, message: 'Only teachers can share quizzes to grade levels' });
-    }
-
-    // Get the quiz from the teacher
-    db.findOne({ email: userEmail, 'quizzes.quizName': quizName }, (err, senderUser) => {
-      if (err || !senderUser) {
-        return res.status(404).send({ success: false, message: 'Quiz not found' });
-      }
-
-      const quiz = senderUser.quizzes.find(q => q.quizName === quizName);
-      if (!quiz) {
-        return res.status(404).send({ success: false, message: 'Quiz not found' });
-      }
-
-      // Find all students in the specified grade levels
-      const gradeNumbers = gradeLevels.map(g => parseInt(g));
-      
-      db.find({ grade: { $in: gradeNumbers }, isAdmin: false }, (err, students) => {
-        if (err) {
-          console.error('Error finding students:', err);
-          return res.status(500).send({ success: false, message: 'Failed to find students' });
-        }
-
-        if (students.length === 0) {
-          return res.status(404).send({ success: false, message: 'No students found in the specified grade levels' });
-        }
-
-        console.log('[Quiz Share] Found', students.length, 'students in grades', gradeLevels);
-
-        let sharedCount = 0;
-        let notificationCount = 0;
-
-        // Share quiz to each student
-        students.forEach(student => {
-          const shareRecord = {
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            fromEmail: userEmail,
-            fromUsername: senderUser.username,
-            quizName: quizName,
-            flashcards: quiz.flashcards,
-            sharedAt: new Date(),
-            isTeacherShare: true,
-            gradeLevels: gradeLevels
-          };
-
-          // Add shared quiz to student's record
-          db.update(
-            { email: student.email },
-            { $push: { sharedQuizzes: shareRecord } },
-            {},
-            (err) => {
-              if (!err) {
-                sharedCount++;
-
-                // Create notification for student
-                const notification = {
-                  id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                  type: 'quiz_share',
-                  fromUser: {
-                    email: userEmail,
-                    username: senderUser.username
-                  },
-                  quizName: quizName,
-                  message: `Your teacher ${senderUser.username} shared a quiz "${quizName}" with Grade ${gradeLevels.join(', ')} students!`,
-                  createdAt: new Date()
-                };
-
-                db.update(
-                  { email: student.email },
-                  { $push: { notifications: notification } },
-                  {},
-                  (err) => {
-                    if (!err) {
-                      notificationCount++;
-                      io.to(student.email).emit('new_notification', notification);
-                    }
-                  }
-                );
-              }
-            }
-          );
-        });
-
-        // Send summary to teacher
-        setTimeout(() => {
-          console.log('[Quiz Share] Shared to', sharedCount, 'students,', notificationCount, 'notifications sent');
-          res.send({ 
-            success: true, 
-            message: `Quiz shared to ${sharedCount} student(s) in Grade ${gradeLevels.join(', ')}!` 
-          });
-        }, 1000);
-      });
-    });
-  });
-});
-
-// Get teacher's teaching grades
-app.get('/get-teacher-grades', async (req, res) => {
-  const userEmail = await getUserFromSession(req);
-  if (!userEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  db.findOne({ email: userEmail }, (err, user) => {
-    if (err || !user) {
-      return res.status(404).send({ success: false, message: 'User not found' });
-    }
-
-    if (!user.isAdmin) {
-      return res.status(403).send({ success: false, message: 'Only teachers can access this' });
-    }
-
-    // Get grades from teachingGrades field or extract from existing data
-    const grades = user.teachingGrades || [];
-    
-    res.send({ success: true, grades: grades });
-  });
-});
-
-// Get user's quiz history
-app.get('/get-quiz-results', async (req, res) => {
-  const userEmail = await getUserFromSession(req);
-  if (!userEmail) {
-    return res.status(401).send({ success: false, message: 'Unauthorized' });
-  }
-
-  db.findOne({ email: userEmail }, (err, user) => {
-    if (err || !user) {
-      return res.send({ results: [] });
-    }
-
-    const results = user.quizResults || [];
-    // Sort by most recent first
-    results.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
-
-    res.send({ results: results });
-  });
-});
-
-// Helper function to generate plausible wrong answers
-function generateWrongAnswers(question, subject, correctAnswer) {
-  const wrongAnswers = [];
-  const subjectLower = (subject || '').toLowerCase();
-  const questionLower = question.toLowerCase();
-  const answerLower = correctAnswer.toLowerCase();
-  
-  console.log('[AI] Generating wrong answers - Subject:', subject, 'Question:', question.substring(0, 50), 'Answer:', correctAnswer);
-  
-  // Try to detect subject from question keywords if not provided
-  let detectedSubject = subjectLower;
-  if (!detectedSubject || detectedSubject === 'general') {
-    if (containsMathKeywords(question)) {
-      detectedSubject = 'math';
-    } else if (questionLower.includes('physics') || questionLower.includes('velocity') || questionLower.includes('force') || questionLower.includes('energy')) {
-      detectedSubject = 'physics';
-    } else if (questionLower.includes('chemistry') || questionLower.includes('atom') || questionLower.includes('element') || questionLower.includes('molecule')) {
-      detectedSubject = 'chemistry';
-    } else if (questionLower.includes('biology') || questionLower.includes('cell') || questionLower.includes('dna') || questionLower.includes('organ')) {
-      detectedSubject = 'biology';
-    } else if (questionLower.includes('history') || questionLower.includes('year') || questionLower.includes('century') || questionLower.includes('president')) {
-      detectedSubject = 'history';
-    } else if (questionLower.includes('geography') || questionLower.includes('country') || questionLower.includes('capital') || questionLower.includes('continent')) {
-      detectedSubject = 'geography';
-    } else if (questionLower.includes('define') || questionLower.includes('what is') || questionLower.includes('meaning')) {
-      detectedSubject = 'definition';
-    }
-  }
-  
-  console.log('[AI] Detected subject:', detectedSubject);
-  
-  // Strategy 1: For MATH - generate number-based wrong answers
-  if (detectedSubject.includes('math') || containsMathKeywords(question)) {
-    const mathWrong = generateMathWrongAnswers(correctAnswer);
-    if (mathWrong.length > 0) {
-      wrongAnswers.push(...mathWrong);
-    }
-  }
-  
-  // Strategy 2: For SCIENCE - use subject-specific terms
-  if (detectedSubject.includes('science') || detectedSubject.includes('physics') || 
-      detectedSubject.includes('chemistry') || detectedSubject.includes('biology')) {
-    const scienceWrong = generateScienceWrongAnswers(detectedSubject, correctAnswer, question);
-    wrongAnswers.push(...scienceWrong);
-  }
-  
-  // Strategy 3: For DEFINITIONS - use opposite/related but wrong definitions
-  if (detectedSubject === 'definition' || questionLower.includes('define') || questionLower.includes('what is')) {
-    const definitionWrong = generateDefinitionWrongAnswers(correctAnswer, question);
-    wrongAnswers.push(...definitionWrong);
-  }
-  
-  // Strategy 4: For HISTORY - use wrong dates/years
-  if (detectedSubject.includes('history')) {
-    const historyWrong = generateHistoryWrongAnswers(correctAnswer, question);
-    wrongAnswers.push(...historyWrong);
-  }
-  
-  // Strategy 5: For GEOGRAPHY - use wrong locations
-  if (detectedSubject.includes('geography') || questionLower.includes('capital') || questionLower.includes('country')) {
-    const geoWrong = generateGeographyWrongAnswers(correctAnswer, question);
-    wrongAnswers.push(...geoWrong);
-  }
-  
-  // Strategy 6: General pattern-based wrong answers (works for any subject)
-  if (wrongAnswers.length < 3) {
-    const generalWrong = generateGeneralWrongAnswers(correctAnswer, question);
-    wrongAnswers.push(...generalWrong);
-  }
-  
-  // Filter out duplicates and the correct answer
-  const uniqueWrong = [...new Set(wrongAnswers)].filter(ans => 
-    ans !== correctAnswer && 
-    ans.toLowerCase() !== answerLower &&
-    ans.trim().length > 0
-  );
-  
-  console.log('[AI] Generated wrong answers:', uniqueWrong);
-  
-  return uniqueWrong.slice(0, 3);
-}
-
-function generateMathWrongAnswers(correctAnswer) {
-  const wrongAnswers = [];
-  const numMatch = correctAnswer.match(/\d+/);
-  
-  if (numMatch) {
-    const num = parseInt(numMatch[0]);
-    // Common math mistakes: off by 1, 10, 100
-    wrongAnswers.push(String(num + 1));
-    wrongAnswers.push(String(num - 1));
-    wrongAnswers.push(String(num + 10));
-    wrongAnswers.push(String(num - 10));
-    if (num > 1) wrongAnswers.push(String(num * 2));
-    if (num > 0) wrongAnswers.push(String(num / 2));
-  } else {
-    // For non-numeric math answers, try common variations
-    const lower = correctAnswer.toLowerCase();
-    if (lower.includes('odd') || lower.includes('even')) {
-      wrongAnswers.push('odd number');
-      wrongAnswers.push('even number');
-      wrongAnswers.push('prime number');
-    }
-    if (lower.includes('positive') || lower.includes('negative')) {
-      wrongAnswers.push('positive');
-      wrongAnswers.push('negative');
-      wrongAnswers.push('zero');
-    }
-  }
-  
-  return wrongAnswers;
-}
-
-function generateScienceWrongAnswers(subject, correctAnswer, question) {
-  const wrongAnswers = [];
-  const answerLower = correctAnswer.toLowerCase();
-  
-  const physicsTerms = ['velocity', 'acceleration', 'force', 'mass', 'energy', 'power', 'gravity', 'friction', 'momentum', 'weight', 'speed', 'distance', 'time', 'work', 'heat'];
-  const chemistryTerms = ['atom', 'molecule', 'element', 'compound', 'mixture', 'reaction', 'bond', 'electron', 'proton', 'neutron', 'ion', 'isotope', 'acid', 'base', 'salt'];
-  const biologyTerms = ['cell', 'tissue', 'organ', 'system', 'DNA', 'RNA', 'protein', 'enzyme', 'bacteria', 'virus', 'mitochondria', 'nucleus', 'membrane', 'gene', 'chromosome'];
-  
-  let relevantTerms = [];
-  if (subject.includes('physics')) relevantTerms = physicsTerms;
-  else if (subject.includes('chemistry')) relevantTerms = chemistryTerms;
-  else if (subject.includes('biology')) relevantTerms = biologyTerms;
-  else relevantTerms = [...physicsTerms, ...chemistryTerms, ...biologyTerms];
-  
-  // Add related but wrong terms
-  const otherTerms = relevantTerms.filter(t => !answerLower.includes(t)).slice(0, 4);
-  wrongAnswers.push(...otherTerms);
-  
-  // For definition-type questions
-  if (question.toLowerCase().includes('what is') || question.toLowerCase().includes('define')) {
-    wrongAnswers.push('A type of ' + correctAnswer);
-    wrongAnswers.push('The opposite of ' + correctAnswer);
-    wrongAnswers.push('Similar to ' + correctAnswer);
-  }
-  
-  return wrongAnswers;
-}
-
-function generateDefinitionWrongAnswers(correctAnswer, question) {
-  const wrongAnswers = [];
-  
-  // For definitions, create plausible wrong definitions
-  wrongAnswers.push('A type of ' + correctAnswer);
-  wrongAnswers.push('The process of ' + correctAnswer);
-  wrongAnswers.push('The opposite of ' + correctAnswer);
-  wrongAnswers.push('Related to ' + correctAnswer);
-  wrongAnswers.push('A method for ' + correctAnswer);
-  
-  return wrongAnswers;
-}
-
-function generateHistoryWrongAnswers(correctAnswer, question) {
-  const wrongAnswers = [];
-  
-  // Try to extract years from history answers
-  const yearMatch = correctAnswer.match(/\b(1[0-9]{3}|20[0-2][0-9])\b/);
-  if (yearMatch) {
-    const year = parseInt(yearMatch[0]);
-    wrongAnswers.push(String(year + 10));
-    wrongAnswers.push(String(year - 10));
-    wrongAnswers.push(String(year + 5));
-    wrongAnswers.push(String(year - 5));
-    wrongAnswers.push(String(year + 1));
-    wrongAnswers.push(String(year - 1));
-  }
-  
-  // For person-based questions
-  if (question.toLowerCase().includes('who') || question.toLowerCase().includes('president') || question.toLowerCase().includes('king')) {
-    wrongAnswers.push('A famous leader');
-    wrongAnswers.push('An important figure');
-    wrongAnswers.push('A historical ruler');
-  }
-  
-  return wrongAnswers;
-}
-
-function generateGeographyWrongAnswers(correctAnswer, question) {
-  const wrongAnswers = [];
-  const answerLower = correctAnswer.toLowerCase();
-  
-  // Common wrong country/capital pairs
-  const capitalPairs = {
-    'paris': ['London', 'Berlin', 'Madrid', 'Rome'],
-    'london': ['Paris', 'Berlin', 'Madrid', 'Rome'],
-    'tokyo': ['Beijing', 'Seoul', 'Bangkok', 'Manila'],
-    'washington': ['New York', 'Los Angeles', 'Chicago', 'Boston'],
-    'manila': ['Tokyo', 'Beijing', 'Seoul', 'Bangkok']
-  };
-  
-  for (const [capital, wrongs] of Object.entries(capitalPairs)) {
-    if (answerLower.includes(capital)) {
-      wrongAnswers.push(...wrongs);
-      break;
-    }
-  }
-  
-  // For other geography questions
-  if (wrongAnswers.length === 0) {
-    wrongAnswers.push('A neighboring country');
-    wrongAnswers.push('A continent');
-    wrongAnswers.push('A region');
-    wrongAnswers.push('A capital city');
-  }
-  
-  return wrongAnswers;
-}
-
-function generateGeneralWrongAnswers(correctAnswer, question) {
-  const wrongAnswers = [];
-  const lower = correctAnswer.toLowerCase();
-  
-  // Try to extract key words from the answer and modify them
-  const words = correctAnswer.split(' ').filter(w => w.length > 3);
-  
-  if (words.length > 0) {
-    // Add 'not' or opposite prefixes
-    wrongAnswers.push('not ' + correctAnswer);
-    wrongAnswers.push('un' + words[0]);
-    wrongAnswers.push('im' + words[0]);
-    wrongAnswers.push('non-' + words[0]);
-    
-    // Swap words
-    if (words.length > 1) {
-      wrongAnswers.push(words[1] + ' ' + words[0]);
-    }
-  }
-  
-  // Add common wrong answers based on question type
-  const questionLower = question.toLowerCase();
-  
-  if (questionLower.includes('which') || questionLower.includes('what')) {
-    wrongAnswers.push('None of the above');
-    wrongAnswers.push('All of the above');
-  }
-  
-  if (questionLower.includes('who')) {
-    wrongAnswers.push('A famous person');
-    wrongAnswers.push('An unknown individual');
-  }
-  
-  if (questionLower.includes('where')) {
-    wrongAnswers.push('Somewhere else');
-    wrongAnswers.push('A different place');
-  }
-  
-  if (questionLower.includes('when')) {
-    wrongAnswers.push('A long time ago');
-    wrongAnswers.push('In the future');
-  }
-  
-  if (questionLower.includes('why')) {
-    wrongAnswers.push('For no particular reason');
-    wrongAnswers.push('Because of random factors');
-  }
-  
-  if (questionLower.includes('how')) {
-    wrongAnswers.push('Through a different method');
-    wrongAnswers.push('By an unknown process');
-  }
-  
-  // If still not enough, add some generic but plausible options
-  if (wrongAnswers.length < 3) {
-    wrongAnswers.push('Option A');
-    wrongAnswers.push('Option B');
-    wrongAnswers.push('Option C');
-  }
-  
-  return wrongAnswers;
-}
-
-function containsMathKeywords(question) {
-  const mathKeywords = ['add', 'subtract', 'multiply', 'divide', 'plus', 'minus', 'times', 'equal', 'equation', 'solve', 'number', 'integer', 'fraction', 'decimal', 'percentage'];
-  return mathKeywords.some(keyword => question.toLowerCase().includes(keyword));
-}
-
-
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
-// Admin endpoints
 app.get('/admin/get-all-users', async (req, res) => {
   const userEmail = await getUserFromSession(req);
   if (!userEmail) {
@@ -2701,7 +1832,7 @@ app.get('/admin/get-all-users', async (req, res) => {
         email: u.email
       }));
 
-      console.log('Admin get-all-users: Found', userList.length, 'users');
+      
       res.send({ success: true, users: userList, total: users.length });
     });
   });
@@ -2796,7 +1927,7 @@ app.get('/admin/get-helping-rankings', async (req, res) => {
         return res.status(500).send({ success: false, message: 'Server error' });
       }
 
-      console.log('Admin get-helping-rankings: Found', sessions.length, 'closed sessions');
+      
 
       // Count how many times each user helped others
       const helperCounts = {};
@@ -2815,7 +1946,7 @@ app.get('/admin/get-helping-rankings', async (req, res) => {
         .sort((a, b) => b.count - a.count)
         .slice(0, 50); // Only return top 50 helpers
 
-      console.log('Admin get-helping-rankings: Found', rankings.length, 'helpers');
+      
 
       // Get user details for each helper
       const helperEmails = rankings.map(r => r.email);
@@ -3040,7 +2171,7 @@ app.post('/admin/update-student-grade', async (req, res) => {
           if (err) console.error("Error logging grade promotion:", err);
         });
 
-        console.log("Grade updated for student:", email, "to Grade", newGrade, "Section", newSection);
+        
         res.send({ success: true, message: 'Student grade updated successfully' });
       }
     );
@@ -3133,7 +2264,7 @@ app.post('/admin/add-lrn-user', async (req, res) => {
           if (err) console.error("Error logging activity:", err);
         });
 
-        console.log("New user added by admin:", lrn, "-", firstName, surname);
+        
         res.send({ success: true, message: 'User added successfully!' });
       });
     });
@@ -3199,7 +2330,7 @@ io.on('connection', (socket) => {
       }
     });
     
-    console.log(normalizedEmail + ' joined with socket ' + socket.id);
+    
   });
 
   socket.on('send message', (data) => {
@@ -3268,12 +2399,11 @@ io.on('connection', (socket) => {
       // Broadcast to all clients that a user disconnected
       io.emit('user_disconnected', { email: socket.email });
       
-      console.log(socket.email + ' disconnected');
+      
     }
   });
 });
 
 server.listen(PORT, () => {
-  console.log("--- Server running at http://localhost:" + PORT + " ---");
-  console.log("--- SendGrid email verification enabled ---");
+  console.log("Server running on port " + PORT);
 });
