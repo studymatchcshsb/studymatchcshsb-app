@@ -1639,22 +1639,38 @@
           const initials = data.user.username.charAt(0).toUpperCase();
           document.getElementById('profile-initials').innerText = initials;
           
-          // Check if user is admin and hide help icon
+          // Check if user is admin
           currentUserIsAdmin = data.user.isAdmin || false;
+          
+          // Debug: Log admin status
+          console.log('User is admin:', currentUserIsAdmin);
+          
           if (currentUserIsAdmin) {
-            document.getElementById('help-icon').style.display = 'none';
             // Also hide the Find a KaStudy section for admins
             const findKaStudySection = document.querySelector('.find-kastudy-corner');
             if (findKaStudySection) {
               findKaStudySection.style.display = 'none';
+              console.log('Hiding Find KaStudy for admin');
             }
             
             // Show add user icon for all admins
-            document.getElementById('add-user-icon').style.display = 'block';
+            const addUserIcon = document.getElementById('add-user-icon');
+            if (addUserIcon) {
+              addUserIcon.style.display = 'block';
+              console.log('Showing Add User icon for admin');
+            } else {
+              console.log('Add User icon element not found!');
+            }
             
             // Show grade promotion icon only for special admin LRN
             if (data.user.lrn === '010101010101') {
               document.getElementById('grade-promotion-icon').style.display = 'block';
+            }
+          } else {
+            // For non-admins, ensure Find KaStudy is visible
+            const findKaStudySection = document.querySelector('.find-kastudy-corner');
+            if (findKaStudySection) {
+              findKaStudySection.style.display = 'block';
             }
           }
 
