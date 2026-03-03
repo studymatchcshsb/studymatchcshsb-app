@@ -242,6 +242,46 @@
       color: #999;
     }
 
+    /* Delete button styles */
+    .delete-btn {
+      padding: 6px 12px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .delete-btn:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+    }
+
+    /* Registered Users Section */
+    .registered-users-section {
+      margin-top: 40px;
+      padding-top: 30px;
+      border-top: 2px dashed #ddd;
+    }
+
+    .registered-users-section h2 {
+      color: #1B5E20;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .warning-text {
+      color: #721c24;
+      font-size: 14px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #f8d7da;
+      border-radius: 5px;
+      border: 1px solid #f5c6cb;
+    }
+
     /* Hide elements */
     .hidden {
       display: none !important;
@@ -339,7 +379,7 @@
 
       <!-- List of Added Users -->
       <div class="user-list-section">
-        <h2>📋 List of Added Users</h2>
+        <h2>📋 List of Added Users (ID Numbers)</h2>
         <div class="user-table-container">
           <table class="user-table">
             <thead>
@@ -359,6 +399,32 @@
           </table>
         </div>
       </div>
+
+      <!-- Registered Users Section with Delete -->
+      <div class="registered-users-section">
+        <h2>🗑️ Manage Registered Users</h2>
+        <p class="warning-text">⚠️ Use this to remove users who have graduated (Grade 10) or transferred. The ID Number will become available again for new registrations.</p>
+        <div class="user-table-container">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>ID Number</th>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Grade</th>
+                <th>Section</th>
+                <th>Email</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="registered-users-tbody">
+              <tr>
+                <td colspan="7" class="loading">Loading registered users...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -372,6 +438,7 @@
       await checkAuthentication();
       await fetchUserProfile();
       loadAddedUsers();
+      loadRegisteredUsers();
     };
 
     async function checkAuthentication() {
@@ -480,6 +547,75 @@
       } catch (error) {
         console.error('Error loading users:', error);
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error loading users</td></tr>';
+      }
+    }
+
+    // Load the list of registered users (actual users in the system)
+    async function loadRegisteredUsers() {
+      const tbody = document.getElementById('registered-users-tbody');
+      tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading registered users...</td></tr>';
+      
+      try {
+        const response = await fetch(`${backendURL}/admin/get-registered-users`, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.users.length > 0) {
+            let html = '';
+            data.users.forEach(user => {
+              html += `<tr>
+                <td>${user.lrn || '-'}</td>
+                <td>${user.name} ${user.surname}</td>
+                <td>${user.username || '-'}</td>
+                <td>${user.grade || '-'}</td>
+                <td>${user.section || '-'}</td>
+                <td>${user.email}</td>
+                <td><button class="delete-btn" onclick="deleteUser('${user.email}', '${user.name} ${user.surname}')">🗑️ Remove</button></td>
+              </tr>`;
+            });
+            tbody.innerHTML = html;
+          } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No registered users yet</td></tr>';
+          }
+        } else {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Failed to load registered users</td></tr>';
+        }
+      } catch (error) {
+        console.error('Error loading registered users:', error);
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Error loading registered users</td></tr>';
+      }
+    }
+
+    // Delete a user
+    async function deleteUser(emailToDelete, userName) {
+      if (!confirm(`Are you sure you want to remove ${userName}?\n\nThis will delete their account and make their ID Number available again for new registrations.\n\nThis action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${backendURL}/admin/delete-user`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ emailToDelete: emailToDelete })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('User removed successfully!');
+          // Reload the registered users list
+          loadRegisteredUsers();
+          // Also reload the allowed users list to show the LRN as available
+          loadAddedUsers();
+        } else {
+          alert(data.message || 'Failed to remove user.');
+        }
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('An error occurred. Please try again.');
       }
     }
 

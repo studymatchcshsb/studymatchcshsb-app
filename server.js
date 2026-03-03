@@ -2271,7 +2271,7 @@ app.post('/admin/add-lrn-user', async (req, res) => {
   });
 });
 
-// Admin: Get list of allowed users
+// Admin: Get list of allowed users (LRNs)
 app.get('/admin/get-allowed-users', async (req, res) => {
   const userEmail = await getUserFromSession(req);
   if (!userEmail) {
@@ -2300,6 +2300,153 @@ app.get('/admin/get-allowed-users', async (req, res) => {
       }
 
       res.send({ success: true, users: lrnData.students });
+    });
+  });
+});
+
+// Admin: Get list of registered users (actual users in the system)
+app.get('/admin/get-registered-users', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, adminUser) => {
+    if (err || !adminUser || !adminUser.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Get all non-admin registered users
+    db.find({ isAdmin: { $ne: true }, profileComplete: true }, (err, users) => {
+      if (err) {
+        console.error("Error finding registered users:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      const registeredUsers = users.map(u => ({
+        name: u.name,
+        surname: u.surname,
+        username: u.username,
+        lrn: u.lrn,
+        grade: u.grade || '',
+        section: u.section || '',
+        email: u.email
+      }));
+
+      res.send({ success: true, users: registeredUsers });
+    });
+  });
+});
+
+// Admin: Delete a user (for graduates or transferred students)
+app.delete('/admin/delete-user', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { emailToDelete } = req.body;
+
+  if (!emailToDelete) {
+    return res.status(400).send({ success: false, message: 'Email to delete is required' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, adminUser) => {
+    if (err || !adminUser || !adminUser.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Find the user to be deleted
+    db.findOne({ email: emailToDelete }, (err, userToDelete) => {
+      if (err) {
+        console.error("Error finding user to delete:", err);
+        return res.status(500).send({ success: false, message: 'Server error' });
+      }
+
+      if (!userToDelete) {
+        return res.status(404).send({ success: false, message: 'User not found' });
+      }
+
+      // Prevent admin from deleting themselves
+      if (emailToDelete === userEmail) {
+        return res.status(400).send({ success: false, message: 'You cannot delete your own account' });
+      }
+
+      // Get the LRN of the user to be deleted
+      const userLrn = userToDelete.lrn;
+
+      // First, delete the user from the database
+      db.remove({ email: emailToDelete }, {}, (err, numRemoved) => {
+        if (err) {
+          console.error("Error deleting user:", err);
+          return res.status(500).send({ success: false, message: 'Server error deleting user' });
+        }
+
+        if (numRemoved === 0) {
+          return res.status(404).send({ success: false, message: 'User not found' });
+        }
+
+        // Then, mark the LRN as unused in allowed-lrns.json
+        if (userLrn) {
+          fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
+            if (err) {
+              console.error("Error reading LRN file after user deletion:", err);
+              // User is already deleted, but we should log this
+            } else {
+              let lrnData;
+              try {
+                lrnData = JSON.parse(data);
+              } catch (parseError) {
+                console.error("Error parsing LRN file:", parseError);
+              }
+
+              // Find and mark the LRN as unused
+              const studentIndex = lrnData.students.findIndex(s => s.lrn === userLrn);
+              if (studentIndex !== -1) {
+                lrnData.students[studentIndex].used = false;
+
+                fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
+                  if (err) {
+                    console.error("Error updating LRN file after user deletion:", err);
+                  }
+                });
+              }
+            }
+          });
+        }
+
+        // Also delete user's sessions
+        sessionsDb.remove({ email: emailToDelete }, { multi: true }, (err) => {
+          if (err) console.error("Error deleting user sessions:", err);
+        });
+
+        // Also delete user's messages
+        messagesDb.remove({ $or: [{ from: emailToDelete }, { to: emailToDelete }] }, { multi: true }, (err) => {
+          if (err) console.error("Error deleting user messages:", err);
+        });
+
+        // Log the deletion activity
+        const activityLog = {
+          type: 'user_deleted',
+          adminEmail: userEmail,
+          adminName: adminUser.name,
+          adminSurname: adminUser.surname,
+          deletedUserEmail: emailToDelete,
+          deletedUserLrn: userLrn || 'N/A',
+          deletedUserName: userToDelete.name,
+          deletedUserSurname: userToDelete.surname,
+          timestamp: new Date(),
+          description: adminUser.name + " " + adminUser.surname + " deleted user: " + userToDelete.name + " " + userToDelete.surname + " (LRN: " + (userLrn || 'N/A') + ")"
+        };
+
+        activityDb.insert(activityLog, (err) => {
+          if (err) console.error("Error logging user deletion:", err);
+        });
+
+        res.send({ success: true, message: 'User deleted successfully!' });
+      });
     });
   });
 });
