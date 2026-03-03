@@ -121,16 +121,14 @@ let currentEmail = '';
 // Email validation function
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalidPatterns = ['test@test.com', 'example@example.com', '@gmail.com', '@yahoo.com', '@hotmail.com'];
+    
+    // Only allow @gbox.cshsb.edu.ph emails
+    if (!email.toLowerCase().endsWith('@gbox.cshsb.edu.ph')) {
+        return { valid: false, message: "Please use your school email (@gbox.cshsb.edu.ph)" };
+    }
     
     if (!emailRegex.test(email)) {
         return { valid: false, message: "Please enter a valid email address." };
-    }
-    
-    for (const pattern of invalidPatterns) {
-        if (email.toLowerCase().includes(pattern)) {
-            return { valid: false, message: "Please use your school email." };
-        }
     }
     
     return { valid: true };

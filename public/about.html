@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
+  <title>About - StudyMatch CSHSB</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="tailwind.config.js"></script>
+</head>
+<body class="min-h-screen" style="background: linear-gradient(135deg, #FFCF50 0%, #e6c04a 30%, #4a8c4a 60%, #347433 100%);">
+  
+  <!-- Logo in top left corner -->
+  <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
+    <img src="/images/logo.jpg" alt="StudyMatch Logo" style="width: 60px; height: auto; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="window.location.href='/homepage.html'">
+  </div>
+
+  <section class="min-h-screen flex items-center justify-center px-6 py-8">
+    <div class="w-full bg-white/95 backdrop-blur rounded-2xl shadow-2xl md:mt-0 sm:max-w-2xl xl:p-0 border-2 border-yellow-400 p-8">
+      
+      <!-- Info Icon -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Welcome Title -->
+      <h1 class="text-3xl font-bold leading-tight tracking-tight text-gray-900 md:text-4xl text-center text-green-800 mb-6">
+        Welcome to StudyMatch, Comsayano!
+      </h1>
+
+      <!-- Description -->
+      <div class="text-lg text-gray-700 leading-relaxed text-justify space-y-4 mb-8">
+        <p>
+          StudyMatch CSHSB is a study website that aims to bridge Comsayanos, especially those who struggle to find the perfect study partner or study group. This is for those who struggle to overcome the challenges, often quiet and unseen, caused by social isolation. 
+        </p>
+        <p>
+          Social isolation can turn simple tasks into daunting challenges, and that asking for help isn't always straightforward. StudyMatch CSHSB aims to help foster a more supportive and inclusive atmosphere in the school community.
+        </p>
+        <p>
+          This study website is a reminder that in the silent battles of anxiety, social awkwardness, and fear of getting judged, you are not alone.
+        </p>
+      </div>
+
+      <!-- Closing Message -->
+      <div class="text-center">
+        <p class="text-xl font-semibold text-green-700">
+          Use responsibly. Enjoy StudyMatch CSHSB, Comsayanos.
+        </p>
+      </div>
+
+      <!-- Back Button -->
+      <div class="mt-8 text-center">
+        <button onclick="window.location.href='/homepage.html'" class="px-6 py-2 bg-green-700 text-white rounded-lg hover:bg-green-600 transition">
+          Back to Home
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+</body>
+</html>
