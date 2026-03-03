@@ -883,7 +883,7 @@ app.post('/find-kastudy', async (req, res) => {
         subject: subject,
         timestamp: new Date(),
         status: 'pending',
-        message: currentUser.username + " needs help in " + subject + ". Would you like to help them?"
+        message: currentUser.username + " needs help in Grade " + currentUser.grade + " " + subject + ". Would you like to help them?"
       };
 
       // Log the activity
@@ -895,7 +895,7 @@ app.post('/find-kastudy', async (req, res) => {
         surname: currentUser.surname,
         subject: subject,
         timestamp: new Date(),
-        description: currentUser.name + " " + currentUser.surname + " needs help in " + subject + "."
+        description: currentUser.name + " " + currentUser.surname + " needs help in Grade " + currentUser.grade + " " + subject + "."
       };
       
       activityDb.insert(activityLog, (err) => {
