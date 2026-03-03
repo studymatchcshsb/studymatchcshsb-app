@@ -23,6 +23,16 @@
       color: #FFF;
     }
     
+    /* Default: hide admin-only icons, they will be shown by JS after auth check */
+    #grade-promotion-icon, #add-user-icon {
+      display: none !important;
+    }
+    
+    /* Default: hide Find KaStudy for all, JS will show for students */
+    .find-kastudy-corner {
+      display: none !important;
+    }
+    
     .dashboard-header {
       background: linear-gradient(90deg, #FFCF50 0%, #347433 100%);
       padding: 15px 30px;
@@ -128,9 +138,9 @@
       <!-- Hamburger Menu Icon -->
       <svg class="icon" onclick="toggleMenu()" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
       <!-- Grade Promotion Icon (only for special admin LRN) - Arrow pointing up -->
-      <svg id="grade-promotion-icon" class="icon" onclick="openGradePromotionModal()" title="Update Grade & Section" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
+      <svg id="grade-promotion-icon" class="icon" onclick="openGradePromotionModal()" title="Update Grade & Section" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
       <!-- Add User Icon (only for admins) - Two people -->
-      <svg id="add-user-icon" class="icon" onclick="window.location.href='/add-user.html'" title="Add Users" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <svg id="add-user-icon" class="icon" onclick="window.location.href='/add-user.html'" title="Add Users" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
     </aside>
 
     <div id="menu-modal" class="modal" style="display:none;">
@@ -1642,32 +1652,23 @@
           // Check if user is admin
           currentUserIsAdmin = data.user.isAdmin || false;
           
-          // Debug: Log admin status
-          console.log('User is admin:', currentUserIsAdmin);
-          
+          // Apply visibility based on user type - this runs immediately after profile load
           if (currentUserIsAdmin) {
-            // Also hide the Find a KaStudy section for admins
-            const findKaStudySection = document.querySelector('.find-kastudy-corner');
-            if (findKaStudySection) {
-              findKaStudySection.style.display = 'none';
-              console.log('Hiding Find KaStudy for admin');
-            }
-            
-            // Show add user icon for all admins
+            // Admin: show Add User icon, hide Find KaStudy
             const addUserIcon = document.getElementById('add-user-icon');
             if (addUserIcon) {
               addUserIcon.style.display = 'block';
-              console.log('Showing Add User icon for admin');
-            } else {
-              console.log('Add User icon element not found!');
             }
             
             // Show grade promotion icon only for special admin LRN
             if (data.user.lrn === '010101010101') {
-              document.getElementById('grade-promotion-icon').style.display = 'block';
+              const gradePromoIcon = document.getElementById('grade-promotion-icon');
+              if (gradePromoIcon) {
+                gradePromoIcon.style.display = 'block';
+              }
             }
           } else {
-            // For non-admins, ensure Find KaStudy is visible
+            // Student: show Find KaStudy
             const findKaStudySection = document.querySelector('.find-kastudy-corner');
             if (findKaStudySection) {
               findKaStudySection.style.display = 'block';
