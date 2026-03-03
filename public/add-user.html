@@ -379,7 +379,8 @@
 
       <!-- List of Added Users -->
       <div class="user-list-section">
-        <h2>📋 List of Added Users (ID Numbers)</h2>
+        <h2>📋 List of Allowed ID Numbers</h2>
+        <p class="warning-text" style="background: #fff3cd; color: #856404; border-color: #ffeeba;">ℹ️ These are ID Numbers that students can use to register. Click 'Remove' to delete an unused ID Number.</p>
         <div class="user-table-container">
           <table class="user-table">
             <thead>
@@ -389,11 +390,13 @@
                 <th>Grade</th>
                 <th>Section</th>
                 <th>Type</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="added-users-tbody">
               <tr>
-                <td colspan="5" class="loading">Loading users...</td>
+                <td colspan="7" class="loading">Loading users...</td>
               </tr>
             </tbody>
           </table>
@@ -510,10 +513,10 @@
       }
     });
 
-    // Load the list of added users
+    // Load the list of allowed LRNs
     async function loadAddedUsers() {
       const tbody = document.getElementById('added-users-tbody');
-      tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading users...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading users...</td></tr>';
       
       try {
         const response = await fetch(`${backendURL}/admin/get-allowed-users`, {
@@ -529,24 +532,62 @@
                 '<span class="user-type admin">Admin</span>' : 
                 '<span class="user-type student">Student</span>';
               
+              const status = user.used ? 
+                '<span style="color: #dc3545; font-weight: bold;">Registered</span>' : 
+                '<span style="color: #28a745; font-weight: bold;">Available</span>';
+              
+              const deleteBtn = user.used ? 
+                '-' : 
+                `<button class="delete-btn" onclick="deleteLrn('${user.lrn}', '${user.firstName} ${user.surname}')">🗑️ Remove</button>`;
+              
               html += `<tr>
                 <td>${user.lrn}</td>
                 <td>${user.firstName} ${user.surname}</td>
                 <td>${user.grade || '-'}</td>
                 <td>${user.section || '-'}</td>
                 <td>${userType}</td>
+                <td>${status}</td>
+                <td>${deleteBtn}</td>
               </tr>`;
             });
             tbody.innerHTML = html;
           } else {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No users added yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No users added yet</td></tr>';
           }
         } else {
-          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Failed to load users</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Failed to load users</td></tr>';
         }
       } catch (error) {
         console.error('Error loading users:', error);
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error loading users</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Error loading users</td></tr>';
+      }
+    }
+    
+    // Delete an unused LRN from allowed list
+    async function deleteLrn(lrn, name) {
+      if (!confirm(`Are you sure you want to remove this ID Number (${lrn}) for ${name}?\n\nThis will permanently delete this ID Number from the system.\n\nThis action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${backendURL}/admin/delete-lrn`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ lrn: lrn })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('ID Number removed successfully!');
+          loadAddedUsers();
+        } else {
+          alert(data.message || 'Failed to remove ID Number.');
+        }
+      } catch (error) {
+        console.error('Error deleting LRN:', error);
+        alert('An error occurred. Please try again.');
       }
     }
 

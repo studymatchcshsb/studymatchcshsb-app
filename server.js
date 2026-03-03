@@ -2304,6 +2304,83 @@ app.get('/admin/get-allowed-users', async (req, res) => {
   });
 });
 
+// Admin: Delete an LRN from allowed list (for unused/never-registered LRNs)
+app.delete('/admin/delete-lrn', async (req, res) => {
+  const userEmail = await getUserFromSession(req);
+  if (!userEmail) {
+    return res.status(401).send({ success: false, message: 'Unauthorized' });
+  }
+
+  const { lrn } = req.body;
+
+  if (!lrn) {
+    return res.status(400).send({ success: false, message: 'LRN is required' });
+  }
+
+  // Check if user is admin
+  db.findOne({ email: userEmail }, (err, adminUser) => {
+    if (err || !adminUser || !adminUser.isAdmin) {
+      return res.status(403).send({ success: false, message: 'Admin access required' });
+    }
+
+    // Read the allowed-lrns.json file
+    fs.readFile('allowed-lrns.json', 'utf8', (err, data) => {
+      if (err) {
+        console.error("Error reading LRN file:", err);
+        return res.status(500).send({ success: false, message: 'Server error reading LRN file' });
+      }
+
+      let lrnData;
+      try {
+        lrnData = JSON.parse(data);
+      } catch (parseError) {
+        console.error("Error parsing LRN file:", parseError);
+        return res.status(500).send({ success: false, message: 'Error parsing LRN data' });
+      }
+
+      // Check if LRN is already used (registered)
+      const studentIndex = lrnData.students.findIndex(s => s.lrn === lrn);
+      if (studentIndex === -1) {
+        return res.status(404).send({ success: false, message: 'LRN not found' });
+      }
+
+      const student = lrnData.students[studentIndex];
+      if (student.used) {
+        return res.status(400).send({ success: false, message: 'Cannot delete LRN that has already been registered. Use the registered users section to remove the user.' });
+      }
+
+      // Remove the LRN from the list
+      lrnData.students.splice(studentIndex, 1);
+
+      // Write back to file
+      fs.writeFile('allowed-lrns.json', JSON.stringify(lrnData, null, 2), 'utf8', (err) => {
+        if (err) {
+          console.error("Error saving LRN file:", err);
+          return res.status(500).send({ success: false, message: 'Server error saving LRN data' });
+        }
+
+        // Log the deletion activity
+        const activityLog = {
+          type: 'lrn_deleted',
+          adminEmail: userEmail,
+          adminName: adminUser.name,
+          adminSurname: adminUser.surname,
+          deletedLrn: lrn,
+          deletedUserName: student.firstName + ' ' + student.surname,
+          timestamp: new Date(),
+          description: adminUser.name + ' ' + adminUser.surname + ' removed unused LRN: ' + lrn + ' (' + student.firstName + ' ' + student.surname + ')'
+        };
+
+        activityDb.insert(activityLog, (err) => {
+          if (err) console.error("Error logging LRN deletion:", err);
+        });
+
+        res.send({ success: true, message: 'LRN removed successfully!' });
+      });
+    });
+  });
+});
+
 // Admin: Get list of registered users (actual users in the system)
 app.get('/admin/get-registered-users', async (req, res) => {
   const userEmail = await getUserFromSession(req);
