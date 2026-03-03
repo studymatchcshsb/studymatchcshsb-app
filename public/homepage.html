@@ -1689,11 +1689,17 @@
       }
     }
 
-    // Check if user has completed their profile (has strengths and weaknesses)
+    // Check if user has completed their profile (has strengths and weaknesses) - only for students
     function checkProfileCompletion(user) {
       const reminder = document.getElementById('profile-reminder');
 
-      // Show reminder if user doesn't have strengths or weaknesses set
+      // Don't show reminder for admins - they don't need to set strengths/weaknesses
+      if (user.isAdmin) {
+        reminder.style.display = 'none';
+        return;
+      }
+
+      // Show reminder if user doesn't have strengths or weaknesses set (only for students)
       if (!user.strengths || user.strengths.length === 0 || !user.weaknesses || user.weaknesses.length === 0) {
         reminder.style.display = 'block';
       } else {
