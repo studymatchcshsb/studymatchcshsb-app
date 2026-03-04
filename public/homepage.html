@@ -133,8 +133,8 @@
     <aside class="sidebar">
       <!-- Active Users Icon (Table/Spreadsheet) -->
       <svg class="icon" onclick="window.location.href='/active-users.html'" title="Users on StudyMatch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3v18h18V3H3zm8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>
-      <!-- Weekly Recommendations Icon (in sidebar) -->
-      <svg class="icon" onclick="openWeeklyRecommendations()" title="Weekly Study Partner Recommendations" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <!-- Weekly Recommendations Icon (in sidebar) - hidden for admins -->
+      <svg id="weekly-rec-icon" class="icon" onclick="openWeeklyRecommendations()" title="Weekly Study Partner Recommendations" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
       <!-- Hamburger Menu Icon -->
       <svg class="icon" onclick="toggleMenu()" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
       <!-- Grade Promotion Icon (only for special admin LRN) - Arrow pointing up -->
@@ -1658,6 +1658,12 @@
             const addUserIcon = document.getElementById('add-user-icon');
             if (addUserIcon) {
               addUserIcon.style.display = 'block';
+            }
+            
+            // Hide weekly recommendations for admins
+            const weeklyRecIcon = document.getElementById('weekly-rec-icon');
+            if (weeklyRecIcon) {
+              weeklyRecIcon.style.display = 'none';
             }
             
             // Show grade promotion icon only for special admin LRN
