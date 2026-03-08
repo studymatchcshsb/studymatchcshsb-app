@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
+  <title>User Promotion - StudyMatch CSHSB</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #FFCF50 0%, #e6c04a 30%, #4a8c4a 60%, #347433 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .promotion-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    .promotion-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    .promotion-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .promotion-header h1 {
+      color: #347433;
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    
+    .promotion-header p {
+      color: #666;
+      font-size: 16px;
+    }
+    
+    .promotion-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .promotion-date {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .promotion-date label {
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .promotion-date input {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .save-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #4CAF50, #388E3C);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .save-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    }
+    
+    .students-table-container {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+    }
+    
+    .students-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .students-table thead {
+      background: #f8f9fa;
+      position: sticky;
+      top: 0;
+    }
+    
+    .students-table th {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 2px solid #ddd;
+      color: #333;
+      font-weight: 600;
+    }
+    
+    .students-table td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .students-table tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .students-table input {
+      width: 70px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    
+    .students-table input:focus {
+      outline: none;
+      border-color: #347433;
+    }
+    
+    .message {
+      margin-top: 20px;
+      text-align: center;
+      padding: 15px;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .back-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #347433;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      transition: background 0.2s;
+    }
+    
+    .back-btn:hover {
+      background: #2d6b2d;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .error-message {
+      text-align: center;
+      padding: 40px;
+      color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <!-- Logo in top left corner -->
+  <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
+    <img src="/images/logo.jpg" alt="StudyMatch Logo" style="width: 60px; height: auto; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="window.location.href='/homepage.html'">
+  </div>
+
+  <div class="promotion-container">
+    <a href="/homepage.html" class="back-btn">← Back to Dashboard</a>
+    
+    <div class="promotion-card">
+      <div class="promotion-header">
+        <h1>🎓 User Promotion Management</h1>
+        <p>Update student grades and sections. Affected users will be logged out.</p>
+      </div>
+      
+      <div class="promotion-controls">
+        <div class="promotion-date">
+          <label for="promotion-date">Promotion Date:</label>
+          <input type="date" id="promotion-date">
+        </div>
+        <button onclick="saveGradePromotions()" class="save-btn">
+          💾 Save Changes & Log Out Affected Users
+        </button>
+      </div>
+      
+      <div class="students-table-container">
+        <table class="students-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Surname</th>
+              <th>Username</th>
+              <th>ID Number</th>
+              <th>Grade</th>
+              <th>Section</th>
+            </tr>
+          </thead>
+          <tbody id="students-list-body">
+            <tr>
+              <td colspan="6" class="loading">Loading students...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div id="promotion-message" class="message" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const backendURL = window.location.origin;
+    
+    // Check authentication
+    async function checkAuthentication() {
+      try {
+        const response = await fetch(`${backendURL}/check-session`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          window.location.href = '/index.html';
+          return;
+        }
+
+        const data = await response.json();
+        if (!data.loggedIn) {
+          window.location.href = '/index.html';
+          return;
+        }
+        
+        // Check if profile is complete
+        if (!data.profileComplete) {
+          window.location.href = '/profile-setup.html';
+          return;
+        }
+        
+        // Check if user is the special admin
+        const profile = await fetch(`${backendURL}/get-profile`, {
+          credentials: 'include'
+        });
+        const profileData = await profile.json();
+        
+        if (!profileData.success || profileData.user.lrn !== '010101010101') {
+          alert('Access denied. This page is only for the super admin.');
+          window.location.href = '/homepage.html';
+          return;
+        }
+        
+        console.log('Admin authenticated, loading students...');
+        loadStudentsForPromotion();
+        
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('promotion-date').value = today;
+        
+      } catch (error) {
+        console.error('Auth error:', error);
+        window.location.href = '/index.html';
+      }
+    }
+    
+    async function loadStudentsForPromotion() {
+      try {
+        const response = await fetch(`${backendURL}/admin/get-all-students-for-promotion`, {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch students');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayStudentsForPromotion(data.students);
+        } else {
+          document.getElementById('students-list-body').innerHTML = 
+            '<tr><td colspan="6" class="error-message">' + data.message + '</td></tr>';
+        }
+      } catch (error) {
+        document.getElementById('students-list-body').innerHTML = 
+          '<tr><td colspan="6" class="error-message">Failed to load students. ' + error.message + '</td></tr>';
+      }
+    }
+    
+    function displayStudentsForPromotion(students) {
+      const tbody = document.getElementById('students-list-body');
+      
+      if (!students || students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="loading">No students found.</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      students.forEach((student, index) => {
+        html += `
+          <tr>
+            <td>${student.name || ''}</td>
+            <td>${student.surname || ''}</td>
+            <td>${student.username || ''}</td>
+            <td>${student.lrn || ''}</td>
+            <td>
+              <input type="text" 
+                id="grade-${index}" 
+                value="${student.grade || ''}" 
+                data-email="${student.email}">
+            </td>
+            <td>
+              <input type="text" 
+                id="section-${index}" 
+                value="${student.section || ''}" 
+                data-email="${student.email}">
+            </td>
+          </tr>
+        `;
+      });
+      
+      tbody.innerHTML = html;
+    }
+    
+    async function saveGradePromotions() {
+      const messageEl = document.getElementById('promotion-message');
+      const promotionDate = document.getElementById('promotion-date').value;
+      
+      if (!promotionDate) {
+        showMessage('Please select a promotion date.', 'error');
+        return;
+      }
+      
+      // Gather all updated grades and sections
+      const updates = [];
+      const rows = document.querySelectorAll('#students-list-body tr');
+      
+      rows.forEach((row, index) => {
+        const gradeInput = document.getElementById(`grade-${index}`);
+        const sectionInput = document.getElementById(`section-${index}`);
+        
+        if (gradeInput) {
+          updates.push({
+            email: gradeInput.dataset.email,
+            newGrade: gradeInput.value,
+            newSection: sectionInput.value
+          });
+        }
+      });
+      
+      if (updates.length === 0) {
+        showMessage('No students to update.', 'error');
+        return;
+      }
+      
+      showMessage('Saving changes...', 'success');
+      
+      let successCount = 0;
+      
+      // Update each student one by one
+      for (const update of updates) {
+        try {
+          const response = await fetch(`${backendURL}/admin/update-student-grade`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              email: update.email,
+              newGrade: update.newGrade,
+              newSection: update.newSection
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            successCount++;
+          }
+        } catch (error) {
+          console.error('Error updating student:', error);
+        }
+      }
+      
+      if (successCount > 0) {
+        showMessage(`Successfully updated ${successCount} student(s). Affected users will be logged out.`, 'success');
+        alert(`Grade promotion completed! ${successCount} student(s) have been updated. They will need to log in again.`);
+      } else {
+        showMessage('Failed to update any students.', 'error');
+      }
+    }
+    
+    function showMessage(text, type) {
+      const messageEl = document.getElementById('promotion-message');
+      messageEl.textContent = text;
+      messageEl.className = 'message ' + type;
+      messageEl.style.display = 'block';
+    }
+    
+    // Run on page load
+    checkAuthentication();
+  </script>
+</body>
+</html>
