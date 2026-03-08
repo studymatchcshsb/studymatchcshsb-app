@@ -33,6 +33,15 @@
       display: none;
     }
     
+    /* Homepage background image */
+    .dashboard-main {
+      background-image: url('/b2ac6af37cb8cccc3c18cec362b66af4.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: calc(100vh - 80px);
+    }
+    
     .dashboard-header {
       background: linear-gradient(90deg, #FFCF50 0%, #347433 100%);
       padding: 15px 30px;
@@ -311,7 +320,7 @@
           </div>
           
           <div style="margin-top: 20px; text-align: right;">
-              <button onclick="saveGradePromotions()" style="padding: 12px 24px; background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
+              <button onclick="saveGradePromotions()" style="padding: 12px 24px; background: linear-gradient(135deg, #1a5c1a, #347433); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
                   💾 Save Changes & Log Out Affected Users
               </button>
           </div>
@@ -393,7 +402,7 @@
               </select>
           </div>
           
-          <button onclick="addNewUser()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px;">
+          <button onclick="addNewUser()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #1a5c1a, #347433); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px;">
               ✅ Add User
           </button>
           <p id="add-user-message" style="margin-top: 10px; text-align: center;"></p>
@@ -1259,7 +1268,7 @@
                         <div><strong>Their Strengths:</strong> ${rec.strengths.join(', ') || 'Not set'}</div>
                         <div><strong>Needs Help With:</strong> ${rec.weaknesses.join(', ') || 'Not set'}</div>
                     </div>
-                    <button onclick="requestAsStudyPartner('${rec.email}', '${rec.username}')" style="margin-top: 10px; width: 100%; padding: 10px; background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                    <button onclick="requestAsStudyPartner('${rec.email}', '${rec.username}')" style="margin-top: 10px; width: 100%; padding: 10px; background: linear-gradient(135deg, #1a5c1a, #347433); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         🤝 Request as Study Partner
                     </button>
                 </div>

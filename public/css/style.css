@@ -143,7 +143,7 @@ input:focus, select:focus {
 button {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(45deg, #d4e8d1, #c1dcba);
+  background: linear-gradient(45deg, #1a5c1a, #347433);
   color: white;
   border: none;
   border-radius: 8px;
@@ -157,7 +157,7 @@ button {
 button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(52, 116, 51, 0.4);
-  background: linear-gradient(45deg, #c1dcba, #d4e8d1);
+  background: linear-gradient(45deg, #347433, #1a5c1a);
 }
 
 /* --- Homepage Dashboard Layout --- */
@@ -168,7 +168,7 @@ button:hover {
 
 .sidebar {
   width: 80px;
-  background: linear-gradient(180deg, #d4e8d1 0%, #c1dcba 100%);
+  background: linear-gradient(180deg, #1a5c1a 0%, #347433 100%);
   padding: 20px 0;
   display: flex;
   flex-direction: column;
@@ -202,7 +202,7 @@ button:hover {
   justify-content: space-between;
   align-items: center;
   padding: 15px 30px;
-  background: linear-gradient(135deg, #d4e8d1 0%, #c1dcba 100%);
+  background: linear-gradient(135deg, #1a5c1a 0%, #347433 100%);
   border-bottom: none;
   position: relative;
 }
@@ -358,6 +358,7 @@ button:hover {
   font-size: 28px;
   padding: 0;
   margin: 0;
+  background: linear-gradient(45deg, #1a5c1a, #347433);
 }
 
 .find-section {
@@ -408,7 +409,7 @@ button:hover {
   width: auto;
   padding: 15px 40px;
   font-size: 1.2em;
-  background: linear-gradient(45deg, #347433, #2e6b2e);
+  background: linear-gradient(45deg, #1a5c1a, #347433);
 }
 
 .find-btn:hover {
@@ -507,7 +508,7 @@ button:hover {
 
 .add-friend-btn {
   padding: 8px 15px;
-  background: linear-gradient(45deg, #347433, #2e6b2e);
+  background: linear-gradient(45deg, #1a5c1a, #347433);
   color: white;
   border: none;
   border-radius: 5px;
@@ -567,12 +568,12 @@ button:hover {
 }
 
 .help-btn.yes-btn {
-  background: linear-gradient(45deg, #347433, #2e6b2e);
+  background: linear-gradient(45deg, #1a5c1a, #347433);
   color: white;
 }
 
 .help-btn.no-btn {
-  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  background: linear-gradient(45deg, #dc3545, #c0392b);
   color: white;
 }
 /* --- Profile Page Styles --- */
@@ -856,7 +857,7 @@ button:hover {
 }
 
 .yes-btn {
-  background: linear-gradient(45deg, #347433, #2e6b2e);
+  background: linear-gradient(45deg, #1a5c1a, #347433);
   color: white;
 }
 
@@ -866,7 +867,7 @@ button:hover {
 }
 
 .no-btn {
-  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  background: linear-gradient(45deg, #dc3545, #c0392b);
   color: white;
 }
 
@@ -1036,7 +1037,7 @@ button:hover {
   width: auto;
   padding: 12px 30px;
   font-size: 1em;
-  background: linear-gradient(45deg, #347433, #2e6b2e);
+  background: linear-gradient(45deg, #1a5c1a, #347433);
   box-shadow: 0 4px 15px rgba(52, 116, 51, 0.3);
 }
 
@@ -2172,7 +2173,7 @@ button:hover {
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  background: linear-gradient(135deg, #1a5c1a, #347433);
   color: white;
   box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
 }

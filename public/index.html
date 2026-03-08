@@ -179,6 +179,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         return; // Already redirected
     }
     
+    // Check if user has saved credentials - if so, show login section
+    const savedEmail = localStorage.getItem('studymatch_email');
+    const savedPassword = localStorage.getItem('studymatch_password');
+    
+    if (savedEmail && savedPassword) {
+        // Show login section for returning users with saved credentials
+        $('#register-section').hide();
+        $('#login-section').show();
+        $('#login-email').val(savedEmail);
+        $('#login-password').val(savedPassword);
+        $('#remember').prop('checked', true);
+        // Auto-login immediately
+        doLogin(savedEmail, savedPassword);
+        return;
+    }
+    
     // Check if coming from role selection
     const signupRole = sessionStorage.getItem('signupRole');
     const isShowingLogin = $('#login-section').is(':visible');
@@ -187,11 +203,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         // No role selected and showing signup form, redirect to role selection
         window.location.href = '/role-selection.html';
         return;
-    }
-    
-    // Only try auto-login if showing login section
-    if (isShowingLogin) {
-        setTimeout(autoLogin, 500);
     }
 });
 
