@@ -40,6 +40,26 @@
       background-position: center;
       background-repeat: no-repeat;
       min-height: calc(100vh - 80px);
+      width: 100%;
+    }
+    
+    /* Fix sidebar to stretch full height */
+    .dashboard-container {
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    .sidebar {
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+    }
+    
+    .main-content {
+      margin-left: 100px;
+      flex: 1;
+      min-height: 100vh;
     }
     
     .dashboard-header {
