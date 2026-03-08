@@ -169,7 +169,7 @@
   <script>
     const backendURL = window.location.origin;
     const subjects = ["Filipino", "English", "Science", "Math", "ICT", "ESP", "AP", "MAPEH"];
-
+    
     // Check if user is admin and redirect if so
     async function checkAdminAndRedirect() {
       try {
@@ -181,6 +181,23 @@
             window.location.href = '/profile.html';
             return true;
           }
+          
+          // Load existing strengths and weaknesses
+          if (data.user.strengths) {
+            data.user.strengths.forEach(subject => {
+              const checkbox = document.querySelector(`input[name="strengths"][value="${subject}"]`);
+              if (checkbox) checkbox.checked = true;
+            });
+          }
+          if (data.user.weaknesses) {
+            data.user.weaknesses.forEach(subject => {
+              const checkbox = document.querySelector(`input[name="weaknesses"][value="${subject}"]`);
+              if (checkbox) checkbox.checked = true;
+            });
+          }
+          
+          // Apply mutual exclusion after loading existing values
+          updateMutualExclusion();
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
@@ -196,15 +213,63 @@
       subjects.forEach(subject => {
         const label = document.createElement('label');
         label.className = 'checkbox-label';
+        label.dataset.subject = subject; // Store subject for reference
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.name = groupName;
         checkbox.value = subject;
+        // Add event listener for mutual exclusion
+        checkbox.addEventListener('change', updateMutualExclusion);
         const span = document.createElement('span');
         span.textContent = subject;
         label.appendChild(checkbox);
         label.appendChild(span);
         container.appendChild(label);
+      });
+    }
+    
+    // Function to handle mutual exclusion between strengths and weaknesses
+    function updateMutualExclusion() {
+      const strengthCheckboxes = document.querySelectorAll('input[name="strengths"]');
+      const weaknessCheckboxes = document.querySelectorAll('input[name="weaknesses"]');
+      
+      // Get currently selected values
+      const selectedStrengths = Array.from(strengthCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+      
+      const selectedWeaknesses = Array.from(weaknessCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+      
+      // Disable strengths that are selected as weaknesses
+      strengthCheckboxes.forEach(cb => {
+        if (selectedWeaknesses.includes(cb.value)) {
+          cb.disabled = true;
+          cb.parentElement.style.opacity = '0.5';
+          cb.parentElement.style.cursor = 'not-allowed';
+          cb.parentElement.title = 'Cannot select: already selected as weakness';
+        } else {
+          cb.disabled = false;
+          cb.parentElement.style.opacity = '1';
+          cb.parentElement.style.cursor = 'pointer';
+          cb.parentElement.title = '';
+        }
+      });
+      
+      // Disable weaknesses that are selected as strengths
+      weaknessCheckboxes.forEach(cb => {
+        if (selectedStrengths.includes(cb.value)) {
+          cb.disabled = true;
+          cb.parentElement.style.opacity = '0.5';
+          cb.parentElement.style.cursor = 'not-allowed';
+          cb.parentElement.title = 'Cannot select: already selected as strength';
+        } else {
+          cb.disabled = false;
+          cb.parentElement.style.opacity = '1';
+          cb.parentElement.style.cursor = 'pointer';
+          cb.parentElement.title = '';
+        }
       });
     }
 
